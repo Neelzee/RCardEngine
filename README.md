@@ -1,2 +1,1 @@
-# CardEngine
-Card Game Engine in Haskell
+# Haskell-Project
