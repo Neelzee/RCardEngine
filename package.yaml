@@ -24,6 +24,8 @@ dependencies:
 - random
 - array
 - mtl
+- extra
+- data-clist
 
 ghc-options:
 - -Wall

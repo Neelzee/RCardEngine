@@ -22,7 +22,8 @@ data Player = Player {
     moves :: Moves
 }
 
-
+resetMoves :: Player -> Moves -> Player
+resetMoves (Player name hand _) moves = Player name hand moves
 
 -- Deals the given amount of cards to each player
 deal :: Int -> Deck -> [Player] -> ([Player], Deck)

@@ -9,7 +9,6 @@ import Data.CircularList
 import System.Time.Extra
 
 import Prelude
-import Foreign.Marshal.Array (advancePtr)
 import GHC.Base (undefined)
 import Player
 import Card
@@ -147,6 +146,13 @@ gameLoop' players deck pile n = do
             else
                 gameLoop' (rotR players) deck pile n
 
+standardMoves :: Moves
+standardMoves = [
+    PlayCard False,
+    DrawCard True,
+    DrawCard True,
+    DrawCard True,
+    Pass False]
 
 
 -- Removes the element at the given index
