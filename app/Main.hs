@@ -1,17 +1,13 @@
 module Main where
 
 
-import System.Random
-import Data.List
-import Data.Array.IO
-import Control.Monad
 import Data.CircularList
-import System.Time.Extra
+    ( focus, fromList, isEmpty, rotR, size, toList, update, CList )
+import System.Time.Extra ( sleep )
 
-import Prelude
-import GHC.Base (undefined)
 import Player
 import Card
+import Game
 
 main :: IO ()
 main = do
@@ -29,18 +25,18 @@ gameLoop' players deck pile 0 = do
     -- New round
     putStrLn "New Round!"
     sleep 1
-    let players' = fromList (map (\p -> resetMoves p standardMoves) (toList players))
+    let players' = fromList (map (`resetMoves` standardMoves) (toList players))
     -- checks if win con is achived
     case defaultWinCon (toList players') deck pile of
         Just plr -> do
-            putStrLn ("Player: " ++ (name plr) ++ " won!")
+            putStrLn ("Player: " ++ name plr ++ " won!")
             sleep 1
             return ()
         _ -> gameLoop' players' deck pile (size players')
 -- Main game
 gameLoop' players deck pile n = do
     putStrLn "\ESC[2J"
-    case focus players of 
+    case focus players of
         Just plr -> do
             putStrLn (name plr ++ "'s turn!")
             print (head pile) -- displayes the card too be placed
@@ -73,14 +69,14 @@ gameLoop' players deck pile n = do
                                             then
                                                 do
                                                     -- Gets card
-                                                    let card = pop (hand plr) cardIndex
+                                                    let card = hand plr !! cardIndex
                                                     -- checks if card can be placed
                                                     if canPlaceCard card (head pile) sortingRules
                                                         then
-                                                            do     
-                                                                putStrLn ("Plays " ++ show card ++ " on " ++ show (head pile)) 
+                                                            do
+                                                                putStrLn ("Plays " ++ show card ++ " on " ++ show (head pile))
                                                                 let plr' = Player (name plr) (removeFirst (hand plr) card) (removeFirst (moves plr) (PlayCard b))
-                                                                let pile' = (card:pile)
+                                                                let pile' = card:pile
                                                                 -- If player can play card again, 
                                                                 if b
                                                                     then
@@ -134,12 +130,12 @@ gameLoop' players deck pile n = do
                                     do
                                         sleep 1
                                         let plr' = Player (name plr) (hand plr) (removeFirst (moves plr) (Pass b))
-                                        gameLoop' (update plr players) deck pile n
+                                        gameLoop' (update plr' players) deck pile n
                                 else
                                     do
                                         sleep 1
                                         let plr' = Player (name plr) (hand plr) (removeFirst (moves plr) (Pass b))
-                                        gameLoop' (rotR (update plr players)) deck pile (n - 1)
+                                        gameLoop' (rotR (update plr' players)) deck pile (n - 1)
         _ -> if isEmpty players
                 then
                     error "No players"
@@ -170,13 +166,7 @@ removeFirst (x:xs) y = if x == y
     else
         x : removeFirst xs y
 
-pop :: [a] -> Int -> a
-pop [] _ = error "Cannot pop from empty list"
-pop (x:_) 0 = x
-pop (x:xs) n = pop xs (n - 1)
-
-
-
+-- Removes all duplicate elements from the given list
 unique :: Eq a => [a] -> [a]
 unique [] = []
 unique (x:xs) = if x `elem` xs
@@ -195,5 +185,5 @@ sortingRules = reverse newDeck
 
 defaultWinCon :: [Player] -> Deck -> Deck -> Maybe Player
 defaultWinCon [] _ _ = Nothing
-defaultWinCon (plr@(Player _ [] _):ps) _ _ = Just plr
-defaultWinCon (plr:ps) dck pls = defaultWinCon ps dck pls
+defaultWinCon (plr@(Player _ [] _):_) _ _ = Just plr
+defaultWinCon (_:ps) dck pls = defaultWinCon ps dck pls

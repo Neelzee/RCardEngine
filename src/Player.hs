@@ -5,7 +5,7 @@ import Card (Card, Deck)
 -- Valid moves, bool for if the move ends the turn or not
 data Move = PlayCard Bool | DrawCard Bool | Pass Bool
     deriving (Show)
-    
+
 
 instance Eq Move where
     x == y = case (x, y) of
@@ -22,8 +22,21 @@ data Player = Player {
     moves :: Moves
 }
 
+-- Creates players
+createPlayers :: Int -> IO [Player]
+createPlayers 0 = return []
+createPlayers n = do
+    player <- createPlayer
+    players <- createPlayers (n - 1)
+    return (player : players)
+
+createPlayer :: IO Player
+createPlayer = do
+    name <- getLine
+    return (Player name [] [])
+
 resetMoves :: Player -> Moves -> Player
-resetMoves (Player name hand _) moves = Player name hand moves
+resetMoves (Player name hand _) = Player name hand
 
 -- Deals the given amount of cards to each player
 deal :: Int -> Deck -> [Player] -> ([Player], Deck)
@@ -36,7 +49,7 @@ dealPlayer (c, Player nm hnd mvs) = Player nm (c:hnd) mvs
 
 hasMove :: Player -> Move -> Bool
 hasMove (Player _ _ []) _ = False
-hasMove (Player _ _ (x:xs)) m = x == m || hasMove (Player "" [] xs) m 
+hasMove (Player _ _ (x:xs)) m = x == m || hasMove (Player "" [] xs) m
 
 getMoveFromString :: String -> Move
 getMoveFromString _ = Pass False

@@ -50,6 +50,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - data-clist
     - Haskell-Project
 
 tests:

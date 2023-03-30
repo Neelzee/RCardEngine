@@ -27,6 +27,7 @@ library
   exposed-modules:
       Card
       Player
+      Game
   other-modules:
       Paths_Haskell_Project
   hs-source-dirs:
@@ -37,6 +38,7 @@ library
     , base >=4.7 && <5
     , mtl
     , random
+    , data-clist
   default-language: Haskell2010
 
 executable Haskell-Project-exe
