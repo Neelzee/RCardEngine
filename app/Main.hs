@@ -26,10 +26,10 @@ gameLoop plrs deck pile = gameLoop' (fromList plrs) deck pile (length plrs)
 
 gameLoop' :: CList Player -> Deck -> Deck -> Int -> IO ()
 gameLoop' players deck pile 0 = do
+    -- New round
     putStrLn "New Round!"
     sleep 1
     let players' = fromList (map (\p -> resetMoves p standardMoves) (toList players))
-
     -- checks if win con is achived
     case defaultWinCon (toList players') deck pile of
         Just plr -> do
@@ -141,10 +141,10 @@ gameLoop' players deck pile n = do
                                         let plr' = Player (name plr) (hand plr) (removeFirst (moves plr) (Pass b))
                                         gameLoop' (rotR (update plr players)) deck pile (n - 1)
         _ -> if isEmpty players
-            then
-                error "No players"
-            else
-                gameLoop' (rotR players) deck pile n
+                then
+                    error "No players"
+                else
+                    gameLoop' (rotR players) deck pile n
 
 standardMoves :: Moves
 standardMoves = [
