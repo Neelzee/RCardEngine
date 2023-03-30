@@ -111,10 +111,10 @@ doPlayerActionPlayCard game plr continue = do
                             then
                                 do
                                     putStrLn ("Plays " ++ show card ++ " on " ++ show (head pile))
-                                    let plr' = Player (name plr) (removeFirst (hand plr) card) (removeFirst (moves plr) (PlayCard b))
+                                    let plr' = Player (name plr) (removeFirst (hand plr) card) (removeFirst (moves plr) (PlayCard continue))
                                     let pile' = card:pile
                                     -- If player can play card again, 
-                                    if b
+                                    if continue
                                         then
                                             do
                                                 sleep 2
@@ -133,3 +133,41 @@ doPlayerActionPlayCard game plr continue = do
                     _ -> do
                         putStrLn ("Invalid input " ++ i ++ ", expected and integer in " ++ show [1..(length (hand plr))])
                         doPlayerActionPlayCard game plr continue
+
+-- Draw card
+doPlayerActionDrawCard :: Game -> Player -> Bool -> IO Game
+doPlayerActionDrawCard game plr continue = do
+    if null (deck game)
+        then
+            do
+                putStrLn "Deck is empty"
+                sleep 1
+                doPlayerTurn game
+        else
+            do
+                let card = head (deck game)
+                putStrLn ("Drew " ++ show card)
+                sleep 1
+                let plr' = Player (name plr) (card:hand plr) (removeFirst (moves plr) (DrawCard continue))
+                let game' = updateDeck game (drop 1 deck)
+                sleep 1
+                if continue
+                    then
+                        do
+                            doPlayerTurn (updatePlayers game' (update plr' (players game')))
+                    else
+                        do
+                            return (updatePlayers game' (rotR (update plr' (players game'))))
+
+-- Pass action
+doPlayerActionPass :: Game -> Player -> Bool -> IO Game
+doPlayerActionPass game plr continue = do
+    sleep 1
+    let plr' = Player (name plr) (hand plr) (removeFirst (moves plr) (Pass b))
+    if b
+        then
+            do
+                doPlayerTurn (updatePlayers game (update plr' (players game)))
+        else
+            do
+                return (updatePlayers game (rotR (update plr' (players game))))
