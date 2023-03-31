@@ -1,6 +1,6 @@
 module Player where
 
-import Card (Card, Deck)
+import Card
 
 -- Valid moves, bool for if the move ends the turn or not
 data Move = PlayCard Bool | DrawCard Bool | Pass Bool
@@ -22,6 +22,10 @@ data Player = Player {
     , moves :: Moves
     , score :: Int
 }
+    deriving (Show, Eq)
+
+instance Ord Player where
+    p1 `compare` p2 = (score p1) `compare` (score p2)
 
 -- Creates players
 createPlayers :: Int -> IO [Player]
@@ -83,3 +87,9 @@ standardMoves = [
     DrawCard True,
     DrawCard True,
     Pass False]
+
+
+addScore :: Player -> Card -> Player
+addScore (Player nm hnd mvs scr) (Card _ _ s) = Player nm hnd mvs (scr + s)
+
+

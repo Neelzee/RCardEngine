@@ -22,6 +22,10 @@ gameLoop game = do
         then
             do
                 putStrLn "Game Over!"
+                winner <- emptyHandEndCon (toList (players game'))
+                scorer <- highestScore (toList (players game'))
+                putStrLn ((name winner) ++ " won!")
+                putStrLn ((name scorer) ++ " had the highest score, a total of: " ++ show (score scorer))
                 return game'
         else
             do

@@ -57,16 +57,17 @@ createGame = do
 
 -- Returns true if any player has no cards on their hand
 defaultWinCon :: Game -> Bool
-defaultWinCon (Game _ _ plrs _ _ _) = case defaultWinCon' (toList plrs) of
+defaultWinCon (Game _ _ plrs _ _ _) = case emptyHandEndCon (toList plrs) of
     Just _ -> True
     _ -> False
 
-defaultWinCon' :: [Player] -> Maybe Player
-defaultWinCon' [] = Nothing
-defaultWinCon' (p@(Player _ [] _ _):ps) = Just p
-defaultWinCon' (_:ps) = defaultWinCon' ps
+emptyHandEndCon :: [Player] -> Maybe Player
+emptyHandEndCon [] = Nothing
+emptyHandEndCon (p@(Player _ [] _ _):ps) = Just p
+emptyHandEndCon (_:ps) = emptyHandEndCon ps
 
-
+highestScore :: [Player] -> Player
+highestScore ps = head (quicksort ps)
 
 
 -- Returns once a player turn is over
@@ -75,9 +76,7 @@ doPlayerTurn game = case focus (players game) of
     Just player -> do
         putStrLn (show (name player) ++ "'s turn!")
         putStrLn "\n"
-        putStrLn "\n"
         putStrLn ("Choose an action: " ++ show (unique (moves player)))
-        putStrLn "\n"
         putStrLn "\n"
         putStrLn ("Pile: " ++ show (head (pile game)))
         putStrLn "\n"
@@ -114,10 +113,10 @@ doPlayerActionPlayCard game plr continue = do
                 putStrLn "Hand: "
                 print (hand player)
                 putStrLn "\n"
-                putStrLn ("Choose a card: (1/" ++ show (length (hand plr)) ++ ")")
+                putStrLn ("Choose a card: (1/" ++ show (length (hand plr)) ++ ") (q to cancel)")
                 i <- getLine
                 case i of
-                    "cancel" -> doPlayerTurn game
+                    "q" -> doPlayerTurn game
                     _ -> do
                             case readMaybe i :: Maybe Int of
                                 Just cardIndex -> do
@@ -130,7 +129,7 @@ doPlayerActionPlayCard game plr continue = do
                                                     then
                                                         do
                                                             putStrLn ("Plays " ++ show card ++ " on " ++ show (head (pile game)))
-                                                            let plr' = Player (name plr) (removeFirst (hand plr) card) (removeFirst (moves plr) (PlayCard continue)) (score plr)
+                                                            let plr' = addScore (Player (name plr) (removeFirst (hand plr) card) (removeFirst (moves plr) (PlayCard continue)) (score plr)) card
                                                             let pile' = card:(pile game)
                                                             -- If player can play card again, 
                                                             if continue
@@ -218,3 +217,10 @@ unique (x:xs) = if x `elem` xs
         unique xs
     else
         x : unique xs
+
+quicksort :: Ord a => [a] -> [a]
+quicksort [] = []
+quicksort (x:xs) = (quicksort lessert) ++ [x] ++ (quicksort greater)
+    where
+        lesser = filter (< p) xs
+        greater filter (>= p) xs
