@@ -17,9 +17,10 @@ instance Eq Move where
 type Moves = [Move]
 
 data Player = Player {
-    name :: String,
-    hand :: [Card],
-    moves :: Moves
+    name :: String
+    , hand :: [Card]
+    , moves :: Moves
+    , score :: Int
 }
 
 -- Creates players
@@ -33,32 +34,52 @@ createPlayers n = do
 createPlayer :: IO Player
 createPlayer = do
     name <- getLine
-    return (Player name [] [])
+    return (Player name [] [] 0)
 
 resetMoves :: Player -> Moves -> Player
-resetMoves (Player name hand _) = Player name hand
+resetMoves (Player name hand _ n) moves = Player name hand moves n
 
 -- Deals the given amount of cards to each player
 deal :: Int -> Deck -> [Player] -> ([Player], Deck)
 deal 0 dck plrs = (plrs, dck)
 deal n dck plrs = deal (n - 1) (drop n dck) (zipWith (curry dealPlayer) (take n dck) (take n plrs) ++ drop n plrs)
 
-
+-- Deals the given card to the given player
 dealPlayer :: (Card, Player) -> Player
-dealPlayer (c, Player nm hnd mvs) = Player nm (c:hnd) mvs
+dealPlayer (c, Player nm hnd mvs s) = Player nm (c:hnd) mvs s
 
+-- Checks if player has the given move
 hasMove :: Player -> Move -> Bool
-hasMove (Player _ _ []) _ = False
-hasMove (Player _ _ (x:xs)) m = x == m || hasMove (Player "" [] xs) m
+hasMove (Player _ _ [] _) _ = False
+hasMove (Player _ _ (x:xs) _) m = x == m || hasMove (Player "" [] xs 0) m
 
-getMoveFromString :: String -> Move
-getMoveFromString _ = Pass False
+-- Gets move from string
+getMoveFromString :: String -> Maybe Move
+getMoveFromString "play" = Just (PlayCard False)
+getMoveFromString "draw" = Just (DrawCard False)
+getMoveFromString "pass" = Just (Pass False)
+getMoveFromString _ = Nothing
 
-
+-- Gets the given move from the player, with the corresponding continuing bool
 getMoveFromPlayer :: Player -> Move -> Move
-getMoveFromPlayer (Player _ _ []) _ = Pass True
-getMoveFromPlayer (Player _ _ (x:xs)) m = if m == x
+getMoveFromPlayer (Player _ _ [] _) _ = Pass True
+getMoveFromPlayer (Player _ _ (x:xs) _) m = if m == x
     then
         x
     else
-        getMoveFromPlayer (Player "" [] xs) m
+        getMoveFromPlayer (Player "" [] xs 0) m
+
+
+-- Checks if the typed action is an action the player can do
+isValidMove :: String -> Player -> Bool
+isValidMove c plr = case getMoveFromString c of
+    Just m -> hasMove plr m
+    Nothing -> False
+
+standardMoves :: Moves
+standardMoves = [
+    PlayCard False,
+    DrawCard True,
+    DrawCard True,
+    DrawCard True,
+    Pass False]
