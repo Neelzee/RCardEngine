@@ -8,42 +8,46 @@ import Data.CircularList
 import Text.Read (readMaybe)
 import System.Time.Extra ( sleep )
 import Data.Maybe (fromMaybe)
+import Data.List (sortBy)
 
 data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)
 
 data Game = Game {
-    deck :: Deck
-    , pile :: Deck
+    cards :: [Card]
+    , deck :: [Card]
+    , pile :: [Card]
     , players :: CList Player
+    , endCon :: [Game -> Bool]
+    , winCon :: Game -> [Player]
     , state :: GameState
+    , rules :: [(GameState, (Game -> Bool, Game -> Game))]
     , rounds :: Int
-    , endCon :: Game -> Bool
 }
 
 
 incrementRoundCounter :: Game -> Game
-incrementRoundCounter (Game dck pl plrs st r ec) = Game dck pl plrs st (r + 1) ec
+incrementRoundCounter g = g { rounds = rounds g + 1}
 
 dealCards :: Game -> Int -> Game
-dealCards game@(Game _ pl _ st r ec) n = do
+dealCards game n = do
     let (plrs', deck') = deal n (deck game) (toList (players game))
-    Game deck' pl (fromList plrs') st r ec
+    game { players = fromList plrs', deck = deck'}
 
 -- Replaces the deck with a new deck in the game
 updateDeck :: Game -> Deck -> Game
-updateDeck (Game _ pl plrs st r ec) dck = Game dck pl plrs st r ec
+updateDeck game dck = game { deck = dck }
 
 -- Replaces the pile with the given pile
 updatePile :: Game -> Deck -> Game
-updatePile (Game dck _ plrs st r ec) pl = Game dck pl plrs st r ec
+updatePile game pl = game { pile = pl }
 
 -- Replaces the players with the updated players
 updatePlayers :: Game -> CList Player -> Game
-updatePlayers (Game dck pl _ st r ec) plrs = Game dck pl plrs st r ec
+updatePlayers game plrs = game { players = plrs }
 
 updateState :: Game -> GameState -> Game
-updateState (Game dck pl plrs _ r ec) st = Game dck pl plrs st r ec
+updateState game st = game { state = st }
 
 createGame :: IO Game
 createGame = do
@@ -54,14 +58,22 @@ createGame = do
             do
                 plrs <- createPlayers playerCount
                 let (plrs', deck') = deal 3 defaultCardDeck (map (`resetMoves` standardMoves) plrs)
-                return (Game (drop 1 deck') [head deck'] (fromList plrs') Start 0 defaultWinCon)
+                return Game {
+                    cards = defaultCardDeck, deck = drop 1 deck'
+                    , pile = [head deck'], players = fromList plrs'
+                    , endCon = [defaultWinCon]
+                    , winCon = sortBy (\p1 p2 -> compare (length $ hand p1) (length $ hand p2)) . toList . players
+                    , state = Start
+                    , rules = []
+                    , rounds = 0
+                    }
         _ -> do
             putStrLn "Invalid Input, expected an integer"
             createGame
 
 -- Returns true if any player has no cards on their hand
 defaultWinCon :: Game -> Bool
-defaultWinCon (Game _ _ plrs _ _ _) = case emptyHandEndCon (toList plrs) of
+defaultWinCon game = case emptyHandEndCon (toList (players game)) of
     Just _ -> True
     _ -> False
 

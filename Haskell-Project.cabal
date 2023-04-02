@@ -28,6 +28,9 @@ library
       Card
       Player
       Game
+      Engine
+      GameRules
+      ParseExpr
   other-modules:
       Paths_Haskell_Project
   hs-source-dirs:
