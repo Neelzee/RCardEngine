@@ -3,6 +3,7 @@ import Game
 import Player (Player(..))
 import Data.List (sortBy)
 import Text.Read (readMaybe)
+import Data.CircularList (toList)
 
 data GameExpr =
     Any GameExpr
@@ -51,14 +52,16 @@ parseString (x:xs) = case x of
     s -> maybe Null GValue (readMaybe s :: Maybe Int)
 
 createEndCon :: GameExpr -> Game -> Game
-createEndCon (Any (Players (IsEmpty Hand))) g = g { endCon = any (null . hand) . players }
-createEndCon (Any (Players (IsEqual Score (GValue n)))) g = g { endCon = any ((== n) . pScore) . players }
+createEndCon (Any (Players (IsEmpty Hand))) g = g { endCon = any (null . hand) . players : endCon g }
+createEndCon (Any (Players (IsEqual Score (GValue n)))) g = g { endCon = any ((== n) . pScore) . players : endCon g }
+createEndCon _ g = g
 
 
 createWinCon :: GameExpr -> Game -> Game
 createWinCon (Any expr) g = createWinCon expr g
 createWinCon (All expr) g = createWinCon expr g
-createWinCon (Greatest (Players Score)) g = g { winCon = sortBy (\p1 p2  -> compare (pScore p1) (pScore p2)) . players }
-createWinCon (Players (IsEqual Score (GValue n))) g = g { winCon = sortBy (\p1 p2 -> compare (distance n (pScore p1)) (distance n (pScore p2))) . players }
+createWinCon (Greatest (Players Score)) g = g { winCon = sortBy (\p1 p2  -> compare (pScore p1) (pScore p2)) . toList . players }
+createWinCon (Players (IsEqual Score (GValue n))) g = g { winCon = sortBy (\p1 p2 -> compare (distance n (pScore p1)) (distance n (pScore p2))) . toList . players }
     where distance x y = abs (x - y)
-createWinCon (Players (IsEmpty Hand)) g = g { winCon = sortBy (\p1 p2 -> compare (length $ hand p1) (length $ hand p2)) . players }
+createWinCon (Players (IsEmpty Hand)) g = g { winCon = sortBy (\p1 p2 -> compare (length $ hand p1) (length $ hand p2)) . toList . players }
+createWinCon _ g = g
