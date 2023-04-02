@@ -18,14 +18,14 @@ main = do
 gameLoop :: Game -> IO Game
 gameLoop game = do
     game' <- doPlayerTurn game
-    if (endCon game') game'
+    if (head (endCon game')) game'
         then
             do
                 putStrLn "Game Over!"
-                winner <- emptyHandEndCon (toList (players game'))
-                scorer <- highestScore (toList (players game'))
+                let winner = head ((winCon game') game')
+                let scorer = highestScore (toList (players game'))
                 putStrLn ((name winner) ++ " won!")
-                putStrLn ((name scorer) ++ " had the highest score, a total of: " ++ show (score scorer))
+                putStrLn ((name scorer) ++ " had the highest score, a total of: " ++ show (pScore scorer))
                 return game'
         else
             do

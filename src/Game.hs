@@ -79,7 +79,7 @@ defaultWinCon game = case emptyHandEndCon (toList (players game)) of
 
 emptyHandEndCon :: [Player] -> Maybe Player
 emptyHandEndCon [] = Nothing
-emptyHandEndCon (p@(Player _ [] _ _):ps) = Just p
+emptyHandEndCon (p@(Player _ [] _ _):_) = Just p
 emptyHandEndCon (_:ps) = emptyHandEndCon ps
 
 highestScore :: [Player] -> Player
