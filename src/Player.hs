@@ -25,7 +25,7 @@ data Player = Player {
     deriving (Show, Eq)
 
 instance Ord Player where
-    p1 `compare` p2 = (score p1) `compare` (score p2)
+    p1 `compare` p2 = score p1 `compare` score p2
 
 -- Creates players
 createPlayers :: Int -> IO [Player]

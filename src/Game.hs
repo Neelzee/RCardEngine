@@ -8,7 +8,7 @@ import Data.CircularList
 import Text.Read (readMaybe)
 import System.Time.Extra ( sleep )
 
-data GameState = Start | Turn | End
+data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)
 
 data Game = Game {
@@ -22,10 +22,10 @@ data Game = Game {
 
 
 incrementRoundCounter :: Game -> Game
-incrementRoundCounter (Game dck pl plrs st r ec) = (Game dck pl plrs st (r + 1) ec)
+incrementRoundCounter (Game dck pl plrs st r ec) = Game dck pl plrs st (r + 1) ec
 
 dealCards :: Game -> Int -> Game
-dealCards game@(Game dck pl plrs st r ec) n = do
+dealCards game@(Game _ pl _ st r ec) n = do
     let (plrs', deck') = deal n (deck game) (toList (players game))
     Game deck' pl (fromList plrs') st r ec
 
@@ -41,6 +41,9 @@ updatePile (Game dck _ plrs st r ec) pl = Game dck pl plrs st r ec
 updatePlayers :: Game -> CList Player -> Game
 updatePlayers (Game dck pl _ st r ec) plrs = Game dck pl plrs st r ec
 
+updateState :: Game -> GameState -> Game
+updateState (Game dck pl plrs _ r ec) st = Game dck pl plrs st r ec
+
 createGame :: IO Game
 createGame = do
     putStrLn "How many players?"
@@ -49,7 +52,7 @@ createGame = do
         Just playerCount ->
             do
                 plrs <- createPlayers playerCount
-                let (plrs', deck') = deal 3 newDeck (map (\p -> resetMoves p standardMoves) plrs)
+                let (plrs', deck') = deal 3 defaultCardDeck (map (`resetMoves` standardMoves) plrs)
                 return (Game (drop 1 deck') [head deck'] (fromList plrs') Start 0 defaultWinCon)
         _ -> do
             putStrLn "Invalid Input, expected an integer"
@@ -74,12 +77,11 @@ highestScore ps = head (quicksort ps)
 doPlayerTurn :: Game -> IO Game
 doPlayerTurn game = case focus (players game) of
     Just player -> do
-        putStrLn (show (name player) ++ "'s turn!")
-        putStrLn "\n"
-        putStrLn ("Choose an action: " ++ show (unique (moves player)))
-        putStrLn "\n"
-        putStrLn ("Pile: " ++ show (head (pile game)))
-        putStrLn "\n"
+        let game' = updateState game TurnStart
+        let playerInfo = playerTurnStart player
+        let pileInfo = "Pile: " ++ show (head (pile game))
+        let terminal = playerInfo ++ pileInfo
+        putStrLn terminal
         action <- getLine
         if not (isValidMove action player)
             then
@@ -90,9 +92,9 @@ doPlayerTurn game = case focus (players game) of
             else
                 case getMoveFromString action of
                     Just move -> case move of
-                        PlayCard b -> doPlayerActionPlayCard game player b
-                        DrawCard b -> doPlayerActionDrawCard game player b
-                        Pass b -> doPlayerActionPass game player b
+                        PlayCard b -> doPlayerActionPlayCard game' player b
+                        DrawCard b -> doPlayerActionDrawCard game' player b
+                        Pass b -> doPlayerActionPass game' player b
                     Nothing -> do
                         putStrLn ("Invalid move, expected " ++ show (unique (moves player)))
                         sleep 1
@@ -110,10 +112,7 @@ doPlayerActionPlayCard game plr continue = do
                 return game
         else  -- Code to play a card
             do
-                putStrLn "Hand: "
-                print (hand player)
-                putStrLn "\n"
-                putStrLn ("Choose a card: (1/" ++ show (length (hand plr)) ++ ") (q to cancel)")
+                putStrLn ("Choose a card: (1/" ++ show (length (hand plr)) ++ ")")
                 i <- getLine
                 case i of
                     "q" -> doPlayerTurn game
@@ -129,8 +128,8 @@ doPlayerActionPlayCard game plr continue = do
                                                     then
                                                         do
                                                             putStrLn ("Plays " ++ show card ++ " on " ++ show (head (pile game)))
-                                                            let plr' = addScore (Player (name plr) (removeFirst (hand plr) card) (removeFirst (moves plr) (PlayCard continue)) (score plr)) card
-                                                            let pile' = card:(pile game)
+                                                            let plr' = Player (name plr) (removeFirst (hand plr) card) (removeFirst (moves plr) (PlayCard continue)) (score plr)
+                                                            let pile' = card:pile game
                                                             -- If player can play card again, 
                                                             if continue
                                                                 then
@@ -141,7 +140,7 @@ doPlayerActionPlayCard game plr continue = do
                                                                 else
                                                                     do
                                                                         sleep 2
-                                                                        let game' = updatePile game pile'
+                                                                        let game' = updateState (updatePile game pile') TurnEnd
                                                                         return (updatePlayers game' (rotR (update plr' (players game'))))
                                                     else
                                                         do
@@ -179,7 +178,7 @@ doPlayerActionDrawCard game plr continue = do
                             doPlayerTurn (updatePlayers game' (update plr' (players game')))
                     else
                         do
-                            return (updatePlayers game' (rotR (update plr' (players game'))))
+                            return (updateState (updatePlayers game' (rotR (update plr' (players game')))) TurnEnd)
 
 -- Pass action
 doPlayerActionPass :: Game -> Player -> Bool -> IO Game
@@ -206,7 +205,7 @@ removeFirst (x:xs) y = if x == y
 
 
 sortingRules :: Deck
-sortingRules = reverse newDeck
+sortingRules = reverse defaultCardDeck
 
 
 -- Removes all duplicate elements from the given list
@@ -220,7 +219,30 @@ unique (x:xs) = if x `elem` xs
 
 quicksort :: Ord a => [a] -> [a]
 quicksort [] = []
-quicksort (x:xs) = (quicksort lessert) ++ [x] ++ (quicksort greater)
+quicksort (x:xs) = quicksort lesser ++ [x] ++ quicksort greater
     where
-        lesser = filter (< p) xs
-        greater filter (>= p) xs
+        lesser = filter (< x) xs
+        greater = filter (>= x) xs
+
+
+-- Used at the start of a turn
+playerTurnStart :: Player -> String
+playerTurnStart p = name p ++ "'s turn!\n" ++
+    "Hand:\n" ++ show (hand p) ++ "\n\n" ++
+    "Choose an action: " ++ show (unique (moves p)) ++ "\n"
+
+-- Clears the terminal by printing
+clearTerminal :: IO ()
+clearTerminal = putStrLn "\ESC[2J"
+
+-- Sleeps for the given time, counting down
+sleepPrint :: String -> Int -> IO ()
+sleepPrint s 0 = do
+    clearTerminal
+    putStrLn s
+sleepPrint s n = do
+    clearTerminal
+    putStrLn s
+    putStrLn ("\n" ++ show n)
+    sleep 1
+    sleepPrint s (n - 1)
