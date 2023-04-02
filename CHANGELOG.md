@@ -1,4 +1,4 @@
-# Changelog for `Haskell-Project`
+# Changelog for `CardEngine`
 
 All notable changes to this project will be documented in this file.
 

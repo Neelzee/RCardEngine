@@ -1,6 +1,6 @@
-name:                Haskell-Project
+name:                CardEngine
 version:             0.1.0.0
-github:              "githubuser/Haskell-Project"
+github:              "githubuser/CardEngine"
 license:             BSD3
 author:              "Author name here"
 maintainer:          "example@example.com"
@@ -10,22 +10,18 @@ extra-source-files:
 - README.md
 - CHANGELOG.md
 
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/Haskell-Project#readme>
+description:         Please see the README on GitHub at <https://github.com/githubuser/CardEngine#readme>
 
 dependencies:
 - base >= 4.7 && < 5
-- random
-- array
-- mtl
+- text
 - extra
+- edit-distance
+- directory
+- filepath
 - data-clist
+- extra
+- optparse-applicative
 
 ghc-options:
 - -Wall
@@ -42,7 +38,7 @@ library:
   source-dirs: src
 
 executables:
-  Haskell-Project-exe:
+  CardEngine-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -50,11 +46,18 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - CardEngine
+    - base
+    - text
+    - extra
+    - edit-distance
+    - directory
+    - filepath
     - data-clist
-    - Haskell-Project
+    - optparse-applicative
 
 tests:
-  Haskell-Project-test:
+  CardEngine-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -62,4 +65,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - Haskell-Project
+    - CardEngine

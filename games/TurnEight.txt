@@ -1,0 +1,39 @@
+CARD_SUITS
+A,B,C,D
+END
+
+CARD_VALUES
+1, 2, 3
+END
+
+CARD_NAMES
+X,Y,Z
+END
+
+DECK
+A.X,B.X,C.X,D.X,A.Y,B.Y,C.Z,D.Z
+END
+
+ENDCON
+any players isEmpty hand;
+END
+
+ENDCON
+any players isEqual score 10;
+END
+
+WINCON
+greatest player score;
+END
+
+ANYTIME
+deck isEmpty : swap pile deck, shuffle deck, take 1 deck pile;
+END
+
+PLAYER_HAND
+3
+END
+
+PLAYER_MOVES
+[PLAYCARD FALSE, DRAWCARD TRUE, DRAWCARD TRUE, DRAWCARD TRUE, PASS FALSE]
+END

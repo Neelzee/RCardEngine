@@ -3,11 +3,24 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: hpack-0.34.4@sha256:f3ea3b8afb16c3e0b20427d1c79e7ef7358027306d1261c1a585f9a35057063f,4521
+    pantry-tree:
+      sha256: 5cbe7a71296699664d89b6e81122ff55938000a0b1dae2620ee2b04b307f1d55
+      size: 3422
+  original:
+    hackage: hpack-0.34.4
+- completed:
+    hackage: data-clist-0.1.2.3@sha256:1e26251c8921821c8a1c7e168955449822f1bacf03d056cc59c84fd2863a0f8e,983
+    pantry-tree:
+      sha256: d4b6685ed28130114f99aead9854656ea5a7006e8598ad948c953a20e786e43d
+      size: 219
+  original:
+    hackage: data-clist-0.1.2.3
 snapshots:
 - completed:
-    sha256: af5d667f6096e535b9c725a72cffe0f6c060e0568d9f9eeda04caee70d0d9d2d
-    size: 649133
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/12.yaml
-  original:
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/12.yaml
+    sha256: e66e70a7f998036025e8f40abc89b8eeb79c88f57727020cba1b54f375aa7ca0
+    size: 586292
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/17.yaml
+  original: lts-18.17
