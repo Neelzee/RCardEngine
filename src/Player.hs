@@ -3,29 +3,21 @@ module Player where
 import Card
 
 -- Valid moves, bool for if the move ends the turn or not
-data Move = PlayCard Bool | DrawCard Bool | Pass Bool
-    deriving (Show)
-
-
-instance Eq Move where
-    x == y = case (x, y) of
-        (PlayCard _, PlayCard _) -> True
-        (DrawCard _, DrawCard _) -> True
-        (Pass _, Pass _) -> True
-        _ -> False
+data Move = PlayCard | DrawCard | Pass
+    deriving (Show, Eq)
 
 type Moves = [Move]
 
 data Player = Player {
     name :: String
     , hand :: [Card]
-    , moves :: Moves
-    , score :: Int
+    , moves :: [(Move, Bool)]
+    , pScore :: Int
 }
     deriving (Show, Eq)
 
 instance Ord Player where
-    p1 `compare` p2 = score p1 `compare` score p2
+    p1 `compare` p2 = pScore p1 `compare` pScore p2
 
 -- Creates players
 createPlayers :: Int -> IO [Player]
@@ -40,7 +32,7 @@ createPlayer = do
     name <- getLine
     return (Player name [] [] 0)
 
-resetMoves :: Player -> Moves -> Player
+resetMoves :: Player -> [(Move, Bool)] -> Player
 resetMoves (Player name hand _ n) moves = Player name hand moves n
 
 -- Deals the given amount of cards to each player
@@ -54,20 +46,21 @@ dealPlayer (c, Player nm hnd mvs s) = Player nm (c:hnd) mvs s
 
 -- Checks if player has the given move
 hasMove :: Player -> Move -> Bool
-hasMove (Player _ _ [] _) _ = False
-hasMove (Player _ _ (x:xs) _) m = x == m || hasMove (Player "" [] xs 0) m
+hasMove plr m = case lookup m (moves plr) of
+    Just _ -> True
+    Nothing -> False
 
 -- Gets move from string
 getMoveFromString :: String -> Maybe Move
-getMoveFromString "play" = Just (PlayCard False)
-getMoveFromString "draw" = Just (DrawCard False)
-getMoveFromString "pass" = Just (Pass False)
+getMoveFromString "play" = Just PlayCard
+getMoveFromString "draw" = Just DrawCard
+getMoveFromString "pass" = Just Pass
 getMoveFromString _ = Nothing
 
 -- Gets the given move from the player, with the corresponding continuing bool
 getMoveFromPlayer :: Player -> Move -> Move
-getMoveFromPlayer (Player _ _ [] _) _ = Pass True
-getMoveFromPlayer (Player _ _ (x:xs) _) m = if m == x
+getMoveFromPlayer (Player _ _ [] _) _ = Pass
+getMoveFromPlayer (Player _ _ ((x, _):xs) _) m = if m == x
     then
         x
     else
@@ -80,13 +73,13 @@ isValidMove c plr = case getMoveFromString c of
     Just m -> hasMove plr m
     Nothing -> False
 
-standardMoves :: Moves
+standardMoves :: [(Move, Bool)]
 standardMoves = [
-    PlayCard False,
-    DrawCard True,
-    DrawCard True,
-    DrawCard True,
-    Pass False]
+    (PlayCard, False),
+    (DrawCard, True),
+    (DrawCard, True),
+    (DrawCard, True),
+    (Pass, False)]
 
 
 addScore :: Player -> Card -> Player

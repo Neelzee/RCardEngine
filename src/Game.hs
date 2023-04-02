@@ -7,6 +7,7 @@ import Card
 import Data.CircularList
 import Text.Read (readMaybe)
 import System.Time.Extra ( sleep )
+import Data.Maybe (fromMaybe)
 
 data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)
@@ -92,9 +93,9 @@ doPlayerTurn game = case focus (players game) of
             else
                 case getMoveFromString action of
                     Just move -> case move of
-                        PlayCard b -> doPlayerActionPlayCard game' player b
-                        DrawCard b -> doPlayerActionDrawCard game' player b
-                        Pass b -> doPlayerActionPass game' player b
+                        PlayCard -> doPlayerActionPlayCard game' player (lookupOrDefault move False (moves player))
+                        DrawCard -> doPlayerActionDrawCard game' player (lookupOrDefault move False (moves player))
+                        Pass -> doPlayerActionPass game' player (lookupOrDefault move False (moves player))
                     Nothing -> do
                         putStrLn ("Invalid move, expected " ++ show (unique (moves player)))
                         sleep 1
@@ -128,7 +129,7 @@ doPlayerActionPlayCard game plr continue = do
                                                     then
                                                         do
                                                             putStrLn ("Plays " ++ show card ++ " on " ++ show (head (pile game)))
-                                                            let plr' = Player (name plr) (removeFirst (hand plr) card) (removeFirst (moves plr) (PlayCard continue)) (score plr)
+                                                            let plr' = Player (name plr) (removeFirst (hand plr) card) (removeFirst (moves plr) (PlayCard, continue)) (pScore plr)
                                                             let pile' = card:pile game
                                                             -- If player can play card again, 
                                                             if continue
@@ -169,7 +170,7 @@ doPlayerActionDrawCard game plr continue = do
                 let card = head (deck game)
                 putStrLn ("Drew " ++ show card)
                 sleep 1
-                let plr' = Player (name plr) (card:hand plr) (removeFirst (moves plr) (DrawCard continue)) (score plr)
+                let plr' = Player (name plr) (card:hand plr) (removeFirst (moves plr) (DrawCard, continue)) (pScore plr)
                 let game' = updateDeck game (drop 1 (deck game))
                 sleep 1
                 if continue
@@ -184,7 +185,7 @@ doPlayerActionDrawCard game plr continue = do
 doPlayerActionPass :: Game -> Player -> Bool -> IO Game
 doPlayerActionPass game plr continue = do
     sleep 1
-    let plr' = Player (name plr) (hand plr) (removeFirst (moves plr) (Pass continue))  (score plr)
+    let plr' = Player (name plr) (hand plr) (removeFirst (moves plr) (Pass, continue))  (pScore plr)
     if continue
         then
             do
@@ -246,3 +247,6 @@ sleepPrint s n = do
     putStrLn ("\n" ++ show n)
     sleep 1
     sleepPrint s (n - 1)
+
+lookupOrDefault :: Eq k => k -> a -> [(k, a)] -> a
+lookupOrDefault key def assocList = fromMaybe def (lookup key assocList)
