@@ -25,7 +25,6 @@ library
       Engine
       Game
       GameRules
-      Lib
       OldMain
       ParseExpr
       Player
@@ -43,6 +42,7 @@ library
     , filepath
     , optparse-applicative
     , text
+    , random
   default-language: Haskell2010
 
 executable CardEngine-exe

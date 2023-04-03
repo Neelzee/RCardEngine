@@ -19,7 +19,7 @@ data Game = Game {
     , pile :: [Card]
     , players :: CList Player
     , endCon :: [Game -> Bool]
-    , winCon :: Game -> [Player]
+    , winCon :: [Game -> [Player]]
     , state :: GameState
     , rules :: [(GameState, (Game -> Bool, Game -> Game))]
     , rounds :: Int
@@ -62,7 +62,7 @@ createGame = do
                     cards = defaultCardDeck, deck = drop 1 deck'
                     , pile = [head deck'], players = fromList plrs'
                     , endCon = [defaultWinCon]
-                    , winCon = sortBy (\p1 p2 -> compare (length $ hand p1) (length $ hand p2)) . toList . players
+                    , winCon = [sortBy (\p1 p2 -> compare (length $ hand p1) (length $ hand p2)) . toList . players]
                     , state = Start
                     , rules = []
                     , rounds = 0

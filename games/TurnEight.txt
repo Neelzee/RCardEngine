@@ -1,17 +1,17 @@
 CARD_SUITS
-A,B,C,D
+A B C D
 END
 
 CARD_VALUES
-1, 2, 3
+1 2 3
 END
 
 CARD_NAMES
-X,Y,Z
+X Y z
 END
 
 DECK
-A.X,B.X,C.X,D.X,A.Y,B.Y,C.Z,D.Z
+A.X B.X C.X D.X A.Y B.Y C.Z D.Z
 END
 
 ENDCON
@@ -27,7 +27,7 @@ greatest player score;
 END
 
 ANYTIME
-deck isEmpty : swap pile deck, shuffle deck, take 1 deck pile;
+isEmpty deck : swap pile deck, shuffle deck, take 1 deck pile;
 END
 
 PLAYER_HAND

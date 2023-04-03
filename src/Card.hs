@@ -1,5 +1,8 @@
 module Card where
 
+import System.Random
+
+
 data Card = Card {
     suit :: String
     , cName :: String
@@ -13,6 +16,21 @@ instance Eq Card where
 
 
 type Deck = [Card]
+
+shuffle :: [a] -> [a]
+shuffle xs = shuffle' xs (mkStdGen 42)
+
+
+shuffle' :: RandomGen mkStdGen => [a] -> mkStdGen -> [a]
+shuffle' [] _ = []
+shuffle' xs gen = y : shuffle' ys gen'
+  where
+    (index, gen') = randomR (0, length xs - 1) gen
+    (y, ys) = removeNth index xs
+
+removeNth :: Int -> [a] -> (a, [a])
+removeNth n xs = (xs !! n, take n xs ++ drop (n+1) xs)
+
 
 -- Checks if the first card can be placed ontop of the second card,
 -- by checking their position in the given sorting list
@@ -29,58 +47,8 @@ defaultCardSuits = ["Hearts", "Clubs", "Diamonds", "Spades"]
 defaultCardNames :: [String]
 defaultCardNames = ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"]
 
+defaultCardValues :: [Int]
+defaultCardValues = [1..13]
+
 defaultCardDeck :: Deck
-defaultCardDeck = [
-    Card "Hearts" "Ace" 0,
-    Card "Hearts" "Two" 0,
-    Card "Hearts" "Three" 0,
-    Card "Hearts" "Four" 0,
-    Card "Hearts" "Five" 0,
-    Card "Hearts" "Six" 0,
-    Card "Hearts" "Seven" 0,
-    Card "Hearts" "Eight" 0,
-    Card "Hearts" "Nine" 0,
-    Card "Hearts" "Ten" 0,
-    Card "Hearts" "Jack" 0,
-    Card "Hearts" "Queen" 0,
-    Card "Hearts" "King" 0,
-    Card "Clubs" "Ace" 0,
-    Card "Clubs" "Two" 0,
-    Card "Clubs" "Three" 0,
-    Card "Clubs" "Four" 0,
-    Card "Clubs" "Five" 0,
-    Card "Clubs" "Six" 0,
-    Card "Clubs" "Seven" 0,
-    Card "Clubs" "Eight" 0,
-    Card "Clubs" "Nine" 0,
-    Card "Clubs" "Ten" 0,
-    Card "Clubs" "Jack" 0,
-    Card "Clubs" "Queen" 0,
-    Card "Clubs" "King" 0,
-    Card "Diamonds" "Ace" 0,
-    Card "Diamonds" "Two" 0,
-    Card "Diamonds" "Three" 0,
-    Card "Diamonds" "Four" 0,
-    Card "Diamonds" "Five" 0,
-    Card "Diamonds" "Six" 0,
-    Card "Diamonds" "Seven" 0,
-    Card "Diamonds" "Eight" 0,
-    Card "Diamonds" "Nine" 0,
-    Card "Diamonds" "Ten" 0,
-    Card "Diamonds" "Jack" 0,
-    Card "Diamonds" "Queen" 0,
-    Card "Diamonds" "King" 0,
-    Card "Spades" "Ace" 0,
-    Card "Spades" "Two" 0,
-    Card "Spades" "Three" 0,
-    Card "Spades" "Four" 0,
-    Card "Spades" "Five" 0,
-    Card "Spades" "Six" 0,
-    Card "Spades" "Seven" 0,
-    Card "Spades" "Eight" 0,
-    Card "Spades" "Nine" 0,
-    Card "Spades" "Ten" 0,
-    Card "Spades" "Jack" 0,
-    Card "Spades" "Queen" 0,
-    Card "Spades" "King" 0
-    ]
+defaultCardDeck = [ Card s n sc | s <- defaultCardSuits, n <- defaultCardNames, sc <- defaultCardValues ]
