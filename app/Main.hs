@@ -1,7 +1,9 @@
 import Data.List (sortOn)
-import System.Directory (listDirectory)
+import System.Directory (listDirectory, renameFile)
 import System.Console.ANSI (clearScreen)
 import Control.Monad (unless)
+import System.IO ( hFlush, stdout )
+
 
 data Command = Command {
         cmd :: String
@@ -66,45 +68,64 @@ playGame n = do
 -- Parse and execute a command
 executeCommand :: String -> IO Bool
 executeCommand input = case words input of
-        ["list"] -> do
-                listGames
-                return False
-        ["game", nStr] -> do
-                let n = read nStr
-                playGame n
-                return False
-        ["help"] -> do
-                printHelp
-                return False
-        ["quit"] -> return True
-        ["clear"] -> do
-                clearScreen
-                return False
-        _ -> do
-                let possibleCorrection = suggestCorrection (head $ words input) commands
-                case possibleCorrection of
-                        Just correction -> putStrLn $ "\"" ++ input ++ "\" is not a valid command. Did you mean: " ++ correction ++ "?"
-                        Nothing -> putStrLn $ "\"" ++ input ++ "\" is not a valid command."
-                return False
+	["list"] -> do
+		listGames
+		return False
+	["game", nStr] -> do
+		let n = read nStr
+		playGame n
+		return False
+	["rename", nStr, newname] -> do
+		let n = read nStr
+		renameGame n newname
+		return False
+	["help"] -> do
+		printHelp
+		return False
+	["quit"] -> return True
+	["clear"] -> do
+		clearScreen
+		return False
+	_ -> do
+		let possibleCorrection = suggestCorrection (head $ words input) commands
+		case possibleCorrection of
+				Just correction -> putStrLn $ "\"" ++ input ++ "\" is not a valid command. Did you mean: " ++ correction ++ "?"
+				Nothing -> putStrLn $ "\"" ++ input ++ "\" is not a valid command."
+		return False
+
+
+renameGame :: Int -> String -> IO ()
+renameGame idx newName = do
+	games <- listDirectory "games"
+	let filename = games !! idx
+	renameFile ("games/" ++ filename) ("games/" ++ newName ++ ".txt")
+	putStrLn ("renamed " ++ filename ++ " to " ++ newName ++ ".txt")
+
 
 -- List of available commands
 commands :: [Command]
 commands =
         [ Command "list" "List the available games" "list"
         , Command "game <number>" "Play the game with the given number" "game <number>"
-        , Command "help" "Print the help message" "help"
+		, Command "rename <number> <new name>" "Renames the game with the given new name" "rename 0 pong"
         , Command "clear" "Clears the terminal" "clear"
         , Command "quit" "Quits the program" "quit"
+        , Command "help" "Print the help message" "help"
         ]
 
 -- Main program loop
 mainLoop :: IO ()
 mainLoop = do
-        putStrLn "Welcome to the game selector. Enter a command:"
+        putStr "> "
+        hFlush stdout
         input <- getLine
         c <- executeCommand input
         unless c mainLoop
 
 -- Main program entry point
 main :: IO ()
-main = mainLoop
+main = do
+        clearScreen
+        putStrLn "Card Game Engine!"
+        putStrLn "\n\n\n"
+        mainLoop
