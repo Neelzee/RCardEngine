@@ -2,7 +2,7 @@ module ParseExpr where
 
 import Game
     ( lookupOrDefault,
-      Game(cards, endCon, winCon, actions, rules, deck, pile, players),
+      Game(cards, endCon, winCon, actions, rules, deck, pile, players, gameName),
       GameState(Start) )
 import Card (shuffle, Card (Card), defaultCardSuits, defaultCardNames, defaultCardValues)
 import Player (Player(..), Move (PlayCard, DrawCard, Pass), standardMoves, resetMoves)
@@ -34,12 +34,12 @@ data GameExpr =
     deriving (Show)
 
 
-loadGame :: FilePath -> Game -> IO Game
-loadGame path g = do
-    rawContent <- readFile path
+loadGame :: String -> Game -> IO Game
+loadGame gamename g = do
+    rawContent <- readFile ("games/" ++ gamename)
     let content = split (== '\n') rawContent
     case validateGame content of
-        Left rls -> return (loadGame' rls g)
+        Left rls -> return ((loadGame' rls g) { gameName = gamename })
         Right err -> error (show err)
 
 loadGame' :: [(GameRule, String)] -> Game -> Game

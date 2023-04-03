@@ -1,8 +1,11 @@
+module Main where
+
 import Data.List (sortOn)
 import System.Directory (listDirectory, renameFile)
 import System.Console.ANSI (clearScreen)
 import Control.Monad (unless)
 import System.IO ( hFlush, stdout )
+import PlayGame (gameStart)
 
 
 data Command = Command {
@@ -55,15 +58,14 @@ listGames = do
 -- Play the selected game
 playGame :: Int -> IO ()
 playGame n = do
-        games <- listDirectory "games"
-        if n >= 0 && n < length games
-                then
-                        do
-                        let filename = "games/" ++ games !! n
-                        contents <- readFile filename
-                        putStrLn contents
-                else
-                        putStrLn "Invalid game number."
+    games <- listDirectory "games"
+    if n >= 0 && n < length games
+        then
+            do
+            let filename = games !! n
+            gameStart filename
+        else
+            putStrLn "Invalid game number."
 
 -- Parse and execute a command
 executeCommand :: String -> IO Bool
