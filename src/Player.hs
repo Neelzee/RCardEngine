@@ -29,8 +29,9 @@ createPlayers n = do
 
 createPlayer :: IO Player
 createPlayer = do
-    name <- getLine
-    return (Player name [] [] 0)
+    putStrLn "Enter name:"
+    n <- getLine
+    return (Player n [] [] 0)
 
 resetMoves :: Player -> [(Move, Bool)] -> Player
 resetMoves (Player name hand _ n) moves = Player name hand moves n
