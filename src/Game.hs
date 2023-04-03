@@ -9,6 +9,7 @@ import Text.Read (readMaybe)
 import System.Time.Extra ( sleep )
 import Data.Maybe (fromMaybe)
 import Data.List (sortBy)
+import GameRules (GameRule)
 
 data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)
@@ -21,7 +22,8 @@ data Game = Game {
     , endCon :: [Game -> Bool]
     , winCon :: [Game -> [Player]]
     , state :: GameState
-    , rules :: [(GameState, (Game -> Bool, Game -> Game))]
+    , rules :: [(GameRule, String)]
+    , actions :: [(GameState, [Game -> Game])]
     , rounds :: Int
 }
 

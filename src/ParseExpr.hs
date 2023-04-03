@@ -1,8 +1,12 @@
 module ParseExpr where
+
 import Game
+    ( lookupOrDefault,
+      Game(cards, endCon, winCon, actions, rules, deck, pile, players),
+      GameState(Start) )
 import Card (shuffle, Card (Card), defaultCardSuits, defaultCardNames, defaultCardValues)
 import Player (Player(..), Move (PlayCard, DrawCard, Pass), standardMoves, resetMoves)
-import Data.List (sortBy, intercalate)
+import Data.List (sortBy)
 import Text.Read (readMaybe)
 import Data.CircularList (toList, fromList)
 import GameExprError (GameError (GameInvalidSyntax))
@@ -38,40 +42,46 @@ loadGame path g = do
         Left rls -> return (loadGame' rls g)
         Right err -> error (show err)
 
-loadGame' :: [(GameRule, [String])] -> Game -> Game
+loadGame' :: [(GameRule, String)] -> Game -> Game
 loadGame' rls g =
-    let cs = head (lookupOrDefault CardSuits [unwords defaultCardSuits] rls)
-        cn = head (lookupOrDefault CardNames [unwords defaultCardNames] rls)
-        cv = head (lookupOrDefault CardValues [unwords (map show defaultCardValues)] rls)
+    let cs = lookupOrDefault CardSuits (unwords defaultCardSuits) rls
+        cn = lookupOrDefault CardNames (unwords defaultCardNames) rls
+        cv = lookupOrDefault CardValues (unwords (map show defaultCardValues)) rls
         cards' = [ Card s n sc | s <- words cs, n <- words cn, sc <- map (\p -> read p :: Int) (words cv) ]
         -- Player
-        mv = maybe standardMoves parsePlayerMoves (lookup PlayerMoves rls)
+        mv = case lookup PlayerMoves rls of
+                Just m -> parsePlayerMoves (words m)
+                Nothing -> standardMoves
         -- Card Count
-        hc = read (head (lookupOrDefault PlayerHand ["3"] rls)) :: Int
+        hc = lookupOrDefault PlayerHand "3" rls
 
         -- End con
-        ec = map (createEndCon . parseString)(lookupAll EndCon rls)
+        ec = map (createEndCon . parseString . words) (lookupAll EndCon rls)
 
         -- Win con
-        wc = map (createWinCon . parseString) (lookupAll WinCon rls)
+        wc = map (createWinCon . parseString . words) (lookupAll WinCon rls)
 
+        -- Rules that should be checked at specific times
+        at = map (execIfExpr . parseIfString . words) (lookupAll AnyTime rls)
     in g {
         cards = cards'
         , players = fromList (map (`resetMoves` mv) (toList (players g)))
         , endCon = ec
         , winCon = wc
+        , actions = [(Start, at)]
+        , rules = [(PlayerHand, hc)]
     }
 
 
 
 
-validateGame :: [String] -> Either [(GameRule, [String])] GameError
+validateGame :: [String] -> Either [(GameRule, String)] GameError
 validateGame (x:xs) =
     case parseGameRules x of
         Just a -> do
             let (as, xs') = span (/= "END") xs
             case validateGame xs' of
-                Left bs -> Left ((a, as) : bs)
+                Left bs -> Left ((a, head as) : bs)
                 Right e -> Right e
         _ -> Right (GameInvalidSyntax "eep")
 validateGame _ = Right (GameInvalidSyntax "eep")
@@ -124,8 +134,13 @@ getDeckExpr Deck = deck
 getDeckExpr Pile = pile
 getDeckExpr _ = const []
 
-parseIfString :: ([String], [[String]]) -> GameExpr
-parseIfString (xs, ys) = If (parseString xs) (map parseString ys)
+parseIfString :: [String] -> GameExpr
+parseIfString s = case break (/= ":") s of
+    (cause, _:effect) -> parseIfString' (cause, [effect])
+    _ -> Null
+
+parseIfString' :: ([String], [[String]]) -> GameExpr
+parseIfString' (xs, ys) = If (parseString xs) (map parseString ys)
 
 
 parseString :: [String] -> GameExpr
