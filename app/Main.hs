@@ -6,12 +6,8 @@ import System.Console.ANSI (clearScreen)
 import Control.Monad (unless)
 import System.IO ( hFlush, stdout )
 import PlayGame (gameStart)
+import GameEditor (Command(..))
 
-
-data Command = Command {
-        cmd :: String
-        , info :: String
-        , example :: String}
 
 -- Compute the Levenshtein distance between two strings
 levenshteinDistance :: Eq a => [a] -> [a] -> Int

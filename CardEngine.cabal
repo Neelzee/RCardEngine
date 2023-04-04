@@ -29,6 +29,7 @@ library
       ParseExpr
       Player
       GameExprError
+      GameEditor
   other-modules:
       Paths_CardEngine
   hs-source-dirs:

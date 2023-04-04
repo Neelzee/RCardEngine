@@ -34,7 +34,7 @@ data GameExpr =
     | Take GameExpr GameExpr GameExpr
     | Null
     | Always
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 loadGame :: String -> Game -> IO Game
@@ -195,6 +195,7 @@ lookupAll x pairs = [b | (a, b) <- pairs, a == x]
 parseFile :: [String] -> Either [(GameRule, String)] GameError
 parseFile input = parseFileHelper [] input 1
 
+-- TODO: Make generic
 parseFileHelper :: [(GameRule, String)] -> [String] -> Int -> Either [(GameRule, String)] GameError
 parseFileHelper result [] _ = Left result
 parseFileHelper result input@(x:xs) lineNumber
@@ -226,5 +227,22 @@ splitAndTrim = map trim . splitOn ","
 
 
 
-
+validateGameExpr :: GameExpr -> Bool
+validateGameExpr (Any expr) = validateGameExpr expr
+validateGameExpr (All expr) = validateGameExpr expr
+validateGameExpr (Players (IsEmpty Hand)) = True
+validateGameExpr (Players (IsEqual Score (GValue _))) = True
+validateGameExpr (Players (IsEqual Hand (GValue _))) = True
+validateGameExpr (Shuffle Deck) = True
+validateGameExpr (Shuffle Pile) = True
+validateGameExpr (Greatest (Players Score)) = True
+validateGameExpr (Greatest (Players Hand)) = True
+validateGameExpr (IsEmpty Deck) = True
+validateGameExpr (IsEmpty Hand) = True
+validateGameExpr (IsEmpty Pile) = True
+validateGameExpr (Swap a b) = (a == Pile || a == Deck) && (b == Pile || b == Deck) 
+validateGameExpr (Take (GValue n) a b) = (a == Pile || a == Deck) && (b == Pile || b == Deck) && n > 0
+validateGameExpr Always = True
+validateGameExpr (GValue _) = True
+validateGameExpr _ = False 
 
