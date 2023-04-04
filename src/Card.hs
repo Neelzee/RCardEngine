@@ -52,3 +52,10 @@ defaultCardValues = [1..13]
 
 defaultCardDeck :: Deck
 defaultCardDeck = [ Card s n sc | s <- defaultCardSuits, n <- defaultCardNames, sc <- defaultCardValues ]
+
+makeDeck :: [String] -> [String] -> [Int] -> Deck
+makeDeck suits ranks values =
+  let paddedValues = values ++ repeat 0
+      rankValuePairs = zip ranks paddedValues
+      suitCards s = map (uncurry (Card s)) rankValuePairs
+  in concatMap suitCards suits

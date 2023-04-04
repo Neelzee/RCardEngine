@@ -2,16 +2,19 @@ module ParseExpr where
 
 import Game
     ( lookupOrDefault,
-      Game(cards, endCon, winCon, actions, rules, deck, pile, players, gameName),
-      GameState(Start) )
-import Card (shuffle, Card (Card), defaultCardSuits, defaultCardNames, defaultCardValues)
-import Player (Player(..), Move (PlayCard, DrawCard, Pass), standardMoves, resetMoves)
-import Data.List (sortBy)
+      Game(endCon, winCon, actions, rules, deck, pile, players, gameName),
+      GameState(Start, TurnEnd, TurnStart) )
+import Card (shuffle, defaultCardSuits, defaultCardValues, makeDeck, Card)
+import Player (Player(..), Move (PlayCard, DrawCard, Pass), standardMoves, resetMoves, toString)
+import Data.List (sortBy, intercalate)
 import Data.CircularList (toList, fromList)
-import Data.List.Extra (split)
-import Data.Maybe (mapMaybe, isJust)
+import Data.List.Extra (split, splitOn)
+import Data.Maybe (mapMaybe)
 import GameRules (GameRule (..), parseGameRules)
 import GameExprError (GameError (MultipleLinesInStatement, MissingTerminationStatement, UnknownKeyWord))
+import Text.Read (readMaybe)
+import Data.Char (isSpace)
+import System.Directory.Internal.Prelude (fromMaybe)
 
 data GameExpr =
     Any GameExpr
@@ -30,6 +33,7 @@ data GameExpr =
     | Pile
     | Take GameExpr GameExpr GameExpr
     | Null
+    | Always
     deriving (Show)
 
 
@@ -37,56 +41,88 @@ loadGame :: String -> Game -> IO Game
 loadGame gamename g = do
     rawContent <- readFile ("games/" ++ gamename)
     let content = split (== '\n') rawContent
-    case validateGame content of
-        Left rls -> return ((loadGame' rls g) { gameName = gamename })
+    case parseFile content of
+        Left rls -> do
+            g' <-loadGame' rls g
+            return g' { gameName = gamename }
         Right err -> error (show err)
 
-loadGame' :: [(GameRule, String)] -> Game -> Game
-loadGame' rls g =
-    let cs = lookupOrDefault CardSuits (unwords defaultCardSuits) rls
-        cn = lookupOrDefault CardNames (unwords defaultCardNames) rls
-        cv = lookupOrDefault CardValues (unwords (map show defaultCardValues)) rls
-        cards' = [ Card s n sc | s <- words cs, n <- words cn, sc <- map (\p -> read p :: Int) (words cv) ]
-        -- Player
-        mv = case lookup PlayerMoves rls of
-                Just m -> parsePlayerMoves (words m)
-                Nothing -> standardMoves
-        -- Card Count
-        hc = lookupOrDefault PlayerHand "3" rls
+loadGame' :: [(GameRule, String)] -> Game -> IO Game
+loadGame' rls g = do
+    let cs = maybe defaultCardSuits splitAndTrim (lookup CardSuits rls)
+    print cs
+    let cn = maybe defaultCardSuits splitAndTrim (lookup CardNames rls)
+    print cn
+    let cv = maybe defaultCardValues (map (fromMaybe 0 . readMaybe) . splitAndTrim) (lookup CardValues rls)
+    print cv
+    let cards' = makeDeck cs cn cv
+    -- Player
+    let mv = maybe standardMoves parsePlayerMoves (lookup PlayerMoves rls)
+    -- Pile
+    let pl = case lookup PileCount rls of
+            Just s -> maybe "1" show (readMaybe s :: Maybe Int)
+            _ -> "1"
 
-        -- End con
-        ec = map (createEndCon . parseString . words) (lookupAll EndCon rls)
+    -- Card Count
+    let hc = lookupOrDefault PlayerHand "3" rls
 
-        -- Win con
-        wc = map (createWinCon . parseString . words) (lookupAll WinCon rls)
+    -- End con
+    let ec = map (createEndCon . parseString . words) (lookupAll EndCon rls)
 
-        -- Rules that should be checked at specific times
-        at = map (execIfExpr . parseIfString . words) (lookupAll AnyTime rls)
-    in g {
-        cards = cards'
+    -- Win con
+    let wc = map (createWinCon . parseString . words) (lookupAll WinCon rls)
+
+    -- Rules that should be checked at specific times
+    -- Anytime
+    let at = map (execIfExpr . parseIfString) (lookupAll AnyTime rls)
+
+    -- Start
+    let st = map (execIfExpr . parseIfString) (lookupAll StartTime rls)
+    return g {
+        deck = cards'
         , players = fromList (map (`resetMoves` mv) (toList (players g)))
         , endCon = ec
         , winCon = wc
-        , actions = [(Start, at)]
-        , rules = [(PlayerHand, hc)]
+        , actions = [(Start, at), (Start, st), (TurnStart, st), (TurnEnd, st)]
+        , rules = [(PlayerHand, hc),(PileCount, pl), (PlayerMoves, intercalate "," (map toString mv))]
     }
 
-parseIfString :: [String] -> GameExpr
-parseIfString = undefined
+-- Takes in a string, and converts it to a GameExpr
+parseIfString :: String -> GameExpr
+parseIfString s = case split ( == ':') s of
+    [condition, expr] ->
+        if null expr
+            then
+                Null
+            else
+                If (parseString (words condition)) (map (parseString . words) (splitAndTrim (drop 1 expr)))
+    _ -> Null
 
+-- Takes in a list of words, and converts it to a single GameExpr
 parseString :: [String] -> GameExpr
-parseString = undefined
+parseString [] = Null
+parseString (x:xs) = case x of
+    "any" -> Any (parseString xs)
+    "players" -> Players (parseString xs)
+    "isEqual" -> IsEqual (parseString [head xs]) (parseString [xs !! 1])
+    "score" -> Score
+    "hand" -> Hand
+    "greatest" -> Greatest (parseString xs)
+    "deck" -> Deck
+    "isEmpty" -> IsEmpty (parseString xs)
+    "swap" -> Swap (parseString [head xs]) (parseString [xs !! 1])
+    "take" -> Take (parseString [head xs]) (parseString [xs !! 1]) (parseString [xs !! 2])
+    "pile" -> Pile
+    "shuffle" -> Shuffle (parseString xs)
+    "always" -> Always
+    s -> maybe Null GValue (readMaybe s :: Maybe Int)
 
 
 
 
-validateGame :: [String] -> Either [(GameRule, String)] GameError
-validateGame (x:xs) = undefined
 
-
-
-parsePlayerMoves :: [String] -> [(Move, Bool)]
-parsePlayerMoves = mapMaybe parsePlayerMove
+parsePlayerMoves :: String -> [(Move, Bool)]
+parsePlayerMoves s = mapMaybe parsePlayerMove (splitAndTrim s)
 
 parsePlayerMove :: String -> Maybe (Move, Bool)
 parsePlayerMove x = case words x of
@@ -102,6 +138,7 @@ execIfExpr (If (IsEmpty Deck) xs) g = if null (deck g)
       foldr execExpr g xs
   else
       g
+execIfExpr (If Always xs) g = foldr execExpr g xs
 execIfExpr _ g = g
 
 -- Executes an expresion
@@ -178,6 +215,14 @@ parseFileHelper result input@(x:xs) lineNumber
     isCommentOrEmptyLine line = null line || head line == '#'
 
 
+
+-- Trim leading and trailing spaces from a string
+trim :: String -> String
+trim = dropWhile isSpace . reverse . dropWhile isSpace . reverse
+
+-- Split a string at the comma separator and trim each element
+splitAndTrim :: String -> [String]
+splitAndTrim = map trim . splitOn ","
 
 
 

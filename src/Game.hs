@@ -16,7 +16,6 @@ data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
 
 data Game = Game {
     gameName :: String
-    , cards :: [Card]
     , deck :: [Card]
     , pile :: [Card]
     , players :: CList Player
@@ -34,8 +33,8 @@ incrementRoundCounter g = g { rounds = rounds g + 1}
 
 dealCards :: Game -> Int -> Game
 dealCards game n = do
-    let (plrs', deck') = deal n (deck game) (toList (players game))
-    game { players = fromList plrs', deck = deck'}
+    let (plrs', deck') = deal n (deck game) (players game)
+    game { players = plrs', deck = deck'}
 
 -- Replaces the deck with a new deck in the game
 updateDeck :: Game -> Deck -> Game
@@ -60,11 +59,11 @@ createGame = do
         Just playerCount ->
             do
                 plrs <- createPlayers playerCount
-                let (plrs', deck') = deal 3 defaultCardDeck (map (`resetMoves` standardMoves) plrs)
+                let (plrs', deck') = deal 3 defaultCardDeck (fromList (map (`resetMoves` standardMoves) plrs))
                 return Game {
                     gameName = "Default Game"
-                    , cards = defaultCardDeck, deck = drop 1 deck'
-                    , pile = [head deck'], players = fromList plrs'
+                    , deck = drop 1 deck'
+                    , pile = [head deck'], players = plrs'
                     , endCon = [defaultWinCon]
                     , winCon = [sortBy (\p1 p2 -> compare (length $ hand p1) (length $ hand p2)) . toList . players]
                     , state = Start

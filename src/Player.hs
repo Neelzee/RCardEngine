@@ -1,10 +1,16 @@
 module Player where
 
 import Card
+import Data.CircularList (CList, focus, size, rotR, update)
 
 -- Valid moves, bool for if the move ends the turn or not
 data Move = PlayCard | DrawCard | Pass
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance Show Move where
+    show PlayCard = "PLAYCARD"
+    show DrawCard = "DRAWCARD"
+    show Pass = "PASS"
 
 type Moves = [Move]
 
@@ -34,12 +40,21 @@ createPlayer = do
     return (Player n [] [] 0)
 
 resetMoves :: Player -> [(Move, Bool)] -> Player
-resetMoves (Player name hand _ n) moves = Player name hand moves n
+resetMoves plr mv = plr {moves = mv }
 
--- Deals the given amount of cards to each player
-deal :: Int -> Deck -> [Player] -> ([Player], Deck)
-deal 0 dck plrs = (plrs, dck)
-deal n dck plrs = deal (n - 1) (drop n dck) (zipWith (curry dealPlayer) (take n dck) (take n plrs) ++ drop n plrs)
+deal :: Int -> [Card] -> CList Player -> (CList Player, [Card])
+deal n deck players = deal' (n * size players) deck players
+
+deal' :: Int -> [Card] -> CList Player -> (CList Player, [Card])
+deal' 0 dck plrs = (plrs, dck)
+deal' _ [] plrs = (plrs, [])
+deal' n (c:dck) plrs = case focus plrs of
+    Just p -> deal' (n - 1) dck (rotR (update (p { hand = c:hand p}) plrs))
+    Nothing -> deal' n (c:dck) (rotR plrs)
+
+
+
+
 
 -- Deals the given card to the given player
 dealPlayer :: (Card, Player) -> Player
@@ -87,3 +102,5 @@ addScore :: Player -> Card -> Player
 addScore (Player nm hnd mvs scr) (Card _ _ s) = Player nm hnd mvs (scr + s)
 
 
+toString :: (Move, Bool) -> String
+toString (a, b) = show a ++ " " ++ (if b then "TRUE" else "FALSE")

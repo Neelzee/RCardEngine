@@ -6,7 +6,6 @@ import System.Console.ANSI (clearScreen)
 import Control.Monad (unless)
 import System.IO ( hFlush, stdout )
 import PlayGame (gameStart)
-import ParseExpr (test)
 
 
 data Command = Command {
@@ -128,10 +127,8 @@ mainLoop = do
 -- Main program entry point
 main :: IO ()
 main = do
-        {-
         clearScreen
         putStrLn "Card Game Engine!"
         putStrLn "\n\n\n"
         mainLoop
-        -}
-        test
+        

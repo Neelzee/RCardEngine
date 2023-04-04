@@ -1,39 +1,38 @@
 CARD_SUITS
-A B C D
+A,B, C, D
 END
 
 CARD_VALUES
-1 2 3
+1, 2, 3
 END
 
 CARD_NAMES
-X Y Z
-END
-
-DECK
-A.X B.X C.X D.X A.Y B.Y C.Z D.Z
+X, Z
 END
 
 ENDCON
-any players isEmpty hand;
+any players isEmpty hand
 END
 
 ENDCON
-any players isEqual score 10;
+any players isEqual score 10
 END
 
 WINCON
-greatest player score;
+greatest players score;
 END
 
 ANYTIME
-isEmpty deck : swap pile deck, shuffle deck, take 1 deck pile;
+isEmpty deck : swap pile deck, shuffle deck, take 1 deck pile
 END
 
+STARTTIME
+always : shuffle deck
+
 PLAYER_HAND
-3
+4
 END
 
 PLAYER_MOVES
-[PLAYCARD FALSE, DRAWCARD TRUE, DRAWCARD TRUE, DRAWCARD TRUE, PASS FALSE]
+PLAYCARD FALSE, DRAWCARD TRUE, DRAWCARD TRUE, DRAWCARD TRUE, PASS FALSE
 END

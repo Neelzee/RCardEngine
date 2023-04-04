@@ -8,7 +8,9 @@ data GameRule =
     | WinCon
     | GRDeck
     | AnyTime
+    | StartTime
     | PlayerHand
+    | PileCount
     | PlayerMoves
     deriving (Show, Eq)
 
@@ -24,6 +26,7 @@ parseGameRules s = case s of
     "PLAYER_HAND" -> Just PlayerHand
     "ANYTIME" -> Just AnyTime
     "PLAYER_MOVES" -> Just PlayerMoves
+    "STARTTIME" -> Just StartTime
     _ -> Nothing
 
 
