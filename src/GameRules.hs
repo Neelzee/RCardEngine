@@ -22,5 +22,12 @@ parseGameRules s = case s of
     "ENDCON" -> Just EndCon
     "WINCON" -> Just WinCon
     "PLAYER_HAND" -> Just PlayerHand
+    "ANYTIME" -> Just AnyTime
     "PLAYER_MOVES" -> Just PlayerMoves
     _ -> Nothing
+
+
+isKeyword :: String -> Bool
+isKeyword str = case parseGameRules str of
+    Just _ -> True
+    Nothing -> False

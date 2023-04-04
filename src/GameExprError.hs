@@ -1,5 +1,4 @@
 module GameExprError where
 
 
-data GameError = GameError String | GameInvalidSyntax String
-    deriving (Show, Eq)
+data GameError = MissingTerminationStatement String | MultipleLinesInStatement String | UnknownKeyWord String deriving (Show)
