@@ -17,7 +17,7 @@ import Data.List (find)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
-    clearScreen
+    --clearScreen
     if any ($ g) (endCon g)
         then
             do

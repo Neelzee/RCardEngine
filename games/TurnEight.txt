@@ -19,7 +19,7 @@ any players isEqual score 10
 END
 
 WINCON
-greatest players score;
+greatest players score
 END
 
 ANYTIME

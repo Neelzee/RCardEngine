@@ -50,11 +50,8 @@ loadGame gamename g = do
 loadGame' :: [(GameRule, String)] -> Game -> IO Game
 loadGame' rls g = do
     let cs = maybe defaultCardSuits splitAndTrim (lookup CardSuits rls)
-    print cs
     let cn = maybe defaultCardSuits splitAndTrim (lookup CardNames rls)
-    print cn
     let cv = maybe defaultCardValues (map (fromMaybe 0 . readMaybe) . splitAndTrim) (lookup CardValues rls)
-    print cv
     let cards' = makeDeck cs cn cv
     -- Player
     let mv = maybe standardMoves parsePlayerMoves (lookup PlayerMoves rls)
@@ -71,7 +68,9 @@ loadGame' rls g = do
 
     -- Win con
     let wc = map (createWinCon . parseString . words) (lookupAll WinCon rls)
-
+    let t = map (parseString . words) (lookupAll WinCon rls)
+    print (map words (lookupAll WinCon rls))
+    print t
     -- Rules that should be checked at specific times
     -- Anytime
     let at = map (execIfExpr . parseIfString) (lookupAll AnyTime rls)
