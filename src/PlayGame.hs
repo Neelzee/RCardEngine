@@ -10,16 +10,18 @@ import Card
 import Text.Read (readMaybe)
 import ParseExpr (loadGame, parsePlayerMoves, lookupAll)
 import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions), GameState (Start, TurnEnd, TurnStart), removeFirst, sortingRules, lookupOrDefault, unique, playerTurnStart, dealCards, gameActions)
-import GameRules (GameRule(PlayerHand, PileCount, PlayerMoves, StartTime))
+import GameRules (GameRule(PlayerHand, PileCount, PlayerMoves))
 import Data.Maybe (fromMaybe)
-import Data.List (foldl')
+import System.Console.ANSI (clearScreen)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
-    --clearScreen
+    clearScreen
     if any ($ g) (endCon g)
         then
-            return g
+            do
+                putStrLn "game over"
+                return g
         else
             do
                 putStrLn ("Playing: " ++ gameName g ++ "!")
@@ -63,15 +65,27 @@ doPlayerTurn game plr = do
         else
             case getMoveFromString action of
                 Just move -> case move of
-                    PlayCard -> do
-                        g <- doPlayerActionPlayCard game' p (lookupOrDefault move False (moves p))
-                        doPlayerTurn g (fromMaybe p (focus (players g)))
-                    DrawCard -> do
-                        g <- doPlayerActionDrawCard game' p (lookupOrDefault move False (moves p))
-                        doPlayerTurn g (fromMaybe p (focus (players g)))
-                    Pass -> do
-                        g <- doPlayerActionPass game' p (lookupOrDefault move False (moves p))
-                        doPlayerTurn g (fromMaybe p (focus (players g)))
+                    PlayCard ->
+                        case lookup move (moves p) of
+                            Just True -> do
+                                g <- doPlayerActionPlayCard game' p True
+                                doPlayerTurn g (fromMaybe p (focus (players g)))
+                            _ -> do
+                                doPlayerActionPlayCard game' p False
+                    DrawCard ->
+                        case lookup move (moves p) of
+                            Just True -> do
+                                g <- doPlayerActionDrawCard game' p True
+                                doPlayerTurn g (fromMaybe p (focus (players g)))
+                            _ -> do
+                                doPlayerActionDrawCard game' p False
+                    Pass ->
+                        case lookup move (moves p) of
+                            Just True -> do
+                                g <- doPlayerActionPass game' p (lookupOrDefault move False (moves p))
+                                doPlayerTurn g (fromMaybe p (focus (players g)))
+                            _ -> do
+                                doPlayerActionPass game' p False
                 Nothing -> do
                     putStrLn ("Invalid move, expected " ++ show (map fst (unique (moves p))))
                     sleep 1
