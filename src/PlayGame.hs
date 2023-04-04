@@ -13,6 +13,7 @@ import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, r
 import GameRules (GameRule(PlayerHand, PileCount, PlayerMoves))
 import Data.Maybe (fromMaybe)
 import System.Console.ANSI (clearScreen)
+import Data.List (find)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
@@ -218,10 +219,9 @@ gameStart gamename = do
     gameEnd game'''
 
 gameEnd :: Game -> IO ()
-gameEnd g = do
-    let winner = head (head (map ($ g) (winCon g)))
-    putStrLn ("The winner is: " ++ name winner ++ "!")
-    sleep 2
+gameEnd g = case find (not . null) (map ($ g) (winCon g)) of
+    Just (x:_) ->  putStrLn ("The winner is: " ++ name x ++ "!")
+    _ -> putStrLn "No winners!"
 
 createPlayer :: IO [Player]
 createPlayer = do
