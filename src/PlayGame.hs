@@ -8,10 +8,11 @@ import System.Time.Extra ( sleep )
 import Player ( createPlayers, Player (name, moves, hand), Move (PlayCard, DrawCard, Pass), isValidMove, getMoveFromString, resetMoves, standardMoves )
 import Card
 import Text.Read (readMaybe)
-import ParseExpr (loadGame, parsePlayerMoves)
-import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules), GameState (Start, TurnEnd, TurnStart), removeFirst, sortingRules, lookupOrDefault, unique, playerTurnStart, dealCards)
-import GameRules (GameRule(PlayerHand, PileCount, PlayerMoves))
+import ParseExpr (loadGame, parsePlayerMoves, lookupAll)
+import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions), GameState (Start, TurnEnd, TurnStart), removeFirst, sortingRules, lookupOrDefault, unique, playerTurnStart, dealCards)
+import GameRules (GameRule(PlayerHand, PileCount, PlayerMoves, StartTime))
 import Data.Maybe (fromMaybe)
+import Data.List (foldl')
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
@@ -40,7 +41,7 @@ gameLoop g = do
 doPlayerTurn :: Game  -> Player -> IO Game
 doPlayerTurn game plr = do
     p <- case lookup PlayerMoves (rules game) of
-        Just mv -> do 
+        Just mv -> do
             print mv
             return (resetMoves plr (parsePlayerMoves mv))
         Nothing -> return (resetMoves plr standardMoves)
@@ -62,7 +63,7 @@ doPlayerTurn game plr = do
                     PlayCard -> do
                         g <- doPlayerActionPlayCard game' p (lookupOrDefault move False (moves p))
                         doPlayerTurn g (fromMaybe p (focus (players g)))
-                    DrawCard -> do 
+                    DrawCard -> do
                         g <- doPlayerActionDrawCard game' p (lookupOrDefault move False (moves p))
                         doPlayerTurn g (fromMaybe p (focus (players g)))
                     Pass -> do
@@ -194,7 +195,9 @@ gameStart gamename = do
             Nothing -> drop 1 (deck game)
     }
 
-    game''' <- gameLoop game''
+    let g = foldl' (foldl' (flip ($))) game'' (lookupAll Start (actions game''))
+
+    game''' <- gameLoop g
     gameEnd game'''
 
 gameEnd :: Game -> IO ()

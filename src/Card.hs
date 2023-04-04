@@ -18,7 +18,7 @@ instance Eq Card where
 type Deck = [Card]
 
 shuffle :: [a] -> [a]
-shuffle xs = shuffle' xs (mkStdGen 42)
+shuffle xs = shuffle' xs (mkStdGen 420)
 
 
 shuffle' :: RandomGen mkStdGen => [a] -> mkStdGen -> [a]
