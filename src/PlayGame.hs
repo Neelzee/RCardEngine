@@ -9,7 +9,7 @@ import Player ( createPlayers, Player (name, moves, hand), Move (PlayCard, DrawC
 import Card
 import Text.Read (readMaybe)
 import ParseExpr (loadGame, parsePlayerMoves, lookupAll)
-import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions), GameState (Start, TurnEnd, TurnStart), removeFirst, sortingRules, lookupOrDefault, unique, playerTurnStart, dealCards)
+import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions), GameState (Start, TurnEnd, TurnStart), removeFirst, sortingRules, lookupOrDefault, unique, playerTurnStart, dealCards, gameActions)
 import GameRules (GameRule(PlayerHand, PileCount, PlayerMoves, StartTime))
 import Data.Maybe (fromMaybe)
 import Data.List (foldl')
@@ -28,7 +28,8 @@ gameLoop g = do
                     Just p -> do
                         putStrLn ("It's " ++ name p ++ "'s turn!")
                         sleep 1
-                        doPlayerTurn g p
+                        g' <- doPlayerTurn g p
+                        gameLoop g'
                     Nothing -> if isEmpty (players g)
                         then
                             error "no players"
@@ -40,12 +41,14 @@ gameLoop g = do
 -- Returns once a player turn is over
 doPlayerTurn :: Game  -> Player -> IO Game
 doPlayerTurn game plr = do
+    let g' = gameActions (lookupAll (state game) (actions game)) game
     p <- case lookup PlayerMoves (rules game) of
         Just mv -> do
             print mv
             return (resetMoves plr (parsePlayerMoves mv))
         Nothing -> return (resetMoves plr standardMoves)
-    let game' = game { state = TurnStart }
+    let game' = g' { state = TurnStart }
+    -- Turn actions
     let playerInfo = playerTurnStart p
     let pileInfo = "Pile: " ++ show (head (pile game))
     let terminal = playerInfo ++ pileInfo
@@ -195,7 +198,7 @@ gameStart gamename = do
             Nothing -> drop 1 (deck game)
     }
 
-    let g = foldl' (foldl' (flip ($))) game'' (lookupAll Start (actions game''))
+    let g = gameActions (lookupAll Start (actions game'')) game''
 
     game''' <- gameLoop g
     gameEnd game'''

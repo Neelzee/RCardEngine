@@ -10,6 +10,7 @@ import System.Time.Extra ( sleep )
 import Data.Maybe (fromMaybe)
 import Data.List (sortBy)
 import GameRules (GameRule)
+import Data.List.Extra (foldl')
 
 data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)
@@ -146,3 +147,8 @@ sleepPrint s n = do
 
 lookupOrDefault :: Eq k => k -> a -> [(k, a)] -> a
 lookupOrDefault key def assocList = fromMaybe def (lookup key assocList)
+
+
+
+gameActions :: [[Game -> Game]] -> Game -> Game
+gameActions acs g = foldl' (foldl' (flip ($))) g acs
