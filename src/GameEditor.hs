@@ -4,7 +4,7 @@ import Text.Read (readMaybe)
 import GHC.IO.Handle (hFlush)
 import System.IO (stdout)
 import System.Console.ANSI (clearScreen)
-import Data.List (sort)
+import Data.List (sort, elemIndex, intercalate)
 import ParseExpr (GameExpr (..), validateGameExpr)
 import Data.Maybe (mapMaybe, fromJust)
 import Player (getMoveFromString)
@@ -105,8 +105,28 @@ getFlag (Clear fls) = fls
 getFlag _ = []
 
 
+printTable :: [(String, String, String)] -> IO ()
+printTable rows = do
+  let (col1, col2, col3) = unzip3 rows
+      max1 = maximum (map length col1)
+      max2 = maximum (map length col2)
+      max3 = maximum (map length col3)
+      formatRow (a, b, c) = intercalate "  " [pad max1 a, pad max2 b, pad max3 c]
+      pad len str = str ++ replicate (len - length str) ' '
+      table = map formatRow rows
+      separator = replicate (length (head table)) '-'
+  putStrLn separator
+  mapM_ putStrLn table
+  putStrLn separator
+
+
+
 printCommands :: [Command] -> IO ()
-printCommands = undefined
+printCommands xs = printTable (pc xs)
+    where
+        pc [] = []
+        pc ((Command nm inf ex):ys) = (nm, inf, ex) : pc ys 
+        pc (_:ys) = pc ys
 
 
 editor :: GameData -> IO ()
@@ -178,7 +198,18 @@ editor gd = do
                         do
                             putStrLn ("Expected a number between 0 and " ++ show (length g) ++ ", in 'from', but got " ++ show a ++ " instead")
                             editor gd
-
+        -- exit
+        Just (Exit flgs) -> if null gd
+        then
+            do
+                putStrLn "No game to exit"
+                editor gd
+        else
+            do
+                let (diff, _) = span ((/=Saved) . fst) (reverse gd)
+                let ecc = [CommandEffect { short = "Exit editing mode", verbose = "Disregareded a total of " ++ show (length diff) ++ " new features" }]
+                e <- saveGameData gd
+                execFlags (ecc ++ [e]) flgs
         Just cm -> case execCommand cm gd of
             Right err -> do
                 print err
@@ -194,6 +225,7 @@ editor gd = do
         Nothing -> do
             putStrLn "Unknown command, or flags, type help to list all commands"
             editor gd
+
 
 
 execFlags :: [CommandEffect] -> [String] -> IO ()
@@ -296,18 +328,10 @@ execCommand xs f = case xs of
         else
             case lookup Saved f of
                 Just _ -> do
-                    let (diff, _) = span ((/=Saved) . fst) f
+                    let (diff, _) = span ((/=Saved) . fst) (reverse f)
                     Left (f ++ [(Saved, "")],[CommandEffect { short = "Saved game data", verbose = "Saved a total of " ++ show (length diff) ++ " new features" }])
 
                 Nothing -> Left (f ++ [(Saved, "")], [CommandEffect { short = "Saved game data", verbose = "Saved a total of " ++ show (length f) ++ " new features" }])
-    -- exit
-    Exit _ -> if null f
-        then
-            Right (NoGameError "No game to exit")
-        else
-            do
-                let (diff, _) = span ((/=Saved) . fst) f
-                Left ([],[CommandEffect { short = "Exit editing mode", verbose = "Disregareded a total of " ++ show (length diff) ++ " features" }])
     _ -> Left (f, [])
 
 
@@ -434,6 +458,66 @@ validateStmt' (x:xs) n = case x of
 allGames :: IO [String]
 allGames = listDirectory "games"
 
+
+saveGameData :: GameData -> IO CommandEffect
+saveGameData gd = do
+    let (_, gd') = span ((/=Saved) . fst) (reverse gd)
+    saveGameData gd'
+
+saveGameData' :: GameData -> IO CommandEffect
+saveGameData' gd = do
+    gl <- allGames
+    case lookup GameName gd of
+        Just gm -> case elemIndex gm gl of
+            Just i -> do
+                oldGd <- loadFeatures [] i
+                let new = findNew oldGd gd
+                let diff = findDiff oldGd gd
+                let sim = findSim oldGd gd
+                saveGD gd gm
+                return (CommandEffect { short = "Overwrote old instance of " ++ gm,
+                verbose = "Overwrote " ++ show (length diff) ++ " features, added " ++ show (length new) ++ " features, " ++ show (length sim) ++ " features unchanged"})
+            Nothing -> do
+                saveGD gd gm
+                let new = findNew [] gd
+                return (CommandEffect { short = "Saved new instance of " ++ gm,
+                verbose = "Saved " ++ show (length new) ++ " features"})
+        Nothing -> do
+            saveGD gd "new_game"
+            let new = findNew [] gd
+            return (CommandEffect { short = "Saved new instance of " ++ "new game",
+            verbose = "Saved " ++ show (length new) ++ " features"})
+    where
+        saveGD cs n = writeFile (n ++ ".txt") (intercalate "\n" (map (\(a, b) -> show a ++ "\n" ++ b ++ "END") cs)) 
+
+findNew :: Eq a => [(a, b)] -> [(a, b)] -> [(a, b)]
+findNew [] _ = []
+findNew _ [] = []
+findNew old (y:ys) = case lookup (fst y) old of
+    Just _ -> findNew old ys
+    Nothing -> y : findNew old ys
+
+findDiff :: Eq a => Eq b => [(a, b)] -> [(a, b)] -> [(a, b)]
+findDiff [] _ = []
+findDiff _ [] = []
+findDiff old (y:ys) = case lookup (fst y) old of
+    Just o -> if o == snd y
+        then
+            findDiff old ys
+        else
+            y : findDiff old ys
+    Nothing -> findDiff old ys
+
+findSim :: Eq a => Eq b => [(a, b)] -> [(a, b)] -> [(a, b)]
+findSim [] _ = []
+findSim _ [] = []
+findSim old (y:ys) = case lookup (fst y) old of
+    Just o -> if o == snd y
+        then
+            findSim old ys
+        else
+            y : findSim old ys
+    Nothing -> findSim old ys
 
 loadFeatures :: GameData -> Int -> IO GameData
 loadFeatures gd n = do
