@@ -11,6 +11,7 @@ import Player (getMoveFromString)
 import System.Directory (listDirectory)
 import GameExprError (GameError (..))
 import Data.Bifunctor (first)
+import Control.Monad (zipWithM)
 
 data EditError = OpenGameError String
     | UnknownFeature String
@@ -50,6 +51,7 @@ data Command = Command {
     | Copy Feature Int [String]
     | Quit [String]
     | Clear [String]
+    | List [String]
     | Help
     deriving (Show, Eq)
 
@@ -75,6 +77,7 @@ commands :: [Command]
 commands =
     [ Command "create <name>" "Creates a new game" "create newgame"
     , Command "edit <number>" "Edits the game with the matching index" "edit 0"
+    , Command "list" "List the available games to edit" "list"
     , Command "add <feature> <statement>" "Adds a feature to the game thats currently being edited" "add WINCON greates player score"
     , Command "update <feature> <statement>" "Updates the feature to the game thats currently being edited" "update WINCON greates player score"
     , Command "remove <feature>" "Removes the feature if it exists" "remove WINCON ENDCON"
@@ -213,6 +216,10 @@ editor gd = do
                 e <- saveGameData gd
                 execFlags (ecc ++ [e]) flgs
                 editor []
+        -- List games
+        Left (List flgs) -> do
+            ecc <- listGameData
+            execFlags ecc flgs
         Left cm -> case execCommand cm gd of
             Right err -> do
                 print err
@@ -229,6 +236,17 @@ editor gd = do
             print e
             editor gd
 
+
+listGameData :: IO [CommandEffect]
+listGameData = do
+    games <- allGames
+    agd <- zipWithM (\ _x i -> loadFeatures [] i) games [0..]
+    return (listGameData' agd)
+    where
+        listGameData' [] = []
+        listGameData' (gd:xs) = case lookup GameName gd of
+            Just gm -> CommandEffect { short = gm, verbose = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map verbose (gameDataStatus gd)) ++ "\n" } : listGameData' xs
+            Nothing -> listGameData' xs
 
 
 execFlags :: [CommandEffect] -> [String] -> IO ()
@@ -284,6 +302,9 @@ getCommand xs = case xs of
         Just flg -> Left (Clear flg)
         Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
     ["help"] -> Left Help
+    ("list":flgs) -> case validateFlags flgs of
+        Just flg -> Left (List flg)
+        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
     _ -> Right (UnknownCommand "Unknown command or flags" (unwords xs))
 
 
@@ -548,7 +569,7 @@ loadFeatures gd n = do
         do
             content <- readFile ("games/" ++ (g !! n))
             case loadFeatures' gd (lines content) of
-                Left gd' -> return gd'
+                Left gd' -> return ((GameName, g !! n) : gd' ++ [(Saved, "")])
                 Right e -> do
                     print e
                     return gd
