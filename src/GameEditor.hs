@@ -2,7 +2,7 @@ module GameEditor where
 
 import Text.Read (readMaybe)
 import GHC.IO.Handle (hFlush)
-import System.IO (stdout)
+import System.IO (stdout, withFile, IOMode (WriteMode), hPrint, hPutStrLn)
 import System.Console.ANSI (clearScreen)
 import Data.List (sort, elemIndex, intercalate)
 import ParseExpr (GameExpr (..), validateGameExpr)
@@ -212,6 +212,7 @@ editor gd = do
                 let ecc = [CommandEffect { short = "Exit editing mode", verbose = "Disregareded a total of " ++ show (length diff) ++ " new features" }]
                 e <- saveGameData gd
                 execFlags (ecc ++ [e]) flgs
+                editor []
         Left cm -> case execCommand cm gd of
             Right err -> do
                 print err
@@ -472,7 +473,7 @@ allGames = listDirectory "games"
 saveGameData :: GameData -> IO CommandEffect
 saveGameData gd = do
     let (_, gd') = span ((/=Saved) . fst) (reverse gd)
-    saveGameData gd'
+    saveGameData' gd'
 
 saveGameData' :: GameData -> IO CommandEffect
 saveGameData' gd = do
@@ -494,11 +495,19 @@ saveGameData' gd = do
                 verbose = "Saved " ++ show (length new) ++ " features"})
         Nothing -> do
             saveGD gd "new_game"
-            let new = findNew [] gd
+            let new = findNew gd []
             return (CommandEffect { short = "Saved new instance of " ++ "new game",
             verbose = "Saved " ++ show (length new) ++ " features"})
     where
-        saveGD cs n = writeFile ("games/" ++ n ++ ".txt") (intercalate "\n" (map (\(a, b) -> show a ++ "\n" ++ b ++ "END") cs))
+        saveGD cd n = do
+            let filtered = filter (\(f, _) -> f /= Saved && f /= GameName) cd
+            withFile ("games/" ++ n ++ ".txt") WriteMode $ \h -> do
+                mapM_ (\(f, s) -> do
+                        hPrint h f
+                        hPutStrLn h s
+                        hPutStrLn h "END"
+                    ) filtered
+
 
 findNew :: Eq a => [(a, b)] -> [(a, b)] -> [(a, b)]
 findNew [] _ = []
