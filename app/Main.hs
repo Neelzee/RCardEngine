@@ -6,7 +6,8 @@ import System.Console.ANSI (clearScreen)
 import Control.Monad (unless)
 import System.IO ( hFlush, stdout )
 import PlayGame (gameStart)
-import GameEditor (Command(..))
+import GameEditor (Command(..), editor)
+import Text.Read (readMaybe)
 
 
 -- Compute the Levenshtein distance between two strings
@@ -69,10 +70,14 @@ executeCommand input = case words input of
 	["list"] -> do
 		listGames
 		return False
-	["game", nStr] -> do
-		let n = read nStr
-		playGame n
-		return False
+	["play", nStr] -> do
+                case readMaybe nStr :: Maybe Int of
+                        Just n -> do
+                                playGame n
+                                return False
+                        Nothing -> do
+                                putStrLn "Invalid syntax, expected a number"
+                                return False
 	["rename", nStr, newname] -> do
 		let n = read nStr
 		renameGame n newname
@@ -84,6 +89,9 @@ executeCommand input = case words input of
 	["clear"] -> do
 		clearScreen
 		return False
+        ["edit"] -> do
+                editor []
+                return False
 	_ -> do
 		let possibleCorrection = suggestCorrection (head $ words input) commands
 		case possibleCorrection of
@@ -104,8 +112,9 @@ renameGame idx newName = do
 commands :: [Command]
 commands =
         [ Command "list" "List the available games" "list"
-        , Command "game <number>" "Play the game with the given number" "game <number>"
-		, Command "rename <number> <new name>" "Renames the game with the given new name" "rename 0 pong"
+        , Command "play <number>" "Play the game with the given number" "play 0"
+        , Command "edit" "Starts the edit mode" "edit"
+        , Command "rename <number> <new name>" "Renames the game with the given new name" "rename 0 pong"
         , Command "clear" "Clears the terminal" "clear"
         , Command "quit" "Quits the program" "quit"
         , Command "help" "Print the help message" "help"

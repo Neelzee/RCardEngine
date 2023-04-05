@@ -488,7 +488,7 @@ saveGameData' gd = do
             return (CommandEffect { short = "Saved new instance of " ++ "new game",
             verbose = "Saved " ++ show (length new) ++ " features"})
     where
-        saveGD cs n = writeFile (n ++ ".txt") (intercalate "\n" (map (\(a, b) -> show a ++ "\n" ++ b ++ "END") cs)) 
+        saveGD cs n = writeFile ("games/" ++ n ++ ".txt") (intercalate "\n" (map (\(a, b) -> show a ++ "\n" ++ b ++ "END") cs)) 
 
 findNew :: Eq a => [(a, b)] -> [(a, b)] -> [(a, b)]
 findNew [] _ = []
@@ -527,7 +527,7 @@ loadFeatures gd n = do
         return gd
     else
         do
-            content <- readFile (g !! n)
+            content <- readFile ("games/" ++ (g !! n))
             case loadFeatures' gd (lines content) of
                 Left gd' -> return gd'
                 Right e -> do
