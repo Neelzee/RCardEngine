@@ -16,6 +16,8 @@ data EditError = OpenGameError String
     | UnknownFeature String
     | InvalidInput String
     | UnknownCommand String String
+    | UnknownFlag String String
+    | InvalidArgument String String
     | NoGameError String
     | InvalidStatementError String StatementError
     | MissingFeature String
@@ -125,7 +127,7 @@ printCommands :: [Command] -> IO ()
 printCommands xs = printTable (pc xs)
     where
         pc [] = []
-        pc ((Command nm inf ex):ys) = (nm, inf, ex) : pc ys 
+        pc ((Command nm inf ex):ys) = (nm, inf, ex) : pc ys
         pc (_:ys) = pc ys
 
 
@@ -137,15 +139,15 @@ editor gd = do
     hFlush stdout
     c <- getLine
     case getCommand (words c) of
-        Just (Quit _) -> return ()
-        Just Help -> do
+        Left (Quit _) -> return ()
+        Left Help -> do
             printCommands commands
             editor gd
-        Just (Clear _) -> do
+        Left (Clear _) -> do
             clearScreen
             editor gd
         -- Edit command
-        Just (Edit gn flgs) ->
+        Left (Edit gn flgs) ->
             case gd of
                 [] -> do
                     g <- allGames
@@ -173,7 +175,7 @@ editor gd = do
                     putStrLn "Cannot load while other game is active"
                     editor gd
          -- copy
-        Just (Copy fet a flgs) ->
+        Left (Copy fet a flgs) ->
             case gd of
                 [] -> do
                     putStrLn "No game to copy too"
@@ -199,7 +201,7 @@ editor gd = do
                             putStrLn ("Expected a number between 0 and " ++ show (length g) ++ ", in 'from', but got " ++ show a ++ " instead")
                             editor gd
         -- exit
-        Just (Exit flgs) -> if null gd
+        Left (Exit flgs) -> if null gd
         then
             do
                 putStrLn "No game to exit"
@@ -210,7 +212,7 @@ editor gd = do
                 let ecc = [CommandEffect { short = "Exit editing mode", verbose = "Disregareded a total of " ++ show (length diff) ++ " new features" }]
                 e <- saveGameData gd
                 execFlags (ecc ++ [e]) flgs
-        Just cm -> case execCommand cm gd of
+        Left cm -> case execCommand cm gd of
             Right err -> do
                 print err
                 editor gd
@@ -222,8 +224,8 @@ editor gd = do
                     putStrLn $ unlines $ map short ce
                     editor gd'
                 _ -> editor gd'
-        Nothing -> do
-            putStrLn "Unknown command, or flags, type help to list all commands"
+        Right e -> do
+            print e
             editor gd
 
 
@@ -234,47 +236,54 @@ execFlags xs ys
     | sort ys == ["-e"] = putStrLn $ unlines $ map short xs
     | otherwise = return ()
 
-getCommand :: [String] -> Maybe Command
+-- Takes in a worded string
+getCommand :: [String] -> Either Command EditError
 getCommand xs = case xs of
     ("create":gm:flgs) -> case validateFlags flgs of
-        Just flg -> Just (Create gm flg)
-        Nothing -> Nothing
+        Just flg -> Left (Create gm flg)
+        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
     ("edit":gn:flgs) -> case (readMaybe gn :: Maybe Int, validateFlags flgs) of
-        (Just i, Just glf) -> Just (Edit i glf)
-        _ -> Nothing
+        (Just i, Just glf) -> Left (Edit i glf)
+        (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a number, but got" ("'" ++ gn ++ "'"))
+        (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
     ("add":feature:ys) -> case (validateFeature feature, validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
         (Just f, Just flg) -> case validateStmt (words (takeWhile (/= '-') (unwords ys))) f of
-            Left s -> Just (Add f s flg)
-            _ -> Nothing
-        _ -> Nothing
+            Left s -> Left (Add f s flg)
+            Right es -> Right (InvalidStatementError "Invalid statement" es)
+        (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ feature ++ "'"))
+        (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ (dropWhile (/= '-') (unwords ys) ++ "'")))
     ("update":feature:ys) -> case (validateFeature feature, validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
         (Just f, Just flg) -> case validateStmt (words (takeWhile (/= '-') (unwords ys))) f of
-            Left s -> Just (Update f s flg)
-            _ -> Nothing
-        _ -> Nothing
+            Left s -> Left (Update f s flg)
+            Right es -> Right (InvalidStatementError "Invalid statement" es)
+        (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ feature ++ "'"))
+        (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ (dropWhile (/= '-') (unwords ys) ++ "'")))
     ("remove":ys) -> case (mapM validateFeature (words (takeWhile (/= '-') (unwords ys))), validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
-        (Just fets, Just flg) -> Just (Remove fets flg)
-        _ -> Nothing
+        (Just fets, Just flg) -> Left (Remove fets flg)
+        (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ (takeWhile (/= '-') (unwords ys) ++ "'")))
+        (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ (dropWhile (/= '-') (unwords ys) ++ "'")))
     ("status":flgs) -> case validateFlags flgs of
-        Just flg -> Just (Status flg)
-        Nothing -> Nothing
+        Just flg -> Left (Status flg)
+        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
     ("save":flgs) -> case validateFlags flgs of
-        Just flg -> Just (Save flg)
-        Nothing -> Nothing
+        Just flg -> Left (Save flg)
+        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
     ("exit":flgs) -> case validateFlags flgs of
-        Just flg -> Just (Exit flg)
-        Nothing -> Nothing
+        Just flg -> Left (Exit flg)
+        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
     ("copy":feature:a:flgs) -> case (validateFeature feature, readMaybe a :: Maybe Int, validateFlags flgs) of
-        (Just ft, Just i, Just flg) -> Just (Copy ft i flg)
-        _ -> Nothing
+        (Just ft, Just i, Just flg) -> Left (Copy ft i flg)
+        (Nothing, _, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ feature ++ "'"))
+        (_, Nothing, _)-> Right (InvalidArgument "Invalid argument, expected a number, but got" ("'" ++ a ++ "'"))
+        (_, _, Nothing)-> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
     ("quit":flgs) -> case validateFlags flgs of
-        Just flg -> Just (Quit flg)
-        Nothing -> Nothing
+        Just flg -> Left (Quit flg)
+        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
     ("clear":flgs) -> case validateFlags flgs of
-        Just flg -> Just (Clear flg)
-        Nothing -> Nothing
-    ["help"] -> Just Help
-    _ -> Nothing
+        Just flg -> Left (Clear flg)
+        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
+    ["help"] -> Left Help
+    _ -> Right (UnknownCommand "Unknown command or flags" (unwords xs))
 
 
 validateFlags :: [String] -> Maybe [String]
@@ -489,7 +498,7 @@ saveGameData' gd = do
             return (CommandEffect { short = "Saved new instance of " ++ "new game",
             verbose = "Saved " ++ show (length new) ++ " features"})
     where
-        saveGD cs n = writeFile ("games/" ++ n ++ ".txt") (intercalate "\n" (map (\(a, b) -> show a ++ "\n" ++ b ++ "END") cs)) 
+        saveGD cs n = writeFile ("games/" ++ n ++ ".txt") (intercalate "\n" (map (\(a, b) -> show a ++ "\n" ++ b ++ "END") cs))
 
 findNew :: Eq a => [(a, b)] -> [(a, b)] -> [(a, b)]
 findNew [] _ = []
