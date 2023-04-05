@@ -3,7 +3,7 @@ module GameRules where
 data GameRule = 
     CardSuits
     | CardValues
-    | CardNames
+    | CardRanks
     | EndCon
     | WinCon
     | GRDeck
@@ -19,7 +19,7 @@ data GameRule =
 parseGameRules :: String -> Maybe GameRule
 parseGameRules s = case s of
     "CARD_SUITS" -> Just CardSuits
-    "CARD_NAMES" -> Just CardNames
+    "CARD_RANKS" -> Just CardRanks
     "CARD_VALUES" -> Just CardValues
     "DECK" -> Just GRDeck
     "ENDCON" -> Just EndCon
@@ -28,6 +28,7 @@ parseGameRules s = case s of
     "ANYTIME" -> Just AnyTime
     "PLAYER_MOVES" -> Just PlayerMoves
     "STARTTIME" -> Just StartTime
+    "CARD_CONSTRAINTS" -> Just CardConstraints
     _ -> Nothing
 
 

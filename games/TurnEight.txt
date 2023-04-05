@@ -6,8 +6,8 @@ CARD_VALUES
 1, 2, 3
 END
 
-CARD_NAMES
-X
+CARD_RANKS
+X, Z
 END
 
 ENDCON
@@ -22,9 +22,9 @@ WINCON
 greatest players score
 END
 
-# CARD_CONSTRAINTS
-# rank, suit, value
-# END
+CARD_CONSTRAINTS
+rank
+END
 
 ANYTIME
 isEmpty deck : swap pile deck, shuffle deck, take 1 deck pile

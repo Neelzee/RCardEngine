@@ -5,7 +5,7 @@ import System.Random
 
 data Card = Card {
     suit :: String
-    , cName :: String
+    , rank :: String
     , cScore :: Int
 }
 instance Show Card where

@@ -4,7 +4,7 @@ import Game
     ( lookupOrDefault,
       Game(..),
       GameState(Start, TurnEnd, TurnStart) )
-import Card (shuffle, defaultCardSuits, defaultCardValues, makeDeck, Card (cName, cScore, suit))
+import Card (shuffle, defaultCardSuits, defaultCardValues, makeDeck, Card (rank, cScore, suit))
 import Player (Player(..), Move (PlayCard, DrawCard, Pass), standardMoves, resetMoves, toString)
 import Data.List (sortBy, intercalate, elemIndex)
 import Data.CircularList (toList, fromList)
@@ -53,7 +53,7 @@ loadGame gamename g = do
 loadGame' :: [(GameRule, String)] -> Game -> IO Game
 loadGame' rls g = do
     let cs = maybe defaultCardSuits splitAndTrim (lookup CardSuits rls)
-    let cn = maybe defaultCardSuits splitAndTrim (lookup CardNames rls)
+    let cn = maybe defaultCardSuits splitAndTrim (lookup CardRanks rls)
     let cv = maybe defaultCardValues (map (fromMaybe 0 . readMaybe) . splitAndTrim) (lookup CardValues rls)
     let cards' = makeDeck cs cn cv
     let cg = cycle cards'
@@ -75,8 +75,9 @@ loadGame' rls g = do
 
 
     -- Can place cards
-    let pc = placeCardStmt (map parseIfString (lookupAll CardConstraints rls))
-
+    let pc = placeCardStmt (map (parseString . words) (lookupAll CardConstraints rls))
+    print (map (parseString . words) (lookupAll CardConstraints rls))
+    print (any (`elem` [Always]) [CardRank, CardSuit, CardValue])
     -- Rules that should be checked at specific times
     -- Anytime
     let at = map (execIfExpr . parseIfString) (lookupAll AnyTime rls)
@@ -98,8 +99,8 @@ placeCardStmt :: [GameExpr] -> (Game -> Card -> Bool)
 placeCardStmt [] = const . const True
 placeCardStmt [Null] = const . const True
 placeCardStmt xs
-    | any (`notElem` xs) [CardRank, CardSuit, CardValue] = const . const False
-    | otherwise = compareCards xs
+    | any (`elem` xs) [CardRank, CardSuit, CardValue] = compareCards xs
+    | otherwise = const . const False
 
 
 compareCards :: [GameExpr] -> Game -> Card -> Bool
@@ -107,10 +108,10 @@ compareCards [] _ _ = True
 compareCards (x:xs) g c = do
     let pc = head (pile g)
     let suits = map suit (takeUntilDuplicate (cardGen g))
-    let ranks = map cName (takeUntilDuplicate (cardGen g))
+    let ranks = map rank (takeUntilDuplicate (cardGen g))
     let values = map cScore (takeUntilDuplicate (cardGen g))
     case x of
-        CardRank -> elemIndex (cName c) ranks >= elemIndex (cName pc) ranks && compareCards xs g c
+        CardRank -> elemIndex (rank c) ranks >= elemIndex (rank pc) ranks && compareCards xs g c
         CardSuit -> elemIndex (suit c) suits >= elemIndex (suit pc) suits && compareCards xs g c
         CardValue -> elemIndex (cScore c) values >= elemIndex (cScore pc) values && compareCards xs g c
         _ -> True
@@ -193,6 +194,9 @@ parseString (x:xs) = case x of
     "pile" -> Pile
     "shuffle" -> Shuffle (parseString xs)
     "always" -> Always
+    "rank" -> CardRank
+    "suit" -> CardSuit
+    "value" -> CardValue
     s -> maybe Null GValue (readMaybe s :: Maybe Int)
 
 
