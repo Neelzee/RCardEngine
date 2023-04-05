@@ -364,6 +364,7 @@ validateFeature x = case x of
     "PLAYER_HAND" -> Just PlayerHand
     "PLAYER_MOVES" -> Just PlayerMoves
     "GAMENAME" -> Just GameName
+    "STARTTIME" -> Just StartTime
     _ -> Nothing
 
 -- Checks if the given statement is valud
@@ -554,7 +555,7 @@ parseDataHelper result (x:xs) lineNumber
           [] -> Right $ MissingTerminationStatement ("Missing termination statement on line " ++ show lineNumber)
           [statement] -> parseDataHelper ((x, statement):result) (drop 1 rest) (lineNumber + length linesInStatement + 2)
           _ -> Right $ MultipleLinesInStatement ("Multiple lines in statement starting at line " ++ show lineNumber)
-      Nothing -> Right $ UnknownKeyWord ("Unknown keyword at line " ++ show lineNumber)
+      Nothing -> Right $ UnknownKeyWord ("Unknown keyword at line " ++ show lineNumber ++ ", '" ++ x ++ "'")
   where
     isEndStatement line = null line || head (words line) == "END"
     isCommentOrEmptyLine line = null line || head line == '#'
