@@ -2,14 +2,14 @@ module ParseExpr where
 
 import Game
     ( lookupOrDefault,
-      Game(endCon, winCon, actions, rules, deck, pile, players, gameName),
+      Game(..),
       GameState(Start, TurnEnd, TurnStart) )
-import Card (shuffle, defaultCardSuits, defaultCardValues, makeDeck, Card)
+import Card (shuffle, defaultCardSuits, defaultCardValues, makeDeck, Card (cName, cScore, suit))
 import Player (Player(..), Move (PlayCard, DrawCard, Pass), standardMoves, resetMoves, toString)
-import Data.List (sortBy, intercalate)
+import Data.List (sortBy, intercalate, elemIndex)
 import Data.CircularList (toList, fromList)
 import Data.List.Extra (split, splitOn)
-import Data.Maybe (mapMaybe)
+import Data.Maybe ( mapMaybe )
 import GameRules (GameRule (..), parseGameRules)
 import GameExprError (GameError (MultipleLinesInStatement, MissingTerminationStatement, UnknownKeyWord))
 import Text.Read (readMaybe)
@@ -34,7 +34,10 @@ data GameExpr =
     | Take GameExpr GameExpr GameExpr
     | Null
     | Always
-    deriving (Eq, Show)
+    | CardRank
+    | CardSuit
+    | CardValue
+    deriving (Eq, Show, Ord)
 
 
 loadGame :: String -> Game -> IO Game
@@ -53,6 +56,7 @@ loadGame' rls g = do
     let cn = maybe defaultCardSuits splitAndTrim (lookup CardNames rls)
     let cv = maybe defaultCardValues (map (fromMaybe 0 . readMaybe) . splitAndTrim) (lookup CardValues rls)
     let cards' = makeDeck cs cn cv
+    let cg = cycle cards'
     -- Player
     let mv = maybe standardMoves parsePlayerMoves (lookup PlayerMoves rls)
     -- Pile
@@ -68,9 +72,11 @@ loadGame' rls g = do
 
     -- Win con
     let wc = map (createWinCon . parseString . words) (lookupAll WinCon rls)
-    let t = map (parseString . words) (lookupAll WinCon rls)
-    print (map words (lookupAll WinCon rls))
-    print t
+
+
+    -- Can place cards
+    let pc = placeCardStmt (map parseIfString (lookupAll CardConstraints rls))
+
     -- Rules that should be checked at specific times
     -- Anytime
     let at = map (execIfExpr . parseIfString) (lookupAll AnyTime rls)
@@ -79,12 +85,83 @@ loadGame' rls g = do
     let st = map (execIfExpr . parseIfString) (lookupAll StartTime rls)
     return g {
         deck = cards'
+        , cardGen = cg
         , players = fromList (map (`resetMoves` mv) (toList (players g)))
         , endCon = ec
         , winCon = wc
         , actions = [(Start, at), (Start, st), (TurnStart, st), (TurnEnd, st)]
         , rules = [(PlayerHand, hc),(PileCount, pl), (PlayerMoves, intercalate "," (map toString mv))]
+        , canPlaceCard = [pc]
     }
+
+placeCardStmt :: [GameExpr] -> (Game -> Card -> Bool)
+placeCardStmt xs
+    | any (`notElem` xs) [CardRank, CardSuit, CardValue] = const . const False
+    | otherwise = compareCards xs
+
+
+compareCards :: [GameExpr] -> Game -> Card -> Bool
+compareCards [] _ _ = True
+compareCards (x:xs) g c = do
+    let pc = head (pile g)
+    let suits = map suit (takeUntilDuplicate (cardGen g))
+    let ranks = map cName (takeUntilDuplicate (cardGen g))
+    let values = map cScore (takeUntilDuplicate (cardGen g))
+    case x of
+        CardRank -> elemIndex (cName c) ranks >= elemIndex (cName pc) ranks && compareCards xs g c
+        CardSuit -> elemIndex (suit c) suits >= elemIndex (suit pc) suits && compareCards xs g c
+        CardValue -> elemIndex (cScore c) values >= elemIndex (cScore pc) values && compareCards xs g c
+        _ -> False
+
+
+
+takeUntilDuplicate :: Eq a => [a] -> [a]
+takeUntilDuplicate = go []
+  where
+    go _ [] = []
+    go seen (y:ys)
+      | y `elem` seen = []
+      | otherwise = y : go (y:seen) ys
+
+evalExpr :: GameExpr -> Game -> Maybe Bool
+evalExpr (Any (Players (IsEmpty a))) g = case a of
+    Hand -> Just (any (null . hand) (toList (players g)))
+    _ -> Nothing
+evalExpr (Any (Players (IsEqual a b))) g = case (calcExpr a g, calcExpr b g) of
+    (Just _, Just _) -> Nothing
+    (Just x, _) -> case b of
+        Hand -> Just (any ((== x) . length . hand) (toList (players g)))
+        Score -> Just (any ((== x) . pScore) (toList (players g)))
+        _ -> Nothing
+    (_, Just y) -> case a of
+        Hand -> Just (any ((== y) . length . hand) (toList (players g)))
+        Score -> Just (any ((== y) . pScore) (toList (players g)))
+        _ -> Nothing
+    _ -> Nothing
+evalExpr (All (Players (IsEmpty a))) g = case a of
+    Hand -> Just (all (null . hand) (toList (players g)))
+    _ -> Nothing
+evalExpr (IsEmpty a) g = case getMaybeDeckExpr a of
+    Just expr -> Just (null (expr g))
+    Nothing -> Nothing
+evalExpr Always _ = Just True
+evalExpr (IsEqual a b) g = case (calcExpr a g, calcExpr b g) of
+    (Just x, Just y) -> Just (x == y)
+    _ -> Nothing
+evalExpr _ _ =  Nothing
+
+
+calcExpr :: GameExpr -> Game -> Maybe Int
+calcExpr (GValue n) _ = Just n
+calcExpr expr g = case getMaybeDeckExpr expr of
+    Just f -> Just (length (f g))
+    Nothing -> Nothing
+
+
+getMaybeDeckExpr :: GameExpr -> Maybe (Game -> [Card])
+getMaybeDeckExpr Deck = Just deck
+getMaybeDeckExpr Pile = Just pile
+getMaybeDeckExpr _ = Nothing
 
 -- Takes in a string, and converts it to a GameExpr
 parseIfString :: String -> GameExpr
@@ -240,9 +317,9 @@ validateGameExpr (Greatest (Players Hand)) = True
 validateGameExpr (IsEmpty Deck) = True
 validateGameExpr (IsEmpty Hand) = True
 validateGameExpr (IsEmpty Pile) = True
-validateGameExpr (Swap a b) = (a == Pile || a == Deck) && (b == Pile || b == Deck) 
+validateGameExpr (Swap a b) = (a == Pile || a == Deck) && (b == Pile || b == Deck)
 validateGameExpr (Take (GValue n) a b) = (a == Pile || a == Deck) && (b == Pile || b == Deck) && n > 0
 validateGameExpr Always = True
 validateGameExpr (GValue _) = True
-validateGameExpr _ = False 
+validateGameExpr _ = False
 

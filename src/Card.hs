@@ -32,14 +32,6 @@ removeNth :: Int -> [a] -> (a, [a])
 removeNth n xs = (xs !! n, take n xs ++ drop (n+1) xs)
 
 
--- Checks if the first card can be placed ontop of the second card,
--- by checking their position in the given sorting list
-canPlaceCard :: Card -> Card -> Deck -> Bool
-canPlaceCard _ _ [] = True
-canPlaceCard x y (c:cs) | x == c = True
-    | y == c = False
-    | otherwise = canPlaceCard x y cs
-
 
 defaultCardSuits :: [String]
 defaultCardSuits = ["Hearts", "Clubs", "Diamonds", "Spades"]

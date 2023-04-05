@@ -9,7 +9,7 @@ import Player ( createPlayers, Player (name, moves, hand), Move (PlayCard, DrawC
 import Card
 import Text.Read (readMaybe)
 import ParseExpr (loadGame, parsePlayerMoves, lookupAll)
-import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions), GameState (Start, TurnEnd, TurnStart), removeFirst, sortingRules, lookupOrDefault, unique, playerTurnStart, dealCards, gameActions)
+import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions, canPlaceCard), GameState (Start, TurnEnd, TurnStart), removeFirst, sortingRules, lookupOrDefault, unique, playerTurnStart, dealCards, gameActions)
 import GameRules (GameRule(PlayerHand, PileCount, PlayerMoves))
 import Data.Maybe (fromMaybe)
 import System.Console.ANSI (clearScreen)
@@ -47,7 +47,6 @@ doPlayerTurn game plr = do
     let g' = gameActions (lookupAll (state game) (actions game)) game
     p <- case lookup PlayerMoves (rules game) of
         Just mv -> do
-            print mv
             return (resetMoves plr (parsePlayerMoves mv))
         Nothing -> return (resetMoves plr standardMoves)
     let game' = g' { state = TurnStart }
@@ -118,7 +117,7 @@ doPlayerActionPlayCard game plr continue = do
                                             do
                                                 let card = hand plr !! (cardIndex - 1)
                                                 -- checks if card can be placed
-                                                if canPlaceCard card (head (pile game)) sortingRules
+                                                if foldr ((&&) . (\f -> uncurry f (game, card))) True (canPlaceCard game)
                                                     then
                                                         do
                                                             putStrLn ("Plays " ++ show card ++ " on " ++ show (head (pile game)))

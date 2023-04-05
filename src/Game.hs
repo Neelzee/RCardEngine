@@ -2,9 +2,14 @@ module Game where
 
 
 import Player
-import Card
+    ( Player(Player, name, hand, moves),
+      createPlayers,
+      resetMoves,
+      deal,
+      standardMoves )
+import Card ( Deck, Card, defaultCardDeck )
 
-import Data.CircularList
+import Data.CircularList ( fromList, toList, CList )
 import Text.Read (readMaybe)
 import System.Time.Extra ( sleep )
 import Data.Maybe (fromMaybe)
@@ -17,6 +22,7 @@ data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
 
 data Game = Game {
     gameName :: String
+    , cardGen :: [Card]
     , deck :: [Card]
     , pile :: [Card]
     , players :: CList Player
@@ -26,6 +32,7 @@ data Game = Game {
     , rules :: [(GameRule, String)]
     , actions :: [(GameState, [Game -> Game])]
     , rounds :: Int
+    , canPlaceCard :: [Game -> Card -> Bool]
 }
 
 
@@ -63,6 +70,7 @@ createGame = do
                 let (plrs', deck') = deal 3 defaultCardDeck (fromList (map (`resetMoves` standardMoves) plrs))
                 return Game {
                     gameName = "Default Game"
+                    , cardGen = []
                     , deck = drop 1 deck'
                     , pile = [head deck'], players = plrs'
                     , endCon = [defaultWinCon]
@@ -71,6 +79,7 @@ createGame = do
                     , rules = []
                     , actions = []
                     , rounds = 0
+                    , canPlaceCard = [const . const True]
                     }
         _ -> do
             putStrLn "Invalid Input, expected an integer"

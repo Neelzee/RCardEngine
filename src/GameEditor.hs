@@ -371,7 +371,7 @@ gameDataStatus :: GameData -> [CommandEffect]
 gameDataStatus [] = []
 gameDataStatus ((Saved, _):xs) = gameDataStatus xs
 gameDataStatus ((GameName, _):xs) = gameDataStatus xs
-gameDataStatus ((f, s):xs) = CommandEffect { short = show f, verbose = "Feature " ++ show f ++ " : Statement: " ++ s}: gameDataStatus xs
+gameDataStatus ((f, s):xs) = CommandEffect { short = show f, verbose = "Feature " ++ show f ++ " : Statement -> " ++ s}: gameDataStatus xs
 
 
 removeFeature :: GameData -> [Feature] -> Either (GameData, [CommandEffect]) EditError

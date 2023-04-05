@@ -12,6 +12,7 @@ data GameRule =
     | PlayerHand
     | PileCount
     | PlayerMoves
+    | CardConstraints
     deriving (Show, Eq)
 
 
