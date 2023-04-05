@@ -137,8 +137,8 @@ printCommands xs = printTable (pc xs)
 editor :: GameData -> IO ()
 editor gd = do
     case lookup GameName gd of
-        Just nm -> putStr (nm ++ "> ")
-        Nothing -> putStr "> "
+        Just nm -> putStr ("edit -> " ++ nm ++ " > ")
+        Nothing -> putStr "edit> "
     hFlush stdout
     c <- getLine
     case getCommand (words c) of
@@ -220,6 +220,7 @@ editor gd = do
         Left (List flgs) -> do
             ecc <- listGameData
             execFlags ecc flgs
+            editor gd
         Left cm -> case execCommand cm gd of
             Right err -> do
                 print err
@@ -368,6 +369,8 @@ execCommand xs f = case xs of
 
 gameDataStatus :: GameData -> [CommandEffect]
 gameDataStatus [] = []
+gameDataStatus ((Saved, _):xs) = gameDataStatus xs
+gameDataStatus ((GameName, _):xs) = gameDataStatus xs
 gameDataStatus ((f, s):xs) = CommandEffect { short = show f, verbose = "Feature " ++ show f ++ " : Statement: " ++ s}: gameDataStatus xs
 
 
