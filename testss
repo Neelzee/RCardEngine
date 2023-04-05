@@ -1,0 +1,54 @@
+# Constants
+CONSTANTS
+constant1: value1
+constant2: value2
+END
+
+# Deck setup
+DECK
+number_of_decks = 1
+END
+
+# Card Suits
+CARD_SUITS
+Hearts,Spaces,Diamonds,Clubs
+END
+
+# Card Rank
+CARD_RANKS
+Ace,Two,Three,Four,Five,Six,Seven,Eight,Nine,Ten,Jack,Queen,King
+END
+
+# Game setup
+GAME_SETUP
+start_hand_size = 5
+min_players = 1
+max_players = 4
+END
+
+# Win condition
+ENCON
+game_players.any_player.hand == 0
+END
+
+# Statements to be executed at certain states
+# Initialization
+GAME_START, players
+game_players = players
+take 1 game_deck game_pile
+END
+
+# Turn order
+TURN_ORDER
+left_to_right = true
+END
+
+# Pile management
+PILE_ADD, card, player
+player.score + card.score
+END
+
+# Deck post draw action
+DECK_DRAW_POST, card, player
+player.score - card.score
+END

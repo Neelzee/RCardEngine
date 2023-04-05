@@ -10,7 +10,7 @@ CARD_VALUES
 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 
 END
 
-CARD_NAMES
+CARD_RANKS
 Ace,Two,Three,Four,Five,Six,Seven,Eight,Nine,Ten,Jack,Queen,King
 END
 

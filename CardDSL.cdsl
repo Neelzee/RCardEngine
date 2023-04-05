@@ -1,0 +1,59 @@
+# Define the card suits
+CARD_SUITS
+Hearts, Diamonds, Clubs, Spades
+END
+
+# Define the card values
+CARD_VALUES
+Ace, 2, 3, 4, 5, 6, 7, 8, 9, 10, Jack, Queen, King
+END
+
+# Define the card ranks
+CARD_RANKS
+Standard
+END
+
+# Define the win condition
+WINCON
+greatest players score
+END
+
+# Define the end conditions
+# If multiple statements, the games ends if either is true
+ENDCON
+any players isEmpty hand 
+any players isEqual score 10
+END
+
+# Define the card constraints
+CARD_CONSTRAINTS
+rank
+END
+
+# Define the available moves for each player
+PLAYER_MOVES
+PLAYCARD FALSE, DRAWCARD TRUE, DRAWCARD TRUE, DRAWCARD TRUE, PASS FALSE
+END
+
+# Define the player's hand size
+PLAYER_HAND
+4
+END
+
+# Define the game actions
+# This statement is checked and executed anytime the state is updated
+ANYTIME
+isEmpty deck : swap pile deck, shuffle deck, take 1 deck pile
+END
+
+# This statment is checked and executed once, at start
+STARTTIME
+always : shuffle deck
+END
+
+# Define some card effects
+CARD_EFFECTS
+A.X, A.Y skipTurn
+A.Z changeCard A.X, A.Y drawFromPlayer
+A.Q giveToPlayer
+END

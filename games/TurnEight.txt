@@ -32,6 +32,7 @@ END
 
 STARTTIME
 always : shuffle deck
+END
 
 PLAYER_HAND
 4

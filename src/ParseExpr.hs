@@ -9,7 +9,7 @@ import Player (Player(..), Move (PlayCard, DrawCard, Pass), standardMoves, reset
 import Data.List (sortBy, intercalate, elemIndex)
 import Data.CircularList (toList, fromList)
 import Data.List.Extra (split, splitOn)
-import Data.Maybe ( mapMaybe )
+import Data.Maybe ( mapMaybe, isJust )
 import GameRules (GameRule (..), parseGameRules)
 import GameExprError (GameError (MultipleLinesInStatement, MissingTerminationStatement, UnknownKeyWord))
 import Text.Read (readMaybe)
@@ -43,7 +43,7 @@ data GameExpr =
 loadGame :: String -> Game -> IO Game
 loadGame gamename g = do
     rawContent <- readFile ("games/" ++ gamename)
-    let content = split (== '\n') rawContent
+    let content = lines rawContent
     case parseFile content of
         Left rls -> do
             g' <-loadGame' rls g
@@ -276,26 +276,31 @@ lookupAll x pairs = [b | (a, b) <- pairs, a == x]
 
 
 parseFile :: [String] -> Either [(GameRule, String)] GameError
-parseFile input = parseFileHelper [] input 1
+parseFile input = parseFileHelper input 1
 
 -- TODO: Make generic
-parseFileHelper :: [(GameRule, String)] -> [String] -> Int -> Either [(GameRule, String)] GameError
-parseFileHelper result [] _ = Left result
-parseFileHelper result input@(x:xs) lineNumber
-  | isCommentOrEmptyLine x = parseFileHelper result xs (lineNumber+1)
-  | otherwise = case parseGameRules x of
-      Just rule -> do
-        let (linesInStatement, rest) = break isEndStatement xs
-        case linesInStatement of
-          [] -> Right $ MissingTerminationStatement ("Missing termination statement on line " ++ show lineNumber)
-          [statement] -> parseFileHelper ((rule, statement):result) (drop 1 rest) (lineNumber + length linesInStatement + 2)
-          _ -> Right $ MultipleLinesInStatement ("Multiple lines in statement starting at line " ++ show lineNumber)
-      Nothing -> Right $ UnknownKeyWord ("Unknown keyword at line " ++ show lineNumber)
-  where
-    isEndStatement line = case parseGameRules line of
-      Just _ -> False
-      Nothing -> null line || head (words line) == "END"
-    isCommentOrEmptyLine line = null line || head line == '#'
+parseFileHelper :: [String] -> Int -> Either [(GameRule, String)] GameError
+parseFileHelper [] _ = Left []
+parseFileHelper (('#':_):xs) n = parseFileHelper xs (n + 1) -- Ignores comments
+parseFileHelper ("":xs) n = parseFileHelper xs (n + 1)
+parseFileHelper (x:xs) n = case parseGameRules x of
+    Just rule -> do
+        let (stmt, rest) = break isEnd xs
+        if onlyNothing (map parseGameRules stmt)
+            then -- Adding two, since we're skiping both the feature, and the end
+                case parseFileHelper (drop 1 rest) (n + 2 + length stmt) of
+                    Left rs -> Left ((rule, unwords stmt):rs)
+                    e -> e
+            else
+                Right (MissingTerminationStatement ("Missing termination statement around line " ++ show n ++ ", '" ++ x ++ "'"))
+    _ -> Right (UnknownKeyWord ("Unknown gamerule at line " ++ show n ++ ", '" ++ x ++ "'"))
+    where
+        isEnd y = take 3 y == "END"
+        onlyNothing [] = True
+        onlyNothing (y:ys) = case y of
+            Just _ -> False
+            Nothing -> onlyNothing ys
+
 
 
 
