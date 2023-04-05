@@ -95,6 +95,8 @@ loadGame' rls g = do
     }
 
 placeCardStmt :: [GameExpr] -> (Game -> Card -> Bool)
+placeCardStmt [] = const . const True
+placeCardStmt [Null] = const . const True
 placeCardStmt xs
     | any (`notElem` xs) [CardRank, CardSuit, CardValue] = const . const False
     | otherwise = compareCards xs
@@ -111,7 +113,7 @@ compareCards (x:xs) g c = do
         CardRank -> elemIndex (cName c) ranks >= elemIndex (cName pc) ranks && compareCards xs g c
         CardSuit -> elemIndex (suit c) suits >= elemIndex (suit pc) suits && compareCards xs g c
         CardValue -> elemIndex (cScore c) values >= elemIndex (cScore pc) values && compareCards xs g c
-        _ -> False
+        _ -> True
 
 
 
