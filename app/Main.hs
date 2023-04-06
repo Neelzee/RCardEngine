@@ -59,8 +59,7 @@ playGame n = do
     if n >= 0 && n < length games
         then
             do
-            let filename = games !! n
-            gameStart filename
+            gameStart n
         else
             putStrLn "Invalid game number."
 

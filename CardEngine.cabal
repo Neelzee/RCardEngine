@@ -39,6 +39,7 @@ library
       Commands
       LoadGame
       ExecCDSLExpr
+      GD
   other-modules:
       Paths_CardEngine
   hs-source-dirs:
