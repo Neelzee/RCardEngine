@@ -5,7 +5,7 @@ import Data.Maybe (mapMaybe)
 import Data.Bifunctor (first, Bifunctor (second, bimap))
 import Data.Either (partitionEithers)
 import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords)
-import CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (MissingTerminationStatement, UnknownKeyWord, CDSLParseError, rawExpr, SyntaxError, pErr, pExpr, OnLoad))
+import CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord))
 import ParseCardDSL (parseCDSLFromString)
 import GD (GameData)
 import Functions (splitEithers, mergeList)
@@ -47,7 +47,7 @@ loadGameData' fs c = case parseFileHelper c 1 of
                 Nothing -> removeMaybe xs
             fixErrs [] = []
             fixErrs ((_, []):xs) = fixErrs xs
-            fixErrs ((f, e:ers):xs) = OnLoad f e : fixErrs ((f, ers):xs)
+            fixErrs ((f, e:ers):xs) = (e { pErr = OnLoad f (pErr e) }) : fixErrs ((f, ers):xs)
     Right e -> Right [e]
 
 
@@ -65,8 +65,8 @@ parseFileHelper (x:xs) n = case validateKeyWords x of
                     Left rs -> Left ((rule, stmt):rs)
                     e -> e
             else
-                Right (MissingTerminationStatement ("Missing termination statement around line " ++ show n ++ ", '" ++ x ++ "'"))
-    _ -> Right (UnknownKeyWord ("Unknown gamerule at line " ++ show n ++ ", '" ++ x ++ "'"))
+                Right (CDSLParseError { pErr = MissingTerminationStatement n, pExpr = Null, rawExpr = x })
+    _ -> Right (CDSLParseError { pErr = UnknownKeyWord n, pExpr = Null, rawExpr = x })
     where
         isEnd y = take 3 y == "END"
         onlyNothing [] = True

@@ -46,16 +46,19 @@ data CDSLExpr =
 data CDSLParseError =
     CDSLParseError
     {
-        pErr :: CDSLParseError
+        pErr :: CDSLParseErrorCode
         , pExpr :: CDSLExpr
         , rawExpr :: String
     }
-    | IncompleteExpressionError
+    deriving (Show, Eq)
+
+data CDSLParseErrorCode =
+    IncompleteExpressionError
     | SyntaxError
     | UnnecessaryOperandError
-    | MissingTerminationStatement String
-    | UnknownKeyWord String
-    | OnLoad Feature CDSLParseError
+    | MissingTerminationStatement Int
+    | UnknownKeyWord Int
+    | OnLoad Feature CDSLParseErrorCode
     deriving (Show, Eq)
 
 data CDSLExecError =

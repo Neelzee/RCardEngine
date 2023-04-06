@@ -1,8 +1,8 @@
 module CDSLExprTest.CDSLParserSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import CDSLExpr (CDSLExpr(Greatest, Score, Players, IsEmpty, Hand, Any, Null, Deck, Pile, Swap, Shuffle, Take, Numeric, Always, Never, IsEqual), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr, IncompleteExpressionError))
 import ParseCardDSL (parseCDSLFromString)
+import CDSLExpr
 
 
 moduleName :: String -> String
@@ -22,6 +22,7 @@ test = hspec $ do
     testParseCDSLFromStringSBC "any players isEmpty hand" (Left (Any (Players (IsEmpty Hand))))
     testParseCDSLFromStringSBC "any players isEqual score 10" (Left (Any (Players (IsEqual Score (Numeric 10)))))
     testParseCDSLFromStringSBC "any players isEqual 10 score" (Left (Any (Players (IsEqual (Numeric 10) Score))))
+    testParseCDSLFromStringSBC "all players isEqual 10 score" (Left (All (Players (IsEqual (Numeric 10) Score))))
     testParseCDSLFromStringSBC "isEmpty deck" (Left (IsEmpty Deck))
     testParseCDSLFromStringSBC "isEmpty pile" (Left (IsEmpty Pile))
     testParseCDSLFromStringSBC "swap pile deck" (Left (Swap Pile Deck))
@@ -36,10 +37,16 @@ test = hspec $ do
     testParseCDSLFromStringSBC "take -1 pile deck" (Left (Take (Numeric (-1)) Pile Deck))
     testParseCDSLFromStringSBC "always" (Left Always)
     testParseCDSLFromStringSBC "never" (Left Never)
+    testParseCDSLFromStringSBC "any always" (Left (Any Always))
 
 
     -- Should raise error
     testParseCDSLFromStringSBE "any" (Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Any Null, rawExpr = "any" }))
+    testParseCDSLFromStringSBE "any ?" (Right (CDSLParseError { pErr = SyntaxError, pExpr = Any Null, rawExpr = "any ?" }))
+    testParseCDSLFromStringSBE "" (Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Null, rawExpr = "" }))
+    testParseCDSLFromStringSBE "any take" (Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Any (Take Null Null Null), rawExpr = "any take" }))
+    testParseCDSLFromStringSBE "any shuffle" (Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Any (Shuffle Null), rawExpr = "any shuffle" }))
+    testParseCDSLFromStringSBE "any always never" (Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = Any Always, rawExpr = "any always never" }))
 
 testParseCDSLFromStringSBE :: String -> Either CDSLExpr CDSLParseError -> Spec
 testParseCDSLFromStringSBE input result = describe (moduleName "parseCDSLFromString") $ do
