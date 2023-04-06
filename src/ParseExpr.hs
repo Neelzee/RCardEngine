@@ -304,6 +304,7 @@ parseFileHelper (x:xs) n = case parseGameRules x of
 
 
 
+
 -- Trim leading and trailing spaces from a string
 trim :: String -> String
 trim = dropWhile isSpace . reverse . dropWhile isSpace . reverse
@@ -311,9 +312,6 @@ trim = dropWhile isSpace . reverse . dropWhile isSpace . reverse
 -- Split a string at the comma separator and trim each element
 splitAndTrim :: String -> [String]
 splitAndTrim = map trim . splitOn ","
-
-
-
 
 validateGameExpr :: GameExpr -> Bool
 validateGameExpr (Any expr) = validateGameExpr expr

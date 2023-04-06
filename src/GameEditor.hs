@@ -12,6 +12,7 @@ import System.Directory (listDirectory)
 import GameExprError (GameError (..))
 import Data.Bifunctor (first)
 import Control.Monad (zipWithM)
+import Feature (Feature (Saved, GameName, PlayerHand, CardValues, PlayerMoves, CardSuits, CardNames, StartTime, WinCon), fromStringToFeature)
 
 data EditError = OpenGameError String
     | UnknownFeature String
@@ -55,18 +56,6 @@ data Command = Command {
     | Help
     deriving (Show, Eq)
 
-data Feature = WinCon
-    | CardSuits
-    | CardValues
-    | CardNames
-    | EndCon
-    | AnyTime
-    | StartTime
-    | PlayerHand
-    | PlayerMoves
-    | GameName
-    | Saved
-    deriving (Show, Eq, Enum)
 
 
 
@@ -266,19 +255,19 @@ getCommand xs = case xs of
         (Just i, Just glf) -> Left (Edit i glf)
         (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a number, but got" ("'" ++ gn ++ "'"))
         (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ("add":feature:ys) -> case (validateFeature feature, validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
+    ("add":feature:ys) -> case (fromStringToFeature feature, validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
         (Just f, Just flg) -> case validateStmt (words (takeWhile (/= '-') (unwords ys))) f of
             Left s -> Left (Add f s flg)
             Right es -> Right (InvalidStatementError "Invalid statement" es)
         (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ feature ++ "'"))
         (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ (dropWhile (/= '-') (unwords ys) ++ "'")))
-    ("update":feature:ys) -> case (validateFeature feature, validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
+    ("update":feature:ys) -> case (fromStringToFeature feature, validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
         (Just f, Just flg) -> case validateStmt (words (takeWhile (/= '-') (unwords ys))) f of
             Left s -> Left (Update f s flg)
             Right es -> Right (InvalidStatementError "Invalid statement" es)
         (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ feature ++ "'"))
         (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ (dropWhile (/= '-') (unwords ys) ++ "'")))
-    ("remove":ys) -> case (mapM validateFeature (words (takeWhile (/= '-') (unwords ys))), validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
+    ("remove":ys) -> case (mapM fromStringToFeature (words (takeWhile (/= '-') (unwords ys))), validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
         (Just fets, Just flg) -> Left (Remove fets flg)
         (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ (takeWhile (/= '-') (unwords ys) ++ "'")))
         (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ (dropWhile (/= '-') (unwords ys) ++ "'")))
@@ -291,7 +280,7 @@ getCommand xs = case xs of
     ("exit":flgs) -> case validateFlags flgs of
         Just flg -> Left (Exit flg)
         Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ("copy":feature:a:flgs) -> case (validateFeature feature, readMaybe a :: Maybe Int, validateFlags flgs) of
+    ("copy":feature:a:flgs) -> case (fromStringToFeature feature, readMaybe a :: Maybe Int, validateFlags flgs) of
         (Just ft, Just i, Just flg) -> Left (Copy ft i flg)
         (Nothing, _, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ feature ++ "'"))
         (_, Nothing, _)-> Right (InvalidArgument "Invalid argument, expected a number, but got" ("'" ++ a ++ "'"))
@@ -385,21 +374,6 @@ removeFeature' fs (f:xs) ecc = case lookup f fs of
             let rs = filter (\(k, _) -> k /= f) fs
             removeFeature' rs xs (CommandEffect ("Removed: " ++ show f) ("Removed: " ++ show f):ecc)
         Nothing -> removeFeature' fs xs (CommandEffect ("No instance of " ++ show f ++ " found.") ("No instance of " ++ show f ++ " found."):ecc)
-
--- Checks if the given feature is valid
-validateFeature :: String -> Maybe Feature
-validateFeature x = case x of
-    "WINCON" -> Just WinCon
-    "CARD_SUITS" -> Just CardSuits
-    "CARD_VALUES" -> Just CardValues
-    "CARD_NAMES" -> Just CardNames
-    "ENDCON" -> Just EndCon
-    "ANYTIME" -> Just AnyTime
-    "PLAYER_HAND" -> Just PlayerHand
-    "PLAYER_MOVES" -> Just PlayerMoves
-    "GAMENAME" -> Just GameName
-    "STARTTIME" -> Just StartTime
-    _ -> Nothing
 
 -- Checks if the given statement is valud
 validateStmt :: [String] -> Feature -> Either String StatementError
@@ -581,7 +555,7 @@ loadFeatures gd n = do
 loadFeatures' :: GameData -> [String] -> Either GameData GameError
 loadFeatures' fs d = case parseDataHelper [] d 0 of
     Left d' -> do
-        let dt = mapMaybe ((\(mfea, str) -> mfea >>= \fea -> Just (fea, str)) . first validateFeature) d'
+        let dt = mapMaybe ((\(mfea, str) -> mfea >>= \fea -> Just (fea, str)) . first fromStringToFeature) d'
         let fs' = mergeList (lookupManyWithKey [WinCon .. Saved] dt) fs
         Left fs'
     Right e -> Right e
@@ -590,7 +564,7 @@ parseDataHelper :: [(String, String)] -> [String] -> Int -> Either [(String, Str
 parseDataHelper result [] _ = Left result
 parseDataHelper result (x:xs) lineNumber
   | isCommentOrEmptyLine x = parseDataHelper result xs (lineNumber+1)
-  | otherwise = case validateFeature x of
+  | otherwise = case fromStringToFeature x of
       Just rule -> do
         let (linesInStatement, rest) = break isEndStatement xs
         case linesInStatement of

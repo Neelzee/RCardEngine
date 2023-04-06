@@ -27,7 +27,7 @@ max_players = 4
 END
 
 # Win condition
-ENCON
+END_CON
 game_players.any_player.hand == 0
 END
 

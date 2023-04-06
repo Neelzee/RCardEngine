@@ -32,6 +32,10 @@ library
       GameEditor
       ParseCardDSL
       LoadGD
+      Constants
+      CDSLExpr
+      Feature
+      SaveGD
   other-modules:
       Paths_CardEngine
   hs-source-dirs:

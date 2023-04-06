@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-incomplete-record-updates #-}
 module ParseCardDSL where
+
 import Text.Read (readMaybe)
 import Data.List (groupBy)
 import Data.Either (partitionEithers)
@@ -7,69 +8,8 @@ import Game (Game (deck, pile, players))
 import Card (Card)
 import Player (Player(hand, name, pScore))
 import Data.CircularList (toList)
+import CDSLExpr (CDSLExpr (Any, Players, IsEmpty, Hand, All, IsEqual, Numeric, Shuffle, Greatest, Swap, Take, And, Or, Always, Never, Not, Deck, Pile, Score, Null, CardRank, CardSuit, CardValue, TurnOrder, If), CDSLExecError (CDSLExecError, err, expr, InvalidSyntaxError, SyntaxErrorLeftOperand, SyntaxErrorRightOperand), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr, UnnecessaryOperandError, IncompleteExpressionError, SyntaxError))
 
-
-data KeyWord = CardValues
-    | CardRanks
-    | CardSuits
-    | WinCondition
-    | EndCondition
-    | CardConstraints
-    | PlayerMoves
-    | PlayerHandCount
-    | AnyTime
-    | StartTime
-    | CardEffects
-
-data CDSLExpr =
-    Any CDSLExpr
-    | All CDSLExpr
-    | Greatest CDSLExpr
-    | Players CDSLExpr
-    | Score
-    | Hand
-    | IsEqual CDSLExpr CDSLExpr
-    | Numeric Int
-    | IsEmpty CDSLExpr
-    | If [CDSLExpr] [CDSLExpr]
-    | Swap CDSLExpr CDSLExpr
-    | Shuffle CDSLExpr
-    | Deck
-    | Pile
-    | Take CDSLExpr CDSLExpr CDSLExpr
-    | Always
-    | Never
-    | Not CDSLExpr
-    | And CDSLExpr CDSLExpr
-    | Or CDSLExpr CDSLExpr
-    | TurnOrder
-    | CardRank
-    | CardSuit
-    | CardValue
-    | Null
-    deriving (Show, Eq)
-
-data CDSLParseError =
-    CDSLParseError
-    {
-        pErr :: CDSLParseError
-        , pExpr :: CDSLExpr
-        , rawExpr :: String
-    }
-    | IncompleteExpressionError
-    | SyntaxError
-    | UnnecessaryOperandError
-
-
-data CDSLExecError =
-    CDSLExecError
-    {
-        err :: CDSLExecError
-        , expr :: CDSLExpr
-    }
-    | InvalidSyntaxError
-    | SyntaxErrorRightOperand
-    | SyntaxErrorLeftOperand
 
 
 -- Checks if a given CDSLExpr is valid
@@ -87,7 +27,7 @@ validateCDSLExpression e@(Any (Players (IsEqual (Numeric _) a))) = if a == Hand 
     else
         Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
-validateCDSLExpression e@(All (Players (IsEqual a (Numeric n)))) = if a == Hand || a == Score
+validateCDSLExpression e@(All (Players (IsEqual a (Numeric _)))) = if a == Hand || a == Score
     then
         Left e
     else
@@ -160,11 +100,11 @@ execCDSLGameBool e@(IsEqual a b) g = case (fromCDSLToCard a, fromCDSLToCard b) o
     (Just fa, Just fb) -> Left (fa g == fb g)
     (Nothing, _) -> Right (CDSLExecError { err = SyntaxErrorLeftOperand, expr = e })
     (_, Nothing) -> Right (CDSLExecError { err = SyntaxErrorRightOperand, expr = e })
-execCDSLGameBool (Any (Players (IsEmpty Hand))) g = Left (any (null . hand) (toList (players g)))
-execCDSLGameBool (All (Players (IsEmpty Hand))) g = Left (all (null . hand) (toList (players g)))
+execCDSLGameBool (Any (Players (IsEmpty Hand))) g = Left (any (null . Player.hand) (toList (players g)))
+execCDSLGameBool (All (Players (IsEmpty Hand))) g = Left (all (null . Player.hand) (toList (players g)))
 execCDSLGameBool e@(Any (Players (IsEqual a b))) g = case ((a == Score, b == Score), (execCDSLInt a, execCDSLInt b)) of
-    ((True, _), (_, Left n)) -> Left (any ((==n) . pScore) (toList (players g)))
-    ((_, True), (Left n, _)) -> Left (any ((==n) . pScore) (toList (players g)))
+    ((True, _), (_, Left n)) -> Left (any ((==n) . Player.pScore) (toList (players g)))
+    ((_, True), (Left n, _)) -> Left (any ((==n) . Player.pScore) (toList (players g)))
     ((False, _), (_, Right _)) -> Right (CDSLExecError { err = InvalidSyntaxError, expr = a })
     ((_, False), (Right _, _)) -> Right (CDSLExecError { err = InvalidSyntaxError, expr = b })
     _ -> Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
@@ -337,7 +277,7 @@ parseIFCDSLFromString xs = do
 processIfString :: String -> ([[String]], [[String]])
 processIfString str =
   let (left, right) = break (==":") (words str)
-      leftGroups = groupBy (\x y -> y /= "," && y /= ":") left
-      rightGroups = groupBy (\x y -> y /= ",") (tail right)
+      leftGroups = groupBy (\_ y -> y /= "," && y /= ":") left
+      rightGroups = groupBy (\_ y -> y /= ",") (tail right)
   in (leftGroups, rightGroups)
 
