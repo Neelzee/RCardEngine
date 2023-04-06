@@ -17,6 +17,7 @@ import Data.List (sortBy)
 import Data.List.Extra (foldl')
 import CDSLExpr (CDSLExpr)
 import Feature (Feature)
+import Functions (unique, quicksort)
 
 data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)
@@ -104,35 +105,11 @@ highestScore ps = head (quicksort ps)
 
 
 
--- Removes the first instance of the given element
-removeFirst :: Eq a => [a] -> a -> [a]
-removeFirst [] _ = []
-removeFirst (x:xs) y = if x == y
-    then
-        xs
-    else
-        x : removeFirst xs y
-
 
 sortingRules :: Deck
 sortingRules = reverse defaultCardDeck
 
 
--- Removes all duplicate elements from the given list
-unique :: Eq a => [a] -> [a]
-unique [] = []
-unique (x:xs) = if x `elem` xs
-    then
-        unique xs
-    else
-        x : unique xs
-
-quicksort :: Ord a => [a] -> [a]
-quicksort [] = []
-quicksort (x:xs) = quicksort lesser ++ [x] ++ quicksort greater
-    where
-        lesser = filter (< x) xs
-        greater = filter (>= x) xs
 
 
 -- Used at the start of a turn
@@ -156,11 +133,6 @@ sleepPrint s n = do
     putStrLn ("\n" ++ show n)
     sleep 1
     sleepPrint s (n - 1)
-
-lookupOrDefault :: Eq k => k -> a -> [(k, a)] -> a
-lookupOrDefault key def assocList = fromMaybe def (lookup key assocList)
-
-
 
 gameActions :: [[Game -> Game]] -> Game -> Game
 gameActions acs g = foldl' (foldl' (flip ($))) g acs

@@ -1,6 +1,7 @@
 module Card where
 
 import System.Random
+import Functions (removeNth)
 
 
 data Card = Card {
@@ -28,8 +29,6 @@ shuffle' xs gen = y : shuffle' ys gen'
     (index, gen') = randomR (0, length xs - 1) gen
     (y, ys) = removeNth index xs
 
-removeNth :: Int -> [a] -> (a, [a])
-removeNth n xs = (xs !! n, take n xs ++ drop (n+1) xs)
 
 
 

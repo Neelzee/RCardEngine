@@ -26,7 +26,7 @@ library
       Game
       GameRules
       PlayGame
-      ParseExpr
+      Functions
       Player
       GameExprError
       GameEditor

@@ -5,15 +5,15 @@ import Data.CircularList
     ( focus, fromList, rotR, update, isEmpty )
 import System.Time.Extra ( sleep )
 
-import Player ( createPlayers, Player (name, moves, hand), Move (PlayCard, DrawCard, Pass), isValidMove, getMoveFromString, resetMoves, standardMoves )
-import Card
+import Player ( createPlayers, Player (name, moves, hand), Move (PlayCard, DrawCard, Pass), isValidMove, getMoveFromString )
 import Text.Read (readMaybe)
-import ParseExpr (loadGame, parsePlayerMoves, lookupAll)
-import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions, canPlaceCard), GameState (Start, TurnEnd, TurnStart), removeFirst, sortingRules, lookupOrDefault, unique, playerTurnStart, dealCards, gameActions)
-import GameRules (GameRule(PlayerHand, PileCount, PlayerMoves))
+import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions, canPlaceCard, playerMoves), GameState (Start, TurnEnd, TurnStart), playerTurnStart, dealCards, gameActions)
 import Data.Maybe (fromMaybe)
-import System.Console.ANSI (clearScreen)
 import Data.List (find)
+import Feature
+import CDSLExpr (CDSLExpr(Numeric))
+import LoadGame (loadGame)
+import Functions (lookupAll, unique, lookupOrDefault, removeFirst)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
@@ -45,10 +45,7 @@ gameLoop g = do
 doPlayerTurn :: Game  -> Player -> IO Game
 doPlayerTurn game plr = do
     let g' = gameActions (lookupAll (state game) (actions game)) game
-    p <- case lookup PlayerMoves (rules game) of
-        Just mv -> do
-            return (resetMoves plr (parsePlayerMoves mv))
-        Nothing -> return (resetMoves plr standardMoves)
+    let p = plr { moves = playerMoves game}
     let game' = g' { state = TurnStart }
     -- Turn actions
     let playerInfo = playerTurnStart p
@@ -190,26 +187,20 @@ doPlayerActionPass game plr continue = do
 
 
 
-gameStart :: String -> IO ()
-gameStart gamename = do
+gameStart :: Int -> IO ()
+gameStart gi = do
     plrs <- createPlayer
-    game <- loadGame gamename (Game { players = fromList plrs, state = Start })
+    game <- loadGame (Game { players = fromList plrs, state = Start }) gi
     game' <- case lookup PlayerHand (rules game) of
-        Just n -> case readMaybe n :: Maybe Int of
-            Just c -> return (dealCards game c)
-            Nothing -> return (dealCards game 3)
-        Nothing -> return (dealCards game 3)
+        Just [Numeric n] -> return (dealCards game n)
+        _ -> return (dealCards game 3)
     let game'' = game' {
         pile = case lookup PileCount (rules game') of
-            Just pc -> case readMaybe pc :: Maybe Int of
-                Just i -> take i (deck game)
-                Nothing -> take 1 (deck game)
-            Nothing -> take 1 (deck game)
+            Just [Numeric i] -> take i (deck game)
+            _ -> take 1 (deck game)
         , deck = case lookup PileCount (rules game') of
-            Just pc -> case readMaybe pc :: Maybe Int of
-                Just i -> drop i (deck game)
-                Nothing -> drop 1 (deck game)
-            Nothing -> drop 1 (deck game)
+            Just [Numeric i] -> drop i (deck game)
+            _ ->  drop 1 (deck game)
     }
 
     let g = gameActions (lookupAll Start (actions game'')) game''

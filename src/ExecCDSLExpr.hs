@@ -1,12 +1,38 @@
 module ExecCDSLExpr where
 
-import Game (Game (deck, pile, players))
+import Game (Game (deck, pile, players, cardGen))
 import Data.CircularList (toList)
-import CDSLExpr (CDSLExpr (Any, Players, IsEmpty, Hand, All, IsEqual, Numeric, And, Or, Always, Never, Not, Deck, Pile, Score, If, Swap, Take, Shuffle),
-    CDSLExecError (CDSLExecError, err, expr, InvalidSyntaxError, SyntaxErrorLeftOperand, SyntaxErrorRightOperand))
 import Player (Player(hand, pScore))
 import Data.Either (partitionEithers)
-import Card (shuffle, Card)
+import Card (shuffle, Card (suit, rank, cScore))
+import CDSLExpr
+import Data.List (elemIndex)
+import Functions (takeUntilDuplicate)
+
+
+placeCardStmt :: [CDSLExpr] -> (Game -> Card -> Bool)
+placeCardStmt [] = const . const True
+placeCardStmt [Null] = const . const True
+placeCardStmt xs
+    | any (`elem` xs) [CardRank, CardSuit, CardValue] = compareCards xs
+    | otherwise = const . const False
+
+
+compareCards :: [CDSLExpr] -> Game -> Card -> Bool
+compareCards [] _ _ = True
+compareCards (x:xs) g c = do
+    let pc = head (pile g)
+    let suits = map suit (takeUntilDuplicate (cardGen g))
+    let ranks = map rank (takeUntilDuplicate (cardGen g))
+    let values = map cScore (takeUntilDuplicate (cardGen g))
+    case x of
+        CardRank -> elemIndex (rank c) ranks >= elemIndex (rank pc) ranks && compareCards xs g c
+        CardSuit -> elemIndex (suit c) suits >= elemIndex (suit pc) suits && compareCards xs g c
+        CardValue -> elemIndex (cScore c) values >= elemIndex (cScore pc) values && compareCards xs g c
+        _ -> True
+
+
+
 
 
 execCDSLGame :: [CDSLExpr] -> Game -> Game

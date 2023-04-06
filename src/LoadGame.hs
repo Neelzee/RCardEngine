@@ -11,6 +11,7 @@ import Player (standardMoves, resetMoves, parsePlayerMovesExpr)
 import CDSLExpr (CDSLExpr(Numeric))
 import ExecCDSLExpr (execCDSLGame)
 import Data.CircularList (toList, fromList)
+import Functions (lookupAll, lookupOrDefault)
 
 loadGame :: Game -> Int -> IO Game
 loadGame g n = do
@@ -79,9 +80,3 @@ createEndCon = undefined
 
 createWinCon :: [CDSLExpr] -> b
 createWinCon = undefined
-
-
-
--- Returns all Maybe lookups in a list
-lookupAll :: Eq a => a -> [(a, b)] -> [b]
-lookupAll x pairs = [b | (a, b) <- pairs, a == x]

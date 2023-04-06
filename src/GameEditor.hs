@@ -9,13 +9,13 @@ import System.Directory (listDirectory)
 import Control.Monad (zipWithM)
 import Feature (Feature (Saved, GameName), fromStringToFeature)
 import Constants (gameFolder)
-import LoadGD (loadFeatures)
 import Data.Either (partitionEithers)
 import SaveGD (saveGameData)
 import Commands (CommandEffect (short, verbose, CommandEffect))
 import GD (GameData)
 import CDSLExpr (CDSLExpr(Text, Null), CDSLParseError)
 import ParseCardDSL (fromCDSLToString, parseCDSLFromString)
+import LoadGD (loadGameData)
 
 data EditError = OpenGameError String
     | UnknownFeature String
@@ -141,7 +141,7 @@ editor gd = do
                     if gn `elem` [0..length g]
                         then
                             do
-                                dl <- loadFeatures gd gn
+                                dl <- loadGameData gd gn
                                 case dl of
                                     Left gd' -> do
                                         let ecc = [CommandEffect { short = "Loaded features from game " ++ (g !! gn), verbose = "Loaded " ++ show (length gd') ++ " features from game " ++ (g !! gn) }]
@@ -169,7 +169,7 @@ editor gd = do
                     if a `elem` [0..(length g)]
                     then
                         do
-                            res <- loadFeatures [] a
+                            res <- loadGameData [] a
                             case res of
                                 Left gd' -> do
                                     (gad, ecc) <- case lookup fet gd' of
@@ -226,7 +226,7 @@ editor gd = do
 listGameData :: IO [CommandEffect]
 listGameData = do
     games <- allGames
-    agd <- zipWithM (\ _x i -> loadFeatures [] i) games [0..]
+    agd <- zipWithM (\ _x i -> loadGameData [] i) games [0..]
     return (listGameData' agd 0)
     where
         listGameData' :: [Either GameData [CDSLParseError]] -> Int -> [CommandEffect]

@@ -8,6 +8,7 @@ import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords
 import CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (MissingTerminationStatement, UnknownKeyWord, CDSLParseError, rawExpr, SyntaxError, pErr, pExpr, OnLoad))
 import ParseCardDSL (parseCDSLFromString)
 import GD (GameData)
+import Functions (splitEithers, mergeList)
 
 
 allGames :: IO [String]
@@ -72,29 +73,5 @@ parseFileHelper (x:xs) n = case validateKeyWords x of
         onlyNothing (y:ys) = case y of
             Just _ -> False
             Nothing -> onlyNothing ys
-
-
-
-
-mergeList :: Eq a => [(a,b)] -> [(a,b)] -> [(a,b)]
-mergeList [] ys = ys
-mergeList ((xk, xv):xs) ys =
-  case lookup xk ys of
-    Just yv -> mergeList xs ((xk, yv):ys)
-    Nothing -> mergeList xs ((xk, xv):ys)
-
-
-
-lookupMany :: Eq a => [a] -> [(a, b)] -> [b]
-lookupMany keys pairs = mapMaybe (`lookup` pairs) keys
-
-lookupManyWithKey :: Eq a => [a] -> [(a,b)] -> [(a,b)]
-lookupManyWithKey keys list = [(k, v) | (k, v) <- list, k `elem` keys]
-
-splitEithers :: [(a, [Either b c])] -> ([(a, [b])], [(a, [c])])
-splitEithers [] = ([], [])
-splitEithers ((a, x):xs) = bimap
-  ((a, fst (partitionEithers x)) :)
-  ((a, snd (partitionEithers x)) :) (splitEithers xs)
 
 

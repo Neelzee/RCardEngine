@@ -4,8 +4,7 @@ import Card
 import Data.CircularList (CList, focus, size, rotR, update)
 import CDSLExpr (CDSLExpr (Text))
 import Data.Maybe (mapMaybe)
-import Data.Char (isSpace)
-import Data.List.Extra (splitOn)
+import Functions (splitAndTrim)
 
 -- Valid moves, bool for if the move ends the turn or not
 data Move = PlayCard | DrawCard | Pass
@@ -118,10 +117,8 @@ parsePlayerMovesExpr (_:xs) = parsePlayerMovesExpr xs
 
 
 parsePlayerMoves :: String -> [(Move, Bool)]
-parsePlayerMoves s = mapMaybe
-  (parsePlayerMove
-     . dropWhile isSpace . reverse . dropWhile isSpace . reverse)
-  (splitOn "," s)
+parsePlayerMoves s = mapMaybe parsePlayerMove (splitAndTrim s)
+  
 
 parsePlayerMove :: String -> Maybe (Move, Bool)
 parsePlayerMove x = case words x of
