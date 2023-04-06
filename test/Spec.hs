@@ -1,2 +1,8 @@
+import qualified CDSLExprTest.CDSLParserSpec as CDSLPrserSpec (test)
+
+
+
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = do
+    CDSLPrserSpec.test
