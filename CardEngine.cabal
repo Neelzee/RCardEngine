@@ -40,6 +40,7 @@ library
       LoadGame
       ExecCDSLExpr
       GD
+      PlayerMove
   other-modules:
       Paths_CardEngine
   hs-source-dirs:

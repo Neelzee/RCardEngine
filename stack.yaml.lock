@@ -18,9 +18,16 @@ packages:
       size: 219
   original:
     hackage: data-clist-0.1.2.3
+- completed:
+    hackage: ghcide-1.3.0.0@sha256:fa0a5256f51fe4e0aabe86feb74f18ede156c73a587641991bc53c22773ed521,11885
+    pantry-tree:
+      sha256: 3de38b40302221322fbf9e6d8a6af742235f150af57905fb94d6883b8e6a7024
+      size: 12187
+  original:
+    hackage: ghcide-1.3.0.0
 snapshots:
 - completed:
-    sha256: e66e70a7f998036025e8f40abc89b8eeb79c88f57727020cba1b54f375aa7ca0
-    size: 586292
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/17.yaml
-  original: lts-18.17
+    sha256: 14ca51a9a597c32dd7804c10d079feea3d0ae40c5fbbb346cbd67b3ae49f6d01
+    size: 649598
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/17.yaml
+  original: lts-20.17

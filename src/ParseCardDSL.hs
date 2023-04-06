@@ -6,6 +6,7 @@ import Data.List (groupBy, intercalate)
 import Data.Either (partitionEithers)
 import ExecCDSLExpr (execCDSLBool)
 import CDSLExpr
+import Data.List.Extra (splitOn)
 
 
 
@@ -75,9 +76,30 @@ isCDSLExprNumeric :: CDSLExpr -> Bool
 isCDSLExprNumeric (Numeric _) = True
 isCDSLExprNumeric _ = False
 
+-- Parses a line into expr
+parseCDSLF :: String -> Either [CDSLExpr] [CDSLParseError]
+parseCDSLF xs = case (parseCDSLFromStringList xs, parseCDSLFromString (words xs), parseIFCDSLFromString xs) of
+    (_, _, Left e) -> Left [e]
+    (_, Left e, _) -> Left [e]
+    (Left e, _, _) -> Left e
+    _ -> Right [(CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = xs })]
 
-
-
+parseCDSLFromStringList :: String -> Either [CDSLExpr] CDSLParseError
+parseCDSLFromStringList xs = do
+    let lst = splitOn "," xs
+    parse lst
+    where
+        parse :: [String] -> Either [CDSLExpr] CDSLParseError
+        parse [] = Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Null, rawExpr = "" })
+        parse (x:ys) = case parseIFCDSLFromString x of
+            Left e -> case parse ys of
+                Left es -> Left (e:es)
+                Right er -> Right er
+            Right _ -> case parseCDSLFromString (words x) of
+                Left e -> case parse ys of
+                    Left es -> Left (e:es)
+                    Right er -> Right er
+                Right er -> Right er
 
 
 -- Parses a words line to an CDSLExpression, or gives an error
@@ -203,7 +225,7 @@ parseCDSLFromString (x:xs) = case x of
             Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = TurnOrder, rawExpr = x})
     _ -> case readMaybe x :: Maybe Int of
         Just i -> Left (Numeric i)
-        _ -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = x})
+        _ -> Left (Text x)
 
 
 fromCDSLToString :: CDSLExpr -> String
@@ -245,10 +267,11 @@ parseIFCDSLFromString xs = do
             ((_, e@CDSLParseError {}:_), (es, [])) -> Right (e { pExpr = If [Null] es })
             ((cs, []), (_, e@CDSLParseError {}:_)) -> Right (e { pExpr = If cs [Null] })
             (_, (_, e@CDSLParseError {}:_)) -> Right (e { pExpr = If [Null] [Null] })
-            ((_, e@CDSLParseError {}:_), _) -> Right (e { pExpr = If [Null] [Null] })
-            _ -> Right (CDSLParseError { pErr = SyntaxError, pExpr = If [Null] [Null], rawExpr = xs})
 
-
+isStringCDSLIF :: String -> Bool
+isStringCDSLIF xs = case parseIFCDSLFromString xs of
+    Left _ -> True
+    Right _ -> False
 
 
 

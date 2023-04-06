@@ -6,18 +6,18 @@ import Player
       createPlayers,
       resetMoves,
       deal,
-      standardMoves, Move )
+      standardMoves)
 import Card ( Deck, Card, defaultCardDeck )
 
 import Data.CircularList ( fromList, toList, CList )
 import Text.Read (readMaybe)
 import System.Time.Extra ( sleep )
-import Data.Maybe (fromMaybe)
 import Data.List (sortBy)
 import Data.List.Extra (foldl')
 import CDSLExpr (CDSLExpr)
 import Feature (Feature)
 import Functions (unique, quicksort)
+import PlayerMove (Move)
 
 data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)

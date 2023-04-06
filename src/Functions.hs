@@ -176,3 +176,4 @@ splitEithers [] = ([], [])
 splitEithers ((a, x):xs) = bimap
   ((a, fst (partitionEithers x)) :)
   ((a, snd (partitionEithers x)) :) (splitEithers xs)
+

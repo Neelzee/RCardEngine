@@ -1,21 +1,11 @@
 module Player where
 
-import Card
+import Card ( Card(Card) )
 import Data.CircularList (CList, focus, size, rotR, update)
 import CDSLExpr (CDSLExpr (Text))
 import Data.Maybe (mapMaybe)
 import Functions (splitAndTrim)
-
--- Valid moves, bool for if the move ends the turn or not
-data Move = PlayCard | DrawCard | Pass
-    deriving (Eq)
-
-instance Show Move where
-    show PlayCard = "PLAYCARD"
-    show DrawCard = "DRAWCARD"
-    show Pass = "PASS"
-
-type Moves = [Move]
+import PlayerMove (Move (PlayCard, DrawCard, Pass))
 
 data Player = Player {
     name :: String

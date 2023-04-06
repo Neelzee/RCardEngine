@@ -1,18 +1,7 @@
 module CDSLExpr where
+
 import Feature (Feature)
-
-
-data KeyWord = CardValues
-    | CardRanks
-    | CardSuits
-    | WinCondition
-    | EndCondition
-    | CardConstraints
-    | PlayerMoves
-    | PlayerHandCount
-    | AnyTime
-    | StartTime
-    | CardEffects
+import PlayerMove (Move)
 
 data CDSLExpr =
     Any CDSLExpr
@@ -39,6 +28,7 @@ data CDSLExpr =
     | CardRank
     | CardSuit
     | CardValue
+    | PlayerAction Move Bool
     | Text String
     | Null
     deriving (Show, Eq)

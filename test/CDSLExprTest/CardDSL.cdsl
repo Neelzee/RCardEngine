@@ -4,23 +4,23 @@ Hearts, Diamonds, Clubs, Spades
 END
 
 # Define the card values
-CARD_VALUES
+CARD_RANKS
 Ace, 2, 3, 4, 5, 6, 7, 8, 9, 10, Jack, Queen, King
 END
 
 # Define the card ranks
-CARD_RANKS
-Standard
+CARD_VALUES
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
 END
 
 # Define the win condition
-WINCON
+WIN_CON
 greatest players score
 END
 
 # Define the end conditions
 # If multiple statements, the games ends if either is true
-ENDCON
+END_CON
 any players isEmpty hand 
 any players isEqual score 10
 END
@@ -42,18 +42,18 @@ END
 
 # Define the game actions
 # This statement is checked and executed anytime the state is updated
-ANYTIME
+ANY_TIME
 isEmpty deck : swap pile deck, shuffle deck, take 1 deck pile
 END
 
 # This statment is checked and executed once, at start
-STARTTIME
+START_TIME
 always : shuffle deck
 END
 
 # Define some card effects
-CARD_EFFECTS
-A.X, A.Y skipTurn
-A.Z changeCard A.X, A.Y drawFromPlayer
-A.Q giveToPlayer
-END
+# CARD_EFFECTS
+# A.X, A.Y skipTurn
+# A.Z changeCard A.X, A.Y drawFromPlayer
+# A.Q giveToPlayer
+# END
