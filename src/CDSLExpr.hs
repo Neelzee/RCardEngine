@@ -56,7 +56,7 @@ data CDSLParseError =
     | MissingTerminationStatement String
     | UnknownKeyWord String
     | OnLoad Feature CDSLParseError
-
+    deriving (Show, Eq)
 
 data CDSLExecError =
     CDSLExecError
@@ -67,3 +67,4 @@ data CDSLExecError =
     | InvalidSyntaxError
     | SyntaxErrorRightOperand
     | SyntaxErrorLeftOperand
+    deriving (Show, Eq)

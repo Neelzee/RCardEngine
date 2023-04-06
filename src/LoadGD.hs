@@ -7,10 +7,7 @@ import Data.Either (partitionEithers)
 import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords)
 import CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (MissingTerminationStatement, UnknownKeyWord, CDSLParseError, rawExpr, SyntaxError, pErr, pExpr, OnLoad))
 import ParseCardDSL (parseCDSLFromString)
-
-
-
-type GameData = [(Feature, [CDSLExpr])]
+import GD (GameData)
 
 
 allGames :: IO [String]

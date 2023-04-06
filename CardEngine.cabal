@@ -36,6 +36,7 @@ library
       CDSLExpr
       Feature
       SaveGD
+      Commands
   other-modules:
       Paths_CardEngine
   hs-source-dirs:

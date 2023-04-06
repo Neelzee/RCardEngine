@@ -2,13 +2,13 @@
 module ParseCardDSL where
 
 import Text.Read (readMaybe)
-import Data.List (groupBy)
+import Data.List (groupBy, intercalate)
 import Data.Either (partitionEithers)
 import Game (Game (deck, pile, players))
 import Card (Card)
 import Player (Player(hand, name, pScore))
 import Data.CircularList (toList)
-import CDSLExpr (CDSLExpr (Any, Players, IsEmpty, Hand, All, IsEqual, Numeric, Shuffle, Greatest, Swap, Take, And, Or, Always, Never, Not, Deck, Pile, Score, Null, CardRank, CardSuit, CardValue, TurnOrder, If), CDSLExecError (CDSLExecError, err, expr, InvalidSyntaxError, SyntaxErrorLeftOperand, SyntaxErrorRightOperand), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr, UnnecessaryOperandError, IncompleteExpressionError, SyntaxError))
+import CDSLExpr (CDSLExpr (Any, Players, IsEmpty, Hand, All, IsEqual, Numeric, Shuffle, Greatest, Swap, Take, And, Or, Always, Never, Not, Deck, Pile, Score, Null, CardRank, CardSuit, CardValue, TurnOrder, If, Text), CDSLExecError (CDSLExecError, err, expr, InvalidSyntaxError, SyntaxErrorLeftOperand, SyntaxErrorRightOperand), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr, UnnecessaryOperandError, IncompleteExpressionError, SyntaxError))
 
 
 
@@ -255,6 +255,34 @@ parseCDSLFromString (x:xs) = case x of
         Just i -> Left (Numeric i)
         _ -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = x})
 
+
+fromCDSLToString :: CDSLExpr -> String
+fromCDSLToString (All e) = "all " ++ fromCDSLToString e
+fromCDSLToString (Any e) = "any " ++ fromCDSLToString e
+fromCDSLToString (Greatest e) = "greatest " ++ fromCDSLToString e
+fromCDSLToString (Players e) = "players " ++ fromCDSLToString e
+fromCDSLToString Score = "Score"
+fromCDSLToString Hand = "hand"
+fromCDSLToString (IsEqual l r) = "isEqual " ++ fromCDSLToString l ++ fromCDSLToString r
+fromCDSLToString (Numeric i) = show i ++ " "
+fromCDSLToString (IsEmpty e) = "isEmpty " ++ fromCDSLToString e
+fromCDSLToString (If cond stmt) = intercalate "," (map fromCDSLToString cond) ++ " : " ++ intercalate "," (map fromCDSLToString stmt)
+fromCDSLToString (Swap l r) = "swap " ++ fromCDSLToString l ++ fromCDSLToString r
+fromCDSLToString (Shuffle e) = "shuffle " ++ fromCDSLToString e
+fromCDSLToString Deck = "deck"
+fromCDSLToString Pile = "pile"
+fromCDSLToString (Take c f t) = "take " ++ fromCDSLToString c ++ fromCDSLToString f ++ fromCDSLToString t
+fromCDSLToString Always = "always"
+fromCDSLToString Never = "never"
+fromCDSLToString (Not e) = "not " ++ fromCDSLToString e
+fromCDSLToString (And l r) = "and " ++ fromCDSLToString l ++ fromCDSLToString r
+fromCDSLToString (Or l r) = "or " ++ fromCDSLToString l ++ fromCDSLToString r
+fromCDSLToString TurnOrder = "turnOrder"
+fromCDSLToString CardRank = "rank"
+fromCDSLToString CardSuit = "suit"
+fromCDSLToString CardValue = "value"
+fromCDSLToString (Text s) = s
+fromCDSLToString _ = ""
 
 
 parseIFCDSLFromString :: String -> Either CDSLExpr CDSLParseError
