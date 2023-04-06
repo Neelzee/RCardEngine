@@ -83,8 +83,6 @@ executable CardEngine-exe
 test-suite CardEngine-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
-  exposed-modules:
-    CDSLParserSpec
   other-modules:
       Paths_CardEngine
   hs-source-dirs:

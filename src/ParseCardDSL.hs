@@ -85,9 +85,13 @@ isCDSLExprNumeric _ = False
 parseCDSLFromString :: [String] -> Either CDSLExpr CDSLParseError
 parseCDSLFromString [] = Left Null
 parseCDSLFromString (x:xs) = case x of
-    "any" -> case parseCDSLFromString xs of
-        Left exr -> Left (Any exr)
-        e -> e
+    "any" -> if null xs
+        then
+            Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Any Null, rawExpr = x })
+        else
+            case parseCDSLFromString xs of
+                Left exr -> Left (Any exr)
+                e -> e
     "all" -> case parseCDSLFromString xs of
         Left exr -> Left (All exr)
         e -> e
