@@ -6,7 +6,7 @@ import Player
       createPlayers,
       resetMoves,
       deal,
-      standardMoves )
+      standardMoves, Move )
 import Card ( Deck, Card, defaultCardDeck )
 
 import Data.CircularList ( fromList, toList, CList )
@@ -14,14 +14,16 @@ import Text.Read (readMaybe)
 import System.Time.Extra ( sleep )
 import Data.Maybe (fromMaybe)
 import Data.List (sortBy)
-import GameRules (GameRule)
 import Data.List.Extra (foldl')
+import CDSLExpr (CDSLExpr)
+import Feature (Feature)
 
 data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)
 
 data Game = Game {
     gameName :: String
+    , playerMoves :: [(Move, Bool)]
     , cardGen :: [Card]
     , deck :: [Card]
     , pile :: [Card]
@@ -29,7 +31,7 @@ data Game = Game {
     , endCon :: [Game -> Bool]
     , winCon :: [Game -> [Player]]
     , state :: GameState
-    , rules :: [(GameRule, String)]
+    , rules :: [(Feature, [CDSLExpr])]
     , actions :: [(GameState, [Game -> Game])]
     , rounds :: Int
     , canPlaceCard :: [Game -> Card -> Bool]
@@ -70,6 +72,7 @@ createGame = do
                 let (plrs', deck') = deal 3 defaultCardDeck (fromList (map (`resetMoves` standardMoves) plrs))
                 return Game {
                     gameName = "Default Game"
+                    , playerMoves = []
                     , cardGen = []
                     , deck = drop 1 deck'
                     , pile = [head deck'], players = plrs'

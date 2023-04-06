@@ -4,11 +4,8 @@ module ParseCardDSL where
 import Text.Read (readMaybe)
 import Data.List (groupBy, intercalate)
 import Data.Either (partitionEithers)
-import Game (Game (deck, pile, players))
-import Card (Card)
-import Player (Player(hand, name, pScore))
-import Data.CircularList (toList)
-import CDSLExpr (CDSLExpr (Any, Players, IsEmpty, Hand, All, IsEqual, Numeric, Shuffle, Greatest, Swap, Take, And, Or, Always, Never, Not, Deck, Pile, Score, Null, CardRank, CardSuit, CardValue, TurnOrder, If, Text), CDSLExecError (CDSLExecError, err, expr, InvalidSyntaxError, SyntaxErrorLeftOperand, SyntaxErrorRightOperand), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr, UnnecessaryOperandError, IncompleteExpressionError, SyntaxError))
+import CDSLExpr (CDSLExpr (Any, Players, IsEmpty, Hand, All, IsEqual, Numeric, Shuffle, Greatest, Swap, Take, And, Or, Always, Never, Not, Deck, Pile, Score, Null, CardRank, CardSuit, CardValue, TurnOrder, If, Text), CDSLExecError (CDSLExecError, err, expr, InvalidSyntaxError), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr, UnnecessaryOperandError, IncompleteExpressionError, SyntaxError))
+import ExecCDSLExpr (execCDSLBool)
 
 
 
@@ -74,55 +71,12 @@ validateCDSLExpression Always = Left Always
 validateCDSLExpression Never = Left Never
 validateCDSLExpression e = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
-
-execCDSLBool :: CDSLExpr -> Either Bool CDSLExecError
-execCDSLBool Always = Left True
-execCDSLBool Never = Left False
-execCDSLBool (IsEqual (Numeric a) (Numeric b)) = Left (a == b)
-execCDSLBool (Not ex) = case execCDSLBool ex of
-    Left b -> Left (not b)
-    e -> e
-execCDSLBool (Or l r) = case (execCDSLBool l, execCDSLBool r) of
-    (Left lt, Left rt) -> Left (lt || rt)
-    (Right e, _) -> Right e
-    (_, Right e) -> Right e
-execCDSLBool (And l r) = case (execCDSLBool l, execCDSLBool r) of
-    (Left lt, Left rt) -> Left (lt && rt)
-    (Right e, _) -> Right e
-    (_, Right e) -> Right e
-execCDSLBool e = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-
-
-execCDSLGameBool :: CDSLExpr -> Game -> Either Bool CDSLExecError
-execCDSLGameBool (IsEmpty Deck) g = Left (null (deck g))
-execCDSLGameBool (IsEmpty Pile) g = Left (null (pile g))
-execCDSLGameBool e@(IsEqual a b) g = case (fromCDSLToCard a, fromCDSLToCard b) of
-    (Just fa, Just fb) -> Left (fa g == fb g)
-    (Nothing, _) -> Right (CDSLExecError { err = SyntaxErrorLeftOperand, expr = e })
-    (_, Nothing) -> Right (CDSLExecError { err = SyntaxErrorRightOperand, expr = e })
-execCDSLGameBool (Any (Players (IsEmpty Hand))) g = Left (any (null . Player.hand) (toList (players g)))
-execCDSLGameBool (All (Players (IsEmpty Hand))) g = Left (all (null . Player.hand) (toList (players g)))
-execCDSLGameBool e@(Any (Players (IsEqual a b))) g = case ((a == Score, b == Score), (execCDSLInt a, execCDSLInt b)) of
-    ((True, _), (_, Left n)) -> Left (any ((==n) . Player.pScore) (toList (players g)))
-    ((_, True), (Left n, _)) -> Left (any ((==n) . Player.pScore) (toList (players g)))
-    ((False, _), (_, Right _)) -> Right (CDSLExecError { err = InvalidSyntaxError, expr = a })
-    ((_, False), (Right _, _)) -> Right (CDSLExecError { err = InvalidSyntaxError, expr = b })
-    _ -> Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-execCDSLGameBool e _ = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-
 isCDSLExprNumeric :: CDSLExpr -> Bool
 isCDSLExprNumeric (Numeric _) = True
 isCDSLExprNumeric _ = False
 
-execCDSLInt :: CDSLExpr -> Either Int CDSLExecError
-execCDSLInt (Numeric n) = Left n
-execCDSLInt e = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
-fromCDSLToCard :: CDSLExpr -> Maybe (Game -> [Card])
-fromCDSLToCard x = case x of
-    Pile -> Just pile
-    Deck -> Just deck
-    _ -> Nothing
+
 
 
 

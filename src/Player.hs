@@ -2,6 +2,10 @@ module Player where
 
 import Card
 import Data.CircularList (CList, focus, size, rotR, update)
+import CDSLExpr (CDSLExpr (Text))
+import Data.Maybe (mapMaybe)
+import Data.Char (isSpace)
+import Data.List.Extra (splitOn)
 
 -- Valid moves, bool for if the move ends the turn or not
 data Move = PlayCard | DrawCard | Pass
@@ -104,3 +108,24 @@ addScore (Player nm hnd mvs scr) (Card _ _ s) = Player nm hnd mvs (scr + s)
 
 toString :: (Move, Bool) -> String
 toString (a, b) = show a ++ " " ++ (if b then "TRUE" else "FALSE")
+
+
+parsePlayerMovesExpr :: [CDSLExpr] -> [(Move, Bool)]
+parsePlayerMovesExpr [] = []
+parsePlayerMovesExpr (Text m:xs) = parsePlayerMoves m ++ parsePlayerMovesExpr xs
+parsePlayerMovesExpr (_:xs) = parsePlayerMovesExpr xs
+
+
+
+parsePlayerMoves :: String -> [(Move, Bool)]
+parsePlayerMoves s = mapMaybe
+  (parsePlayerMove
+     . dropWhile isSpace . reverse . dropWhile isSpace . reverse)
+  (splitOn "," s)
+
+parsePlayerMove :: String -> Maybe (Move, Bool)
+parsePlayerMove x = case words x of
+    ["PLAYCARD", b] -> Just (PlayCard, b == "TRUE")
+    ["DRAWCARD", b] -> Just (DrawCard, b == "TRUE")
+    ["PASS", b] -> Just (Pass, b == "TRUE")
+    _ -> Nothing

@@ -203,16 +203,6 @@ parseString (x:xs) = case x of
 
 
 
-parsePlayerMoves :: String -> [(Move, Bool)]
-parsePlayerMoves s = mapMaybe parsePlayerMove (splitAndTrim s)
-
-parsePlayerMove :: String -> Maybe (Move, Bool)
-parsePlayerMove x = case words x of
-    ["PLAYCARD", b] -> Just (PlayCard, b == "TRUE")
-    ["DRAWCARD", b] -> Just (DrawCard, b == "TRUE")
-    ["PASS", b] -> Just (Pass, b == "TRUE")
-    _ -> Nothing
-
 -- Executes an if expression, if a statement is true
 execIfExpr :: GameExpr -> Game -> Game
 execIfExpr (If (IsEmpty Deck) xs) g = if null (deck g)

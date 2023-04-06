@@ -14,8 +14,8 @@ allGames :: IO [String]
 allGames = listDirectory gameFolder
 
 
-loadFeatures :: GameData -> Int -> IO (Either GameData [CDSLParseError])
-loadFeatures gd n = do
+loadGameData :: GameData -> Int -> IO (Either GameData [CDSLParseError])
+loadGameData gd n = do
     g <- allGames
     if n < 0 || n >= length g
     then -- Shouldnt happen
@@ -23,13 +23,13 @@ loadFeatures gd n = do
     else
         do
             content <- readFile (gameFolder ++ (g !! n))
-            case loadFeatures' gd (lines content) of
+            case loadGameData' gd (lines content) of
                 Left gd' -> return (Left ((GameName, [Text (g !! n)]) : gd' ++ [(Saved, [Null])]))
                 e -> return e
 
 
-loadFeatures' :: GameData -> [String] -> Either GameData [CDSLParseError]
-loadFeatures' fs c = case parseFileHelper c 1 of
+loadGameData' :: GameData -> [String] -> Either GameData [CDSLParseError]
+loadGameData' fs c = case parseFileHelper c 1 of
     Left nGd -> do
         let gd = removeMaybe (map (first fromStringToFeature) nGd)
         let (gd', errs) = splitEithers (map (second (map (parseCDSLFromString . words))) gd)

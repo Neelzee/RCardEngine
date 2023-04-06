@@ -37,6 +37,8 @@ library
       Feature
       SaveGD
       Commands
+      LoadGame
+      ExecCDSLExpr
   other-modules:
       Paths_CardEngine
   hs-source-dirs:

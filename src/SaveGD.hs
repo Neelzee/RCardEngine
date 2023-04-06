@@ -6,10 +6,10 @@ import System.Directory (listDirectory)
 import Constants (gameFolder)
 import Data.List (elemIndex)
 import CDSLExpr (CDSLExpr(..))
-import LoadGD (loadFeatures)
 import System.IO (withFile, IOMode (WriteMode), hPrint, hPutStrLn)
 import ParseCardDSL (fromCDSLToString)
 import Commands (CommandEffect (CommandEffect, short, verbose))
+import LoadGD (loadGameData)
 
 
 saveGameData :: GameData -> IO CommandEffect
@@ -23,7 +23,7 @@ saveGameData' gd = do
     case lookup GameName gd of
         Just (Text gm:_) -> case elemIndex gm gl of
             Just i -> do
-                res <- loadFeatures [] i
+                res <- loadGameData [] i
                 case res of
                     Left oldGd -> do
                         let new = findNew oldGd gd
