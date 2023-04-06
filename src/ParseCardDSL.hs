@@ -4,8 +4,8 @@ module ParseCardDSL where
 import Text.Read (readMaybe)
 import Data.List (groupBy, intercalate)
 import Data.Either (partitionEithers)
-import CDSLExpr (CDSLExpr (Any, Players, IsEmpty, Hand, All, IsEqual, Numeric, Shuffle, Greatest, Swap, Take, And, Or, Always, Never, Not, Deck, Pile, Score, Null, CardRank, CardSuit, CardValue, TurnOrder, If, Text), CDSLExecError (CDSLExecError, err, expr, InvalidSyntaxError), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (IncompleteExpressionError, UnnecessaryOperandError, SyntaxError))
 import ExecCDSLExpr (execCDSLBool)
+import CDSLExpr
 
 
 

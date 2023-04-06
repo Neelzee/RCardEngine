@@ -64,10 +64,13 @@ data CDSLParseErrorCode =
 data CDSLExecError =
     CDSLExecError
     {
-        err :: CDSLExecError
+        err :: CDSLExecErrorCode
         , expr :: CDSLExpr
     }
-    | InvalidSyntaxError
+    deriving (Show, Eq)
+
+data CDSLExecErrorCode =
+    InvalidSyntaxError
     | SyntaxErrorRightOperand
     | SyntaxErrorLeftOperand
     deriving (Show, Eq)
