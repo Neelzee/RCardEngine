@@ -30,6 +30,8 @@ library
       Player
       GameExprError
       GameEditor
+      ParseCardDSL
+      LoadGD
   other-modules:
       Paths_CardEngine
   hs-source-dirs:
