@@ -1,4 +1,4 @@
-WINCON
+WIN_CON
 greatest players score;
 END
 
@@ -14,7 +14,7 @@ CARD_RANKS
 Ace,Two,Three,Four,Five,Six,Seven,Eight,Nine,Ten,Jack,Queen,King
 END
 
-ENDCON
+END_CON
 any players isEmpty hand;
 END
 

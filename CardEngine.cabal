@@ -36,8 +36,11 @@ library
       CDSL.CDSLExpr
       CDSL.ExecCDSLExpr
       Feature
-      GameCommands
       LoadGame
+      Terminal.GameCommands
+      Terminal.ValidateGameCommands
+      Terminal.ExecGameCommands
+      Terminal.GameTerminal
   other-modules:
       Paths_CardEngine
   hs-source-dirs:

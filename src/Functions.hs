@@ -6,6 +6,8 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Bifunctor (bimap)
 import Data.Either (partitionEithers)
 import Control.Monad ((>=>), join, forM)
+import System.Directory (listDirectory)
+import Constants (gameFolder)
 
 
 -- Returns all Maybe lookups in a list
@@ -100,3 +102,8 @@ removeMaybe [] = []
 removeMaybe ((x, y):xs) = case x of
     Just z -> (z, y) : removeMaybe xs
     Nothing -> removeMaybe xs
+
+
+allGames :: IO [String]
+allGames = listDirectory gameFolder
+

@@ -8,11 +8,8 @@ import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords
 import CDSL.CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord))
 import CDSL.ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLFromStringList, processIfString, parseStringList, parseCDSLPlayerAction)
 import GameData.GD (GameData)
-import Functions (mergeList, removeMaybe)
+import Functions (mergeList, removeMaybe, allGames)
 
-
-allGames :: IO [String]
-allGames = listDirectory gameFolder
 
 
 loadGameData :: GameData -> Int -> IO (Either GameData [CDSLParseError])
@@ -23,7 +20,7 @@ loadGameData gd n = do
         return (Right [CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show n }])
     else
         do
-            content <- readFile (gameFolder ++ (g !! n))
+            content <- readFile (gameFolder ++ "/" ++ (g !! n))
             case loadGameData' gd (lines content) of
                 Left gd' -> return (Left ((GameName, [Text (g !! n)]) : gd' ++ [(Saved, [Null])]))
                 e -> return e

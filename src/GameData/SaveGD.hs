@@ -8,8 +8,8 @@ import Data.List (elemIndex)
 import CDSL.CDSLExpr (CDSLExpr(..))
 import System.IO (withFile, IOMode (WriteMode), hPrint, hPutStrLn)
 import CDSL.ParseCardDSL (fromCDSLToString)
-import GameCommands (CommandEffect (CommandEffect, short, verbose))
 import GameData.LoadGD (loadGameData)
+import Terminal.GameCommands
 
 
 saveGameData :: GameData -> IO CommandEffect

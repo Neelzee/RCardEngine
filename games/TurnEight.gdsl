@@ -10,15 +10,15 @@ CARD_RANKS
 X, Z
 END
 
-ENDCON
+END_CON
 any players isEmpty hand
 END
 
-ENDCON
+END_CON
 any players isEqual score 10
 END
 
-WINCON
+WIN_CON
 greatest players score
 END
 
@@ -26,11 +26,11 @@ CARD_CONSTRAINTS
 rank
 END
 
-ANYTIME
+ANY_TIME
 isEmpty deck : swap pile deck, shuffle deck, take 1 deck pile
 END
 
-STARTTIME
+START_TIME
 always : shuffle deck
 END
 

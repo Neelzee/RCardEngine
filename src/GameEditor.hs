@@ -11,11 +11,12 @@ import Feature (Feature (Saved, GameName), fromStringToFeature)
 import Constants (gameFolder)
 import Data.Either (partitionEithers)
 import GameData.SaveGD (saveGameData)
-import GameCommands (CommandEffect (short, verbose, CommandEffect))
 import GameData.GD (GameData)
 import CDSL.CDSLExpr (CDSLExpr(Text, Null), CDSLParseError)
 import CDSL.ParseCardDSL (fromCDSLToString, parseCDSLFromString)
 import GameData.LoadGD (loadGameData)
+import Terminal.GameCommands (CommandEffect(..))
+import Functions (allGames)
 
 data EditError = OpenGameError String
     | UnknownFeature String
@@ -122,7 +123,7 @@ editor :: GameData -> IO ()
 editor gd = do
     case lookup GameName gd of
         Just (Text nm:_) -> putStr ("edit -> " ++ nm ++ " > ")
-        _ -> putStr "edit> "
+        _ -> putStr "edit > "
     hFlush stdout
     c <- getLine
     case getCommand (words c) of
@@ -383,7 +384,3 @@ removeFeature' fs (f:xs) ecc = case lookup f fs of
             let rs = filter (\(k, _) -> k /= f) fs
             removeFeature' rs xs (CommandEffect ("Removed: " ++ show f) ("Removed: " ++ show f):ecc)
         Nothing -> removeFeature' fs xs (CommandEffect ("No instance of " ++ show f ++ " found.") ("No instance of " ++ show f ++ " found."):ecc)
-
-allGames :: IO [String]
-allGames = listDirectory gameFolder
-
