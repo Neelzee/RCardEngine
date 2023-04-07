@@ -5,6 +5,7 @@ import Data.Char (isSpace)
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Bifunctor (bimap)
 import Data.Either (partitionEithers)
+import Control.Monad ((>=>), join, forM)
 
 {-
 
@@ -118,7 +119,7 @@ takeUntilDuplicate = go []
       | y `elem` seen = []
       | otherwise = y : go (y:seen) ys
 
-    
+
 removeNth :: Int -> [a] -> (a, [a])
 removeNth n xs = (xs !! n, take n xs ++ drop (n+1) xs)
 
@@ -177,3 +178,12 @@ splitEithers ((a, x):xs) = bimap
   ((a, fst (partitionEithers x)) :)
   ((a, snd (partitionEithers x)) :) (splitEithers xs)
 
+applyF :: (a -> [b] -> Maybe (a, [c])) -> [(a, [b])] -> Maybe [(a, [c])]
+applyF f = traverse (\(a, bs) -> forM [bs] (f a)) >=> (pure . join)
+
+
+removeMaybe :: [(Maybe a, b)] -> [(a, b)]
+removeMaybe [] = []
+removeMaybe ((x, y):xs) = case x of
+    Just z -> (z, y) : removeMaybe xs
+    Nothing -> removeMaybe xs

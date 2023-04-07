@@ -31,6 +31,7 @@ fromStringToFeature x = case x of
     "PILE_COUNT" -> Just PileCount
     "GAME_NAME" -> Just GameName
     "START_TIME" -> Just StartTime
+    "CARD_CONSTRAINTS" -> Just CardConstraints
     _ -> Nothing
 
 

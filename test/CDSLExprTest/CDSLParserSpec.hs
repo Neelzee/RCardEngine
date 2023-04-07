@@ -38,11 +38,10 @@ test = hspec $ do
     testParseCDSLFromStringSBC "always" (Left Always)
     testParseCDSLFromStringSBC "never" (Left Never)
     testParseCDSLFromStringSBC "any always" (Left (Any Always))
-    testParseCDSLFromStringSBC "xashdkdashk" (Left (Text "xashdkdashk"))
-    testParseCDSLFromStringSBC "any ?" (Left (Any (Text "?")))
 
 
     -- Should raise error
+    testParseCDSLFromStringSBE "always : any never, any always" (Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = Always, rawExpr = "always : any never, any always" }))
     testParseCDSLFromStringSBE "any" (Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Any Null, rawExpr = "any" }))
     testParseCDSLFromStringSBE "" (Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Null, rawExpr = "" }))
     testParseCDSLFromStringSBE "any take" (Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Any (Take Null Null Null), rawExpr = "any take" }))

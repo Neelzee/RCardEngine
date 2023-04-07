@@ -44,6 +44,7 @@ data CDSLParseError =
 
 data CDSLParseErrorCode =
     IncompleteExpressionError
+    | NotIfStatementError
     | SyntaxError
     | UnnecessaryOperandError
     | MissingTerminationStatement Int

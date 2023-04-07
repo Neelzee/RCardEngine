@@ -7,6 +7,7 @@ import Data.Either (partitionEithers)
 import ExecCDSLExpr (execCDSLBool)
 import CDSLExpr
 import Data.List.Extra (splitOn)
+import Data.Text (unpack, strip, pack)
 
 
 
@@ -76,18 +77,10 @@ isCDSLExprNumeric :: CDSLExpr -> Bool
 isCDSLExprNumeric (Numeric _) = True
 isCDSLExprNumeric _ = False
 
--- Parses a line into expr
-parseCDSLF :: String -> Either [CDSLExpr] [CDSLParseError]
-parseCDSLF xs = case (parseCDSLFromStringList xs, parseCDSLFromString (words xs), parseIFCDSLFromString xs) of
-    (_, _, Left e) -> Left [e]
-    (_, Left e, _) -> Left [e]
-    (Left e, _, _) -> Left e
-    _ -> Right [(CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = xs })]
 
 parseCDSLFromStringList :: String -> Either [CDSLExpr] CDSLParseError
-parseCDSLFromStringList xs = do
-    let lst = splitOn "," xs
-    parse lst
+parseCDSLFromStringList "" = Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Null, rawExpr = "" })
+parseCDSLFromStringList xs = parse (splitOn "," xs)
     where
         parse :: [String] -> Either [CDSLExpr] CDSLParseError
         parse [] = Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Null, rawExpr = "" })
@@ -258,27 +251,28 @@ fromCDSLToString _ = ""
 
 
 parseIFCDSLFromString :: String -> Either CDSLExpr CDSLParseError
-parseIFCDSLFromString xs = do
-    case processIfString xs of
-        ([], _) -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = If [Null] [Null], rawExpr = xs})
-        (_, []) -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = If [Null] [Null], rawExpr = xs})
-        (conds, exr) -> case (partitionEithers (map parseCDSLFromString conds), partitionEithers (map parseCDSLFromString exr)) of
-            ((cs, []), (es, [])) -> Left (If cs es)
-            ((_, e@CDSLParseError {}:_), (es, [])) -> Right (e { pExpr = If [Null] es })
-            ((cs, []), (_, e@CDSLParseError {}:_)) -> Right (e { pExpr = If cs [Null] })
-            (_, (_, e@CDSLParseError {}:_)) -> Right (e { pExpr = If [Null] [Null] })
+parseIFCDSLFromString xs = if ':' `elem` xs
+    then
+        case processIfString xs of
+            ([], _) -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = If [Null] [Null], rawExpr = xs})
+            (_, []) -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = If [Null] [Null], rawExpr = xs})
+            (conds, exr) -> case (partitionEithers (map parseCDSLFromString conds), partitionEithers (map parseCDSLFromString exr)) of
+                ((cs, []), (es, [])) -> Left (If cs es)
+                ((_, e@CDSLParseError {}:_), (es, [])) -> Right (e { pExpr = If [Null] es })
+                ((cs, []), (_, e@CDSLParseError {}:_)) -> Right (e { pExpr = If cs [Null] })
+                (_, (_, e@CDSLParseError {}:_)) -> Right (e { pExpr = If [Null] [Null] })
+    else
+        Right (CDSLParseError { pErr = NotIfStatementError, pExpr = Null, rawExpr = xs})
 
-isStringCDSLIF :: String -> Bool
-isStringCDSLIF xs = case parseIFCDSLFromString xs of
-    Left _ -> True
-    Right _ -> False
 
 
 
 processIfString :: String -> ([[String]], [[String]])
-processIfString str =
-  let (left, right) = break (==":") (words str)
-      leftGroups = groupBy (\_ y -> y /= "," && y /= ":") left
-      rightGroups = groupBy (\_ y -> y /= ",") (tail right)
-  in (leftGroups, rightGroups)
+processIfString str = do
+    let (left, right) = break (== ':') str
+    let trimmedLeft = unpack $ strip $ pack left
+    let trimmedRight = unpack $ strip $ pack (drop 1 right)
+    let l = map words (splitOn "," trimmedLeft)
+    let r = map words (splitOn "," trimmedRight)
+    (l, r)
 

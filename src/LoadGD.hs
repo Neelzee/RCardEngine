@@ -3,26 +3,17 @@ module LoadGD where
 import System.Directory (listDirectory)
 import Constants (gameFolder)
 import Data.Maybe (mapMaybe)
-import Data.Bifunctor (first, Bifunctor (second, bimap))
-import Data.Either (partitionEithers)
+import Data.Bifunctor (first)
 import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords)
-import CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord), CDSLExecError (CDSLExecError))
-import ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLF)
+import CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord))
+import ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLFromStringList, processIfString)
 import GD (GameData)
-import Functions (splitEithers, mergeList)
+import Functions (mergeList, removeMaybe)
 
 
 allGames :: IO [String]
 allGames = listDirectory gameFolder
 
-
-main :: IO ()
-main = do
-    rawC <- readFile "test/CDSLExprTest/CardDSL.cdsl"
-    let c = lines rawC
-    print "\nTEST\n"
-    res <- loadGameData'' [] c
-    print res
 
 loadGameData :: GameData -> Int -> IO (Either GameData [CDSLParseError])
 loadGameData gd n = do
@@ -42,66 +33,48 @@ loadGameData' :: GameData -> [String] -> Either GameData [CDSLParseError]
 loadGameData' fs c = case parseFileHelper c 1 of
     Left nGd -> do
         let gd = removeMaybe (map (first fromStringToFeature) nGd)
-        let (gd', errs) = partitionEithers (map (uncurry readGD) gd)
+        let (gd', errs) = (mapMaybe readGDF gd, mapMaybe readGDE gd)
         let gd'' = mergeList fs gd'
         if null errs
             then
                 Left gd''
             else
                 Right (fixErrs errs)
-        where
-            removeMaybe [] = []
-            removeMaybe ((x, y):xs) = case x of
-                Just z -> (z, y) : removeMaybe xs
-                Nothing -> removeMaybe xs
-            fixErrs [] = []
-            fixErrs ((_, []):xs) = fixErrs xs
-            fixErrs ((f, e:ers):xs) = (e { pErr = OnLoad f (pErr e) }) : fixErrs ((f, ers):xs)
     Right e -> Right [e]
     where
-        readGD :: Feature -> [String] -> Either (Feature, [CDSLExpr]) (Feature, [CDSLParseError])
-        readGD f [] = Left (f, [])
-        readGD f [x] = case parseCDSLF x of
-            Left ex -> Left (f, ex)
-            Right err -> Right (f, err)
-        readGD f (x:xs) = case parseCDSLF x of
-            Left ex -> case readGD f xs of
-                Left (_, exs) -> Left (f, ex ++ exs)
-                Right e -> Right e
-            Right e -> Right (f, e)
+        fixErrs [] = []
+        fixErrs ((_, []):xs) = fixErrs xs
+        fixErrs ((f, e:ers):xs) = (e { pErr = OnLoad f (pErr e) }) : fixErrs ((f, ers):xs)
+
+readGDF :: (Feature, [String]) -> Maybe (Feature, [CDSLExpr])
+readGDF (f, []) = Just (f, [])
+-- Checks if its a normal expr
+readGDF (f, x:xs) = case parseCDSLFromString (words x) of
+    Left ex -> case readGDF (f, xs) of
+        Just (_, exs) -> Just (f, ex:exs)
+        Nothing -> Just (f, [ex])
+    Right _ -> case parseIFCDSLFromString x of
+        Left ex -> case readGDF (f, xs) of
+            Just (_, exs) -> Just (f, ex:exs)
+            Nothing -> Just (f, [ex])
+        Right _ -> case parseCDSLFromStringList x of
+            Left ex -> case readGDF (f, xs) of
+                Just (_, exs) -> Just (f, ex ++ exs)
+                Nothing -> Just (f, ex)
+            Right _ -> Nothing
+
+readGDE :: (Feature, [String]) -> Maybe (Feature, [CDSLParseError])
+readGDE (_, []) = Nothing
+readGDE (f, x:xs) = case (parseIFCDSLFromString x, parseCDSLFromStringList x, parseCDSLFromString (words x)) of
+    (Left _, _, _) -> readGDE (f, xs)
+    (_, Left _, _) -> readGDE (f, xs)
+    (_, _, Left _) -> readGDE (f, xs)
+    (Right e, _, _) -> case readGDE (f, xs) of
+        Just (_, err) -> Just (f, (e { pErr = OnLoad f (pErr e) }):err)
+        Nothing -> Just (f, [CDSLParseError { pErr = OnLoad f SyntaxError, pExpr = Null, rawExpr = x }])
 
 
-loadGameData'' :: GameData -> [String] -> IO (Either GameData [CDSLParseError])
-loadGameData'' fs c = case parseFileHelper c 1 of
-    Left nGd -> do
-        putStrLn "YEE"
-        case parseCDSLF "Hearts, Diamonds, Clubs, Spades" of
-            Left e -> do
-                print "AAA"
-                print e
-            Right e -> print e
-        print (length (parseCDSLF "Hearts, Diamonds, Clubs, Spades"))
-        putStrLn "\n"
-        let gd = removeMaybe (map (first fromStringToFeature) nGd)
-        let (gd', errs) =  splitEithers (map (second (map parseCDSLF)) gd)
-        print gd'
-        putStrLn "\n\n\n"
-        print errs
-        let gd'' = mergeList fs (map (second concat) gd')
-        if null errs
-            then
-                return (Left gd'')
-            else
-                return (Right (fixErrs (map (second concat) errs)))
-        where
-            removeMaybe [] = []
-            removeMaybe ((x, y):xs) = case x of
-                Just z -> (z, y) : removeMaybe xs
-                Nothing -> removeMaybe xs
-            fixErrs [] = []
-            fixErrs ((_, []):xs) = fixErrs xs
-            fixErrs ((f, e:ers):xs) = (e { pErr = OnLoad f (pErr e) }) : fixErrs ((f, ers):xs)
-    Right e -> return (Right [e])
+
 
 
 
