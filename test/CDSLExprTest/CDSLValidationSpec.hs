@@ -1,8 +1,8 @@
 module CDSLExprTest.CDSLValidationSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import CDSLExpr
-import ParseCardDSL (validateCDSLExpression)
+import CDSL.CDSLExpr
+import CDSL.ParseCardDSL (validateCDSLExpression)
 
 
 moduleName :: String -> String

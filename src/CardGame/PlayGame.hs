@@ -1,19 +1,19 @@
-module PlayGame where
+module CardGame.PlayGame where
 
 import Data.CircularList
     ( focus, fromList, rotR, update, isEmpty )
 import System.Time.Extra ( sleep )
 
-import Player ( createPlayers, Player (name, moves, hand), isValidMove, getMoveFromString )
+import CardGame.Player ( createPlayers, Player (name, moves, hand), isValidMove, getMoveFromString )
 import Text.Read (readMaybe)
-import Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions, canPlaceCard, playerMoves), GameState (Start, TurnEnd, TurnStart), playerTurnStart, dealCards, gameActions)
+import CardGame.Game (Game (players, pile, state, Game, gameName, deck, endCon, winCon, rules, actions, canPlaceCard, playerMoves), GameState (Start, TurnEnd, TurnStart), playerTurnStart, dealCards, gameActions)
 import Data.Maybe (fromMaybe)
 import Data.List (find)
 import Feature
-import CDSLExpr (CDSLExpr(Numeric))
+import CDSL.CDSLExpr (CDSLExpr(Numeric))
 import LoadGame (loadGame)
 import Functions (lookupAll, unique, lookupOrDefault, removeFirst)
-import PlayerMove (Move(PlayCard, DrawCard, Pass))
+import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
 
 gameLoop :: Game -> IO Game
 gameLoop g = do

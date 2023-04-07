@@ -1,4 +1,4 @@
-module Card where
+module CardGame.Card where
 
 import System.Random
 import Functions (removeNth)

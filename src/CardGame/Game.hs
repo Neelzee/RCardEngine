@@ -1,23 +1,23 @@
-module Game where
+module CardGame.Game where
 
 
-import Player
+import CardGame.Player
     ( Player(Player, name, hand, moves),
       createPlayers,
       resetMoves,
       deal,
       standardMoves)
-import Card ( Deck, Card, defaultCardDeck )
+import CardGame.Card ( Deck, Card, defaultCardDeck )
 
 import Data.CircularList ( fromList, toList, CList )
 import Text.Read (readMaybe)
 import System.Time.Extra ( sleep )
 import Data.List (sortBy)
 import Data.List.Extra (foldl')
-import CDSLExpr (CDSLExpr)
 import Feature (Feature)
 import Functions (unique, quicksort)
-import PlayerMove (Move)
+import CardGame.PlayerMove (Move)
+import CDSL.CDSLExpr (CDSLExpr)
 
 data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)

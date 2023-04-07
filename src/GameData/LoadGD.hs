@@ -1,13 +1,13 @@
-module LoadGD where
+module GameData.LoadGD where
 
 import System.Directory (listDirectory)
 import Constants (gameFolder)
 import Data.Maybe (mapMaybe)
 import Data.Bifunctor (first)
 import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords)
-import CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord))
-import ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLFromStringList, processIfString, parseStringList, parseCDSLPlayerAction)
-import GD (GameData)
+import CDSL.CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord))
+import CDSL.ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLFromStringList, processIfString, parseStringList, parseCDSLPlayerAction)
+import GameData.GD (GameData)
 import Functions (mergeList, removeMaybe)
 
 

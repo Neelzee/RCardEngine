@@ -1,14 +1,13 @@
-{-# OPTIONS_GHC -Wno-incomplete-record-updates #-}
-module ParseCardDSL where
+module CDSL.ParseCardDSL where
 
 import Text.Read (readMaybe)
 import Data.List (groupBy, intercalate)
 import Data.Either (partitionEithers)
-import ExecCDSLExpr (execCDSLBool)
-import CDSLExpr
+import CDSL.ExecCDSLExpr (execCDSLBool)
+import CDSL.CDSLExpr
 import Data.List.Extra (splitOn, trim)
 import Data.Text (unpack, strip, pack)
-import PlayerMove (Move(PlayCard, DrawCard, Pass))
+import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
 
 
 

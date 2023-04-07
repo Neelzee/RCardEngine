@@ -1,7 +1,7 @@
-module CDSLExpr where
+module CDSL.CDSLExpr where
 
 import Feature (Feature)
-import PlayerMove (Move)
+import CardGame.PlayerMove (Move)
 
 data CDSLExpr =
     Any CDSLExpr

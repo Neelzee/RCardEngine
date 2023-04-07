@@ -1,4 +1,4 @@
-module PlayerMove where
+module CardGame.PlayerMove where
 
 -- Valid moves, bool for if the move ends the turn or not
 data Move = PlayCard | DrawCard | Pass

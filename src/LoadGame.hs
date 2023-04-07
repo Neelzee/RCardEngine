@@ -1,15 +1,15 @@
 module LoadGame where
-import Game
-import GD (GameData)
-import LoadGD (loadGameData)
-import Card (defaultCardSuits, defaultCardValues, makeDeck)
+import CardGame.Game
+import GameData.GD (GameData)
+import GameData.LoadGD (loadGameData)
+import CardGame.Card (defaultCardSuits, defaultCardValues, makeDeck)
 import Data.List.Extra (splitOn, trim)
 import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime))
 import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
-import Player (standardMoves, resetMoves, parsePlayerMovesExpr)
-import CDSLExpr (CDSLExpr(Numeric))
-import ExecCDSLExpr (execCDSLGame)
+import CardGame.Player (standardMoves, resetMoves, parsePlayerMovesExpr)
+import CDSL.CDSLExpr (CDSLExpr(Numeric))
+import CDSL.ExecCDSLExpr (execCDSLGame)
 import Data.CircularList (toList, fromList)
 import Functions (lookupAll, lookupOrDefault)
 

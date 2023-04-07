@@ -1,6 +1,7 @@
-module GD where
+module GameData.GD where
+
 import Feature (Feature)
-import CDSLExpr (CDSLExpr)
+import CDSL.CDSLExpr (CDSLExpr)
 
 type GameData = [(Feature, [CDSLExpr])]
 

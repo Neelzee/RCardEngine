@@ -2,11 +2,11 @@ module CDSLExprTest.CDSLLoaderSPec where
 
 
 import Test.Hspec ( describe, it, shouldBe, hspec )
-import LoadGD (loadGameData')
-import GD (GameData)
-import PlayerMove (Move(PlayCard, DrawCard, Pass))
+import GameData.LoadGD (loadGameData')
+import GameData.GD (GameData)
+import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
 import Feature (Feature(CardSuits, CardValues, WinCon, EndCon, CardConstraints, PlayerMoves, PlayerHand, AnyTime, StartTime, CardRanks))
-import CDSLExpr
+import CDSL.CDSLExpr
     ( CDSLParseError,
       CDSLExpr(Text, Numeric, Greatest, Players, Score, Any, IsEmpty,
                Hand, IsEqual, CardRank, Deck, Shuffle, Always, If, Pile,

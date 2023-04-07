@@ -1,11 +1,11 @@
-module Player where
+module CardGame.Player where
 
-import Card ( Card(Card) )
+import CardGame.Card ( Card(Card) )
 import Data.CircularList (CList, focus, size, rotR, update)
-import CDSLExpr (CDSLExpr (Text))
+import CDSL.CDSLExpr (CDSLExpr (Text))
 import Data.Maybe (mapMaybe)
 import Functions (splitAndTrim)
-import PlayerMove (Move (PlayCard, DrawCard, Pass))
+import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass))
 
 data Player = Player {
     name :: String

@@ -5,7 +5,7 @@ import System.Directory (listDirectory, renameFile)
 import System.Console.ANSI (clearScreen)
 import Control.Monad (unless)
 import System.IO ( hFlush, stdout )
-import PlayGame (gameStart)
+import CardGame.PlayGame (gameStart)
 import GameEditor (Command(..), editor)
 import Text.Read (readMaybe)
 

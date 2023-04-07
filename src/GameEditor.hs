@@ -10,12 +10,12 @@ import Control.Monad (zipWithM)
 import Feature (Feature (Saved, GameName), fromStringToFeature)
 import Constants (gameFolder)
 import Data.Either (partitionEithers)
-import SaveGD (saveGameData)
-import Commands (CommandEffect (short, verbose, CommandEffect))
-import GD (GameData)
-import CDSLExpr (CDSLExpr(Text, Null), CDSLParseError)
-import ParseCardDSL (fromCDSLToString, parseCDSLFromString)
-import LoadGD (loadGameData)
+import GameData.SaveGD (saveGameData)
+import GameCommands (CommandEffect (short, verbose, CommandEffect))
+import GameData.GD (GameData)
+import CDSL.CDSLExpr (CDSLExpr(Text, Null), CDSLParseError)
+import CDSL.ParseCardDSL (fromCDSLToString, parseCDSLFromString)
+import GameData.LoadGD (loadGameData)
 
 data EditError = OpenGameError String
     | UnknownFeature String

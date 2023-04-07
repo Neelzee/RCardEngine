@@ -1,8 +1,8 @@
 module CDSLExprTest.CDSLParseExprSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import ParseCardDSL (parseCDSLFromString)
-import CDSLExpr
+import CDSL.ParseCardDSL (parseCDSLFromString)
+import CDSL.CDSLExpr
 
 
 moduleName :: String -> String

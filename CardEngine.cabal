@@ -21,26 +21,23 @@ source-repository head
 
 library
   exposed-modules:
-      Card
-      Engine
-      Game
-      GameRules
-      PlayGame
+      CardGame.Card
+      CardGame.Game
+      CardGame.PlayGame
+      CardGame.Player
+      CardGame.PlayerMove
       Functions
-      Player
-      GameExprError
       GameEditor
-      ParseCardDSL
-      LoadGD
+      GameData.GD
+      GameData.LoadGD
+      GameData.SaveGD
       Constants
-      CDSLExpr
+      CDSL.ParseCardDSL
+      CDSL.CDSLExpr
+      CDSL.ExecCDSLExpr
       Feature
-      SaveGD
-      GameCommands.hs
+      GameCommands
       LoadGame
-      ExecCDSLExpr
-      GD
-      PlayerMove
   other-modules:
       Paths_CardEngine
   hs-source-dirs:
@@ -99,5 +96,9 @@ test-suite CardEngine-test
     , filepath
     , optparse-applicative
     , text
+    , time
+    , bytestring
+    , ansi-terminal
+    , random
     , hspec
   default-language: Haskell2010

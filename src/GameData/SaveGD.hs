@@ -1,15 +1,15 @@
-module SaveGD where
+module GameData.SaveGD where
 
-import GD (GameData)
+import GameData.GD (GameData)
 import Feature (Feature(..))
 import System.Directory (listDirectory)
 import Constants (gameFolder)
 import Data.List (elemIndex)
-import CDSLExpr (CDSLExpr(..))
+import CDSL.CDSLExpr (CDSLExpr(..))
 import System.IO (withFile, IOMode (WriteMode), hPrint, hPutStrLn)
-import ParseCardDSL (fromCDSLToString)
-import Commands (CommandEffect (CommandEffect, short, verbose))
-import LoadGD (loadGameData)
+import CDSL.ParseCardDSL (fromCDSLToString)
+import GameCommands (CommandEffect (CommandEffect, short, verbose))
+import GameData.LoadGD (loadGameData)
 
 
 saveGameData :: GameData -> IO CommandEffect

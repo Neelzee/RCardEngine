@@ -1,5 +1,5 @@
 module GameCommands where
-import CDSLExpr (CDSLExpr (Text))
+import CDSL.CDSLExpr (CDSLExpr (Text))
 import Feature (Feature (AnyTime))
 
 

@@ -1,11 +1,11 @@
-module ExecCDSLExpr where
+module CDSL.ExecCDSLExpr where
 
-import Game (Game (deck, pile, players, cardGen))
+import CardGame.Game (Game (deck, pile, players, cardGen))
 import Data.CircularList (toList)
-import Player (Player(hand, pScore))
+import CardGame.Player (Player(hand, pScore))
 import Data.Either (partitionEithers)
-import Card (shuffle, Card (suit, rank, cScore))
-import CDSLExpr
+import CardGame.Card (shuffle, Card (suit, rank, cScore))
+import CDSL.CDSLExpr
 import Data.List (elemIndex)
 import Functions (takeUntilDuplicate)
 
