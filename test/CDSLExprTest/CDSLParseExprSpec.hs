@@ -1,4 +1,4 @@
-module CDSLExprTest.CDSLParserSpec where
+module CDSLExprTest.CDSLParseExprSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
 import ParseCardDSL (parseCDSLFromString)
@@ -38,6 +38,7 @@ test = hspec $ do
     testParseCDSLFromStringSBC "always" (Left Always)
     testParseCDSLFromStringSBC "never" (Left Never)
     testParseCDSLFromStringSBC "any always" (Left (Any Always))
+    testParseCDSLFromStringSBC "1" (Left (Numeric 1))
 
 
     -- Should raise error

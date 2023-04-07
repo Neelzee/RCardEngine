@@ -6,7 +6,7 @@ import Data.Maybe (mapMaybe)
 import Data.Bifunctor (first)
 import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords)
 import CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord))
-import ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLFromStringList, processIfString)
+import ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLFromStringList, processIfString, parseStringList, parseCDSLPlayerAction)
 import GD (GameData)
 import Functions (mergeList, removeMaybe)
 
@@ -61,7 +61,12 @@ readGDF (f, x:xs) = case parseCDSLFromString (words x) of
             Left ex -> case readGDF (f, xs) of
                 Just (_, exs) -> Just (f, ex ++ exs)
                 Nothing -> Just (f, ex)
-            Right _ -> Nothing
+            Right _ -> case parseCDSLPlayerAction x of
+                Left ex -> case readGDF (f, xs) of
+                    Just (_, exs) -> Just (f, ex ++ exs)
+                    Nothing -> Just (f, ex)
+                Right _ -> Just (f, parseStringList x)
+
 
 readGDE :: (Feature, [String]) -> Maybe (Feature, [CDSLParseError])
 readGDE (_, []) = Nothing
@@ -71,7 +76,7 @@ readGDE (f, x:xs) = case (parseIFCDSLFromString x, parseCDSLFromStringList x, pa
     (_, _, Left _) -> readGDE (f, xs)
     (Right e, _, _) -> case readGDE (f, xs) of
         Just (_, err) -> Just (f, (e { pErr = OnLoad f (pErr e) }):err)
-        Nothing -> Just (f, [CDSLParseError { pErr = OnLoad f SyntaxError, pExpr = Null, rawExpr = x }])
+        Nothing -> Nothing
 
 
 

@@ -6,8 +6,9 @@ import Data.List (groupBy, intercalate)
 import Data.Either (partitionEithers)
 import ExecCDSLExpr (execCDSLBool)
 import CDSLExpr
-import Data.List.Extra (splitOn)
+import Data.List.Extra (splitOn, trim)
 import Data.Text (unpack, strip, pack)
+import PlayerMove (Move(PlayCard, DrawCard, Pass))
 
 
 
@@ -80,7 +81,7 @@ isCDSLExprNumeric _ = False
 
 parseCDSLFromStringList :: String -> Either [CDSLExpr] CDSLParseError
 parseCDSLFromStringList "" = Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Null, rawExpr = "" })
-parseCDSLFromStringList xs = parse (splitOn "," xs)
+parseCDSLFromStringList xs = parse (map trim (splitOn "," xs))
     where
         parse :: [String] -> Either [CDSLExpr] CDSLParseError
         parse [] = Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Null, rawExpr = "" })
@@ -93,6 +94,33 @@ parseCDSLFromStringList xs = parse (splitOn "," xs)
                     Left es -> Left (e:es)
                     Right er -> Right er
                 Right er -> Right er
+
+
+parseCDSLPlayerAction :: String -> Either [CDSLExpr] CDSLParseError
+parseCDSLPlayerAction xs = parse (parseStringList xs)
+    where
+        parse :: [CDSLExpr] -> Either [CDSLExpr] CDSLParseError
+        parse [] = Left []
+        parse (y:ys) = case y of
+            Text txt -> case words txt of
+                ("PLAYCARD":b) -> case parse ys of
+                    Left ex -> Left (PlayerAction PlayCard (head b == "TRUE") : ex)
+                    Right e -> Right e
+                ("DRAWCARD":b) -> case parse ys of
+                    Left ex -> Left (PlayerAction DrawCard (head b == "TRUE") : ex)
+                    Right e -> Right e
+                ("PASS":b) -> case parse ys of
+                    Left ex -> Left (PlayerAction Pass (head b == "TRUE") : ex)
+                    Right e -> Right e
+                _ -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show y })
+
+            _ -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show y })
+
+
+
+
+parseStringList :: String -> [CDSLExpr]
+parseStringList xs = map (Text . trim) (splitOn "," xs)
 
 
 -- Parses a words line to an CDSLExpression, or gives an error
@@ -218,7 +246,7 @@ parseCDSLFromString (x:xs) = case x of
             Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = TurnOrder, rawExpr = x})
     _ -> case readMaybe x :: Maybe Int of
         Just i -> Left (Numeric i)
-        _ -> Left (Text x)
+        _ -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = x})
 
 
 fromCDSLToString :: CDSLExpr -> String
