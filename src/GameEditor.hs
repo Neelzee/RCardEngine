@@ -10,6 +10,7 @@ import CDSL.ParseCardDSL (fromCDSLToString, validateCDSLExpression)
 import Terminal.GameCommands (GameCommand (Create, Add, Update, Remove, Status, Save, Test, Close), GCEffect (GCEffect, se, ve, gcErr), GCError (MissingFeatureError, GCError, errType, input, OpenGameDataError, NoGameDataError, CDSLError), showAll, Flag)
 import Terminal.ValidateGameCommands (validateGameCommand)
 import Terminal.ExecGameCommands (confirmCommand, printGCEffect)
+import qualified Terminal.ExecGameCommands as ExecGameCommands (execGameCommands)
 import GameData.SaveGD (saveGameData)
 
 editor :: GameData -> IO ()
@@ -21,22 +22,19 @@ editor gd = do
     c <- getLine
     case validateGameCommand c of
         Left cm -> case cm of
-            (Close flg) -> do 
+            (Close flg) -> do
                 gce <-case (lookup Saved gd, lookup GameName gd) of
                     (Just _, Just [Text gm]) -> do
                         let (diff, _) = span ((/=Saved) . fst) gd
                         let gc = GCEffect { se = "Closing GameData " ++ gm, ve = "Thrashed a total of " ++ show (length diff - 1) ++ " features", gcErr = [] }
-                        return ([gc])
+                        return [gc]
                     _ -> return [GCEffect { se = "Closing GameData", ve = "Trashed a total of " ++ show (length gd - 1) ++ " features", gcErr = [] }]
                 res <- confirmCommand cm gce flg
                 if res
                     then
-                        do
-                            let (gd', _) = removeFeature gd [Saved]
-                            saveGameData gd'
-                            return ()
-                    else
                         return ()
+                    else
+                        editor gd
             _ -> do
                 gd'<- execGameCommand cm gd
                 editor gd'
@@ -68,7 +66,7 @@ execGameCommand c gd = case c of
                     else
                         do
                             return gd
-    
+
     -- Test command
     (Test f exprs flgs) -> do
         let r = zip (map validateCDSLExpression exprs) [0..]
@@ -192,8 +190,8 @@ execGameCommand c gd = case c of
                     else
                         return gd
     _ -> do
-        putStrLn ("No Editor Execution for command '" ++ show c ++ "' found.")
-        return gd
+            ExecGameCommands.execGameCommands c
+            return gd
 
 
 splitRes :: [(Either a b, Int)] -> ([(a, Int)], [(b, Int)])

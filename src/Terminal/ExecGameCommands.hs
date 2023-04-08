@@ -24,6 +24,17 @@ execGameCommands c = case c of
         clearScreen
         return ()
     
+    (List flg) -> do
+        let ge = GCEffect { se = "List of all Games.", ve = "List of all Games.", gcErr = []}
+        res <- confirmCommand c [ge] flg
+        if res
+            then
+                do
+                    inf <- listGameData
+                    printGCEffect inf flg
+                    return ()
+            else
+                return ()
     _ -> do
         putStrLn ("No generic execuction for command '" ++ show c ++ "' found")
         return ()

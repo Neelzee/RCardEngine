@@ -14,7 +14,24 @@ data Feature = WinCon
     | GameName
     | Saved
     | CardConstraints
-    deriving (Show, Eq, Enum)
+    deriving (Eq, Enum)
+
+
+instance Show Feature where
+    show f = case f of
+        WinCon -> "WIN_CON"
+        CardSuits -> "CARD_SUITS"
+        CardValues -> "CARD_VALUES"
+        CardRanks -> "CARD_RANKS"
+        EndCon -> "END_CON"
+        AnyTime -> "ANY_TIME"
+        StartTime -> "START_TIME"
+        PlayerHand -> "PLAYER_HAND"
+        PlayerMoves -> "PLAYER_MOVES"
+        PileCount -> "PILE_COUNT"
+        GameName -> "GAME_NAME"
+        Saved -> "SAVED"
+        CardConstraints -> "CARD_CONSTRAINTS"
 
 
 -- Checks if the given feature is valid

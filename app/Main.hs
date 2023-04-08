@@ -75,7 +75,9 @@ mainLoop = do
                                     r <- confirmCommand gc gce flg
                                     if r
                                         then
-                                            editor gd'
+                                            do
+                                                editor gd'
+                                                mainLoop
                                         else
                                             mainLoop
                                 Right err -> do

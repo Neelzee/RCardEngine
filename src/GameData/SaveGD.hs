@@ -4,7 +4,7 @@ import GameData.GD (GameData)
 import Feature (Feature(..))
 import System.Directory (listDirectory)
 import Constants (gameFolder, gameExtension)
-import Data.List (elemIndex)
+import Data.List (elemIndex, intercalate)
 import CDSL.CDSLExpr (CDSLExpr(..))
 import System.IO (withFile, IOMode (WriteMode), hPrint, hPutStrLn)
 import CDSL.ParseCardDSL (fromCDSLToString)
@@ -53,13 +53,9 @@ saveGameData' gd = do
         saveGD :: [(Feature, [CDSLExpr])] -> String -> IO ()
         saveGD cd n = do
             let filtered = filter (\(f, _) -> f /= Saved && f /= GameName) cd
-            let conv = map (\(fs, er) -> (fs, unlines (map fromCDSLToString er))) filtered
-            withFile (gameFolder ++ n ++ gameExtension) WriteMode $ \h -> do
-                mapM_ (\(f, s) -> do
-                        hPrint h f
-                        hPutStrLn h s
-                        hPutStrLn h "END"
-                    ) conv
+            let cont = map (\(f, e) -> show f ++ "\n" ++ intercalate "," (map fromCDSLToString e)) filtered
+            let cs = intercalate "\nEND\n" cont
+            writeFile (gameFolder ++ "/" ++ n ++ gameExtension) (cs ++ "\nEND")
 
 
 findNew :: Eq a => [(a, b)] -> [(a, b)] -> [(a, b)]

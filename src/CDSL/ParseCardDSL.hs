@@ -274,6 +274,7 @@ fromCDSLToString CardRank = "rank"
 fromCDSLToString CardSuit = "suit"
 fromCDSLToString CardValue = "value"
 fromCDSLToString (Text s) = s
+fromCDSLToString (PlayerAction a b) = show a ++ " " ++ if b then "TRUE" else "FALSE"
 fromCDSLToString _ = ""
 
 

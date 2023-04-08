@@ -77,7 +77,7 @@ instance Show GameCommand where
         (Help {}) -> "help"
         (Play {}) -> "play"
         (Clear {}) -> "clear"
-        _ -> ""
+        _ -> "'NO SHOW'"
 
 
 data GCError =
@@ -119,7 +119,20 @@ instance Show GCError where
 
 
 showAll :: GameCommand -> String
-showAll c = undefined
+showAll c = case c of
+    (Create e flg) -> "create " ++ show e ++ " " ++ unwords flg
+    (Edit e flg) -> "edit " ++ show e ++ unwords flg
+    (List flg) -> "list " ++ unwords flg
+    (Add f e flg) -> "add " ++ show f ++ " " ++ intercalate "," (map show e) ++ " " ++ unwords flg
+    (Update f e flg) -> "update " ++ show f ++ " " ++ intercalate "," (map show e) ++ " " ++ unwords flg
+    (Status flg) -> "status " ++ unwords flg
+    (Save flg) -> "save " ++ unwords flg
+    (Copy e fs flg) -> "copy " ++ show e ++ " " ++ intercalate "," (map show fs) ++ " " ++ unwords flg
+    (Quit flg) -> "quit " ++ unwords flg
+    (List flg) -> "list " ++ unwords flg
+    Clear -> "clear"
+    Help -> "help"
+    _ -> error "no showAll for " ++ show c
 
 
 commands :: [GameCommand]
