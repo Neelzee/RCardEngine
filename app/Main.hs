@@ -3,16 +3,19 @@ module Main where
 import Data.List (sortOn)
 import System.Directory (listDirectory, renameFile)
 import System.Console.ANSI (clearScreen)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import System.IO ( hFlush, stdout )
 import CardGame.PlayGame (gameStart)
-import GameEditor (Command(..), editor)
 import Text.Read (readMaybe)
 import GameData.GD (GameData)
-import Terminal.GameCommands
+import CDSL.CDSLExpr ( CDSLExpr(Numeric, Text) )
+import Terminal.GameCommands (GameCommand(Play, Create), GCEffect (GCEffect, se, ve, gcErr))
+import Terminal.ValidateGameCommands (validateGameCommand)
+import GameEditor (editor)
+import Feature (Feature(GameName))
 import Terminal.ExecGameCommands
-import Terminal.ValidateGameCommands
-import CDSL.CDSLExpr ( CDSLExpr(Numeric) )
+    ( execGameCommands, confirmCommand )
+--import Terminal.ExecGameCommands (confirmCommand)
 
 -- Play the selected game
 playGame :: Int -> IO ()
@@ -40,9 +43,19 @@ mainLoop gd = do
             (Play (Numeric i)) -> do
                 playGame i
                 mainLoop gd
+        -- Create Command
+            (Create (Text gm) flg) ->
+                if null gd
+                    then
+                        do
+                            let gce = [GCEffect { se = "Created game: " ++ gm, ve = "Created game: " ++ gm, gcErr = [] }]
+                            res <- confirmCommand gc gce flg
+                            when res $ editor ((GameName, [Text gm]):gd)
+                    else
+                        undefined
             _ -> do
-                gd' <- execGameCommands gd gc
-                mainLoop gd'
+                execGameCommands gc
+                mainLoop gd
 
 -- Main program entry point
 main :: IO ()

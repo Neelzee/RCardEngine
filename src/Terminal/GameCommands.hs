@@ -103,7 +103,10 @@ data GCError =
     -- Invalid CDSL input
     | CDSLError (Either [CDSLExecError] [CDSLParseError])
     -- Missing or Corrupt data on load
-    | MissingOrCorruptData String
+    | MissingOrCorruptDataError String
+    | MissingFeatureError Feature
+    | OpenGameDataError String
+    | NoGameDataError
 
 instance Show GCError where
     show e = case e of
@@ -113,9 +116,16 @@ instance Show GCError where
         UnknownFlagsError -> "UnknownFlagsError"
         (CDSLError (Left s)) -> "CDSLError->CDSLExecError: " ++ intercalate "," (map show s)
         (CDSLError (Right s)) -> "CDSLError->CDSLParseError: " ++ intercalate "," (map show s)
-        (MissingOrCorruptData s) -> "MissingOrCorruptData: " ++ s
+        (MissingOrCorruptDataError s) -> "MissingOrCorruptData: " ++ s
+        (MissingFeatureError f) -> "MissingFeatureError '" ++ show f ++ "'"
+        (OpenGameDataError s) -> "OpenGameDataError: '" ++ s ++ "'"
+        NoGameDataError -> "NoGameDataError"
         (GCError { errType = GCError {}, input = y}) -> "GCError: " ++ y
         (GCError { errType = x, input = y}) -> show x ++ ", input: '" ++ y ++ "'"
+
+
+showAll :: GameCommand -> String
+showAll c = undefined
 
 
 commands :: [GameCommand]

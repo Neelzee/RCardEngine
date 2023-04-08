@@ -1,122 +1,15 @@
 module GameEditor where
 
-import Text.Read (readMaybe)
 import GHC.IO.Handle (hFlush)
 import System.IO (stdout)
-import System.Console.ANSI (clearScreen)
-import Data.List (sort, intercalate, partition, groupBy)
-import System.Directory (listDirectory)
-import Control.Monad (zipWithM)
-import Feature (Feature (Saved, GameName), fromStringToFeature)
-import Constants (gameFolder)
-import Data.Either (partitionEithers)
-import GameData.SaveGD (saveGameData)
+import Data.List (intercalate)
+import Feature (Feature (Saved, GameName))
 import GameData.GD (GameData)
-import CDSL.CDSLExpr (CDSLExpr(Text, Null), CDSLParseError)
-import CDSL.ParseCardDSL (fromCDSLToString, parseCDSLFromString)
-import GameData.LoadGD (loadGameData)
-import Terminal.GameCommands (CommandEffect(..))
-import Functions (allGames)
-
-data EditError = OpenGameError String
-    | UnknownFeature String
-    | InvalidInput String
-    | UnknownCommand String String
-    | UnknownFlag String String
-    | InvalidArgument String String
-    | NoGameError String
-    | InvalidStatementError String [CDSLParseError]
-    | MissingFeature String
-    deriving (Show, Eq)
-
-data StatementError = SyntaxError String
-    | InvalidStatement String
-    deriving (Show, Eq)
-
-
-data Command = Command
-    {
-        cmd :: String
-        , info :: String
-        , example :: String
-    }
-    | Create CDSLExpr Flags
-    | Edit Int Flags
-    | Add Feature [CDSLExpr] Flags
-    | Update Feature [CDSLExpr] Flags
-    | Remove [Feature] Flags
-    | Status Flags
-    | Save Flags
-    | Exit Flags
-    | Copy Feature Int Flags
-    | Quit Flags
-    | Clear Flags
-    | List Flags
-    | Help
-    deriving (Show, Eq)
-
-type Flags = [String]
-
-
-commands :: [Command]
-commands =
-    [ Command "create <name>" "Creates a new game" "create newgame"
-    , Command "edit <number>" "Edits the game with the matching index" "edit 0"
-    , Command "list" "List the available games to edit" "list"
-    , Command "add <feature> <statement>" "Adds a feature to the game thats currently being edited" "add WINCON greates player score"
-    , Command "update <feature> <statement>" "Updates the feature to the game thats currently being edited" "update WINCON greates player score"
-    , Command "remove <feature>" "Removes the feature if it exists" "remove WINCON ENDCON"
-    , Command "status" "List the features on the current game" "status"
-    , Command "save" "Saves the changes that has been done on the current game" "save"
-    , Command "exit" "Exits the editing mode of the current game, unsaved changes will be lost" "exit"
-    , Command "cp <feature> <from>" "Copies a feature from a game, and adds it to the active game data" "cp WINCON 0"
-    , Command "quit" "Quits the program" "quit"
-    , Command "clear" "Clears the terminal" "clear"
-    , Command "help" "Print the help message" "help"
-    ]
-
-flags :: [String]
-flags = ["-verbose" -- Turns on makes the message verbose
-    , "-e" -- shows the effect of the command
-    ]
-
-getFlag :: Command -> [String]
-getFlag (Create _ fls) = fls
-getFlag (Edit _ fls) = fls
-getFlag (Add _ _ fls) = fls
-getFlag (Update _ _ fls) = fls
-getFlag (Remove _ fls) = fls
-getFlag (Status fls) = fls
-getFlag (Save fls) = fls
-getFlag (Exit fls) = fls
-getFlag (Copy _ _ fls) = fls
-getFlag (Quit fls) = fls
-getFlag (Clear fls) = fls
-getFlag _ = []
-
-
-printTable :: [(String, String, String)] -> IO ()
-printTable rows = do
-  let (col1, col2, col3) = unzip3 rows
-      max1 = maximum (map length col1)
-      max2 = maximum (map length col2)
-      max3 = maximum (map length col3)
-      formatRow (a, b, c) = intercalate "  " [pad max1 a, pad max2 b, pad max3 c]
-      pad len str = str ++ replicate (len - length str) ' '
-      table = map formatRow rows
-      separator = replicate (length (head table)) '-'
-  putStrLn separator
-  mapM_ putStrLn table
-  putStrLn separator
-
-
-
-printCommands :: [Command] -> IO ()
-printCommands xs = printTable (pc xs)
-    where
-        pc [] = []
-        pc ((Command nm inf ex):ys) = (nm, inf, ex) : pc ys
-        pc (_:ys) = pc ys
+import CDSL.CDSLExpr (CDSLExpr(Text, Null))
+import CDSL.ParseCardDSL (fromCDSLToString, validateCDSLExpression)
+import Terminal.GameCommands (GameCommand (Create, Add, Update, Remove, Status, Save, Test), GCEffect (GCEffect, se, ve, gcErr), GCError (MissingFeatureError, GCError, errType, input, OpenGameDataError, NoGameDataError, CDSLError), showAll, Flag)
+import Terminal.ValidateGameCommands (validateGameCommand)
+import Terminal.ExecGameCommands (confirmCommand, printGCEffect)
 
 
 editor :: GameData -> IO ()
@@ -126,261 +19,200 @@ editor gd = do
         _ -> putStr "edit > "
     hFlush stdout
     c <- getLine
-    case getCommand (words c) of
-        Left (Quit _) -> return ()
-        Left Help -> do
-            printCommands commands
-            editor gd
-        Left (Clear _) -> do
-            clearScreen
-            editor gd
-        -- Edit command
-        Left (Edit gn flgs) -> if null gd
-            then
-                do
-                    g <- allGames
-                    if gn `elem` [0..length g]
-                        then
-                            do
-                                dl <- loadGameData gd gn
-                                case dl of
-                                    Left gd' -> do
-                                        let ecc = [CommandEffect { short = "Loaded features from game " ++ (g !! gn), verbose = "Loaded " ++ show (length gd') ++ " features from game " ++ (g !! gn) }]
-                                        execFlags ecc flgs
-                                        editor gd'
-                                    Right err -> do
-                                            execFlags (map fromCDSLParseErrorOnLoad err) flgs
-                                            editor gd
-                        else
-                            do
-                                execFlags [CommandEffect { short = "Invalid number", verbose = "Invalid number, expected a number between 0 and " ++ show (length g) }] flgs
-                                editor gd
-            else
-                do
-                putStrLn "Cannot load while other game is active"
-                editor gd
-         -- copy
-        Left (Copy fet a flgs) ->
-            case gd of
-                [] -> do
-                    putStrLn "No game to copy too"
-                    editor gd
-                _ -> do
-                    g <- allGames
-                    if a `elem` [0..(length g)]
-                    then
-                        do
-                            res <- loadGameData [] a
-                            case res of
-                                Left gd' -> do
-                                    (gad, ecc) <- case lookup fet gd' of
-                                        Just stmt -> do
-                                            return (gd ++ [(fet, stmt)], [CommandEffect { short = "Copied feature: " ++ show fet ++ " from " ++ (g !! a)
-                                        , verbose = "Copied feature: " ++ show fet ++ " : " ++ intercalate "," (map fromCDSLToString stmt) ++ " , from " ++ (g !! a)}])
-                                        Nothing -> do
-                                            putStrLn ("Feature " ++ show fet ++ " not in file " ++ (g !! a))
-                                            return (gd, [])
-                                    execFlags ecc flgs
-                                    editor gad
-                                Right err -> do
-                                    execFlags (map fromCDSLParseErrorOnLoad err) flgs
-                                    editor gd
-                    else
-                        do
-                            putStrLn ("Expected a number between 0 and " ++ show (length g) ++ ", in 'from', but got " ++ show a ++ " instead")
-                            editor gd
-        -- exit
-        Left (Exit flgs) -> if null gd
-        then
-            do
-                putStrLn "No game to exit"
-                editor gd
-        else
-            do
-                let (diff, _) = span ((/=Saved) . fst) (reverse gd)
-                let ecc = [CommandEffect { short = "Exit editing mode", verbose = "Disregareded a total of " ++ show (length diff) ++ " new features" }]
-                e <- saveGameData gd
-                execFlags (ecc ++ [e]) flgs
-                editor []
-        -- List games
-        Left (List flgs) -> do
-            ecc <- listGameData
-            execFlags ecc flgs
-            editor gd
-        Left cm -> case execCommand cm gd of
-            Right err -> do
-                print err
-                editor gd
-            Left (gd', ce) -> case getFlag cm of
-                ["-e", "-verbose"] -> do
-                    putStrLn $ unlines $ map verbose ce
-                    editor gd'
-                ["-e"] -> do
-                    putStrLn $ unlines $ map short ce
-                    editor gd'
-                _ -> editor gd'
+    case validateGameCommand c of
+        Left cm -> do
+            gd'<- execGameCommand cm gd
+            editor gd'
         Right e -> do
             print e
             editor gd
 
 
-listGameData :: IO [CommandEffect]
-listGameData = do
-    games <- allGames
-    agd <- zipWithM (\ _x i -> loadGameData [] i) games [0..]
-    return (listGameData' agd 0)
-    where
-        listGameData' :: [Either GameData [CDSLParseError]] -> Int -> [CommandEffect]
-        listGameData' [] _ = []
-        listGameData' (x:xs) n = case x of
-            Left gd -> case lookup GameName gd of
-                Just (Text gm:_) -> CommandEffect { short = gm, verbose = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map verbose (gameDataStatus gd)) ++ "\n" } : listGameData' xs (n + 1)
-                _ -> CommandEffect { short = "Failed listing game: " ++ show n ++ ", found no name", verbose = "Failed loading game: " ++ show n ++ ", found no name"} : listGameData' xs (n + 1)
-            Right e -> CommandEffect { short = "Failed listing game: " ++ show n, verbose = "Failed loading game: " ++ show n ++ ", error: " ++ show e} : listGameData' xs (n + 1)
-
-fromCDSLParseErrorOnLoad :: CDSLParseError -> CommandEffect
-fromCDSLParseErrorOnLoad e = CommandEffect { short = "Failed loading game", verbose = "Failed loading game, error: " ++ show e}
-
-execFlags :: [CommandEffect] -> [String] -> IO ()
-execFlags xs ys
-    | sort ys == ["-e", "-verbose"] = putStrLn $ unlines $ map verbose xs
-    | sort ys == ["-e"] = putStrLn $ unlines $ map short xs
-    | otherwise = return ()
-
--- Takes in a worded string
-getCommand :: [String] -> Either Command EditError
-getCommand xs = case xs of
-    ("create":gm:flgs) -> case validateFlags flgs of
-        Just flg -> Left (Create (Text gm) flg)
-        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ("edit":gn:flgs) -> case (readMaybe gn :: Maybe Int, validateFlags flgs) of
-        (Just i, Just glf) -> Left (Edit i glf)
-        (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a number, but got" ("'" ++ gn ++ "'"))
-        (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ("add":feature:ys) -> case fromStringToFeature feature of
-        (Just f) -> do
-            let input = unwords ys
-            let (exprStr, flagStrs) = partition (\s -> head s /= '-') (words input)
-            let exs = map unwords $ groupBy (\_ b -> head b /= '-') exprStr
-            let flg = map tail flagStrs
-            case partitionEithers (map (parseCDSLFromString . words) exs) of
-                (exps, []) -> Left (Add f exps flg)
-                (_, errs) -> Right (InvalidStatementError "Invalid statement" errs)
-        Nothing -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ feature ++ "'"))
-    ("update":feature:ys) -> case fromStringToFeature feature of
-        Just f -> do
-            let input = unwords ys
-            let (exprStr, flagStrs) = partition (\s -> head s /= '-') (words input)
-            let exs = map unwords $ groupBy (\_ b -> head b /= '-') exprStr
-            let flg = map tail flagStrs
-            case partitionEithers (map (parseCDSLFromString . words) exs) of
-                (exps, []) -> Left (Update f exps flg)
-                (_, errs) -> Right (InvalidStatementError "Invalid statement" errs)
-        Nothing -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ feature ++ "'"))
-    ("remove":ys) -> case (mapM fromStringToFeature (words (takeWhile (/= '-') (unwords ys))), validateFlags (words (dropWhile (/= '-') (unwords ys)))) of
-        (Just fets, Just flg) -> Left (Remove fets flg)
-        (Nothing, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ (takeWhile (/= '-') (unwords ys) ++ "'")))
-        (_, Nothing) -> Right (UnknownFlag "Unknown flag" ("'" ++ (dropWhile (/= '-') (unwords ys) ++ "'")))
-    ("status":flgs) -> case validateFlags flgs of
-        Just flg -> Left (Status flg)
-        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ("save":flgs) -> case validateFlags flgs of
-        Just flg -> Left (Save flg)
-        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ("exit":flgs) -> case validateFlags flgs of
-        Just flg -> Left (Exit flg)
-        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ("copy":feature:a:flgs) -> case (fromStringToFeature feature, readMaybe a :: Maybe Int, validateFlags flgs) of
-        (Just ft, Just i, Just flg) -> Left (Copy ft i flg)
-        (Nothing, _, _) -> Right (InvalidArgument "Invalid argument, expected a feature, but got" ("'" ++ feature ++ "'"))
-        (_, Nothing, _)-> Right (InvalidArgument "Invalid argument, expected a number, but got" ("'" ++ a ++ "'"))
-        (_, _, Nothing)-> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ("quit":flgs) -> case validateFlags flgs of
-        Just flg -> Left (Quit flg)
-        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ("clear":flgs) -> case validateFlags flgs of
-        Just flg -> Left (Clear flg)
-        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    ["help"] -> Left Help
-    ("list":flgs) -> case validateFlags flgs of
-        Just flg -> Left (List flg)
-        Nothing -> Right (UnknownFlag "Unknown flag" ("'" ++ unwords flgs ++ "'"))
-    _ -> Right (UnknownCommand "Unknown command or flags" (unwords xs))
-
-
-validateFlags :: [String] -> Maybe [String]
-validateFlags xs = case sort xs of
-    ["-e", "-verbose"] -> Just xs
-    ["-e"] -> Just xs
-    [] -> Just []
-    _ -> Nothing
 
 -- Takes in user input
-execCommand :: Command -> GameData -> Either (GameData, [CommandEffect]) EditError
-execCommand xs f = case xs of
-    -- Create Command
-    Create (Text gm) _-> if null f
-        then
-            Left ([(GameName, [Text gm])], [CommandEffect { short = "Created game: " ++ gm, verbose = "Created game: " ++ gm }])
-        else
-            Right (OpenGameError "Cannot create a game, already editing one")
+execGameCommand :: GameCommand -> GameData -> IO GameData
+execGameCommand c gd = case c of
+    
+
+
     -- Add feature command
-    Add fs s _ -> if null f
+    (Add fs s flg) -> if null gd
         then
-            Right (NoGameError "No game to add a feature too")
+            do
+                let gce = [GCEffect { se = "No GameData too add feature too.", ve = "No GameData too add '" ++ show fs ++ "' too.",
+                gcErr = [GCError { errType = NoGameDataError, input = showAll c }]}]
+                printGCEffect gce flg
+                return gd
         else
-            Left ((fs, s) : f, [CommandEffect { short = "Added " ++ show fs, verbose = "Added feature " ++ show fs ++ ":\n" ++ intercalate "\n" (map fromCDSLToString s) }])
+            do
+                let gce = [GCEffect { se = "Added " ++ show fs, ve = "Added feature " ++ show fs ++ ":\n" ++ intercalate "\n" (map fromCDSLToString s), gcErr = [] }]
+                res <- confirmCommand c gce flg
+                if res
+                    then
+                        do
+                            return ((fs, s):gd)
+                    else
+                        do
+                            return gd
+    
+    -- Test command
+    (Test f exprs flgs) -> do
+        let r = zip (map validateCDSLExpression exprs) [0..]
+        let (v, er) = splitRes r
+        let gce = GCEffect {
+                se = "The statements for feature '"
+                ++ show f ++ "' had " ++ show (length v)
+                ++ "/" ++ show (length r) ++ " valid expressions."
+
+                , ve = "The statements for feature '"
+                ++ show f ++ "' had " ++ show (length v)
+                ++ "/" ++ show (length r) ++ " valid expressions.\n"
+                ++ intercalate "\n" (map (\(e, i) -> "The expression at " ++ show i ++ " failed, giving the error " ++ show e) er)
+
+                , gcErr = map (\(e, _) -> CDSLError (Left [e])) er
+            }
+        res <- confirmCommand c [GCEffect { se = "Check validity of: " ++ intercalate "," (map show exprs), ve = "Check validity of: " ++ intercalate "\n\t" (map show exprs), gcErr = []}] flgs
+        if res
+            then
+                do
+                    printGCEffect [gce] flgs
+                    return gd
+            else
+                return gd
+
+
     -- Update feature
-    Update fs s _-> if null f
+    (Update fs s flg) -> if null gd
         then
-            Right (NoGameError "No game to add a feature too")
+            do
+                let gce = [GCEffect { se = "No GameData too update feature.", ve = "No GameData too update feature '" ++ show fs ++ "'",
+                gcErr = [GCError { errType = NoGameDataError, input = showAll c }]}]
+                printGCEffect gce flg
+                return gd
         else
-            case lookup fs f of
-                Just old -> Left ((fs, s) : filter (\(k, _) -> k /= fs) f, [CommandEffect { short  = "Updated " ++ show fs, verbose = "Updated " ++ show fs ++ " from\n" ++ intercalate "\n" (map fromCDSLToString old) ++ "\n" ++ " to " ++ intercalate "\n" (map fromCDSLToString s)}])
-                Nothing -> Right (MissingFeature ("No feature to update: " ++ show fs))
+            case lookup fs gd of
+                Just old -> do
+                    let (gd', gc) = removeFeature gd [fs]
+                    let gce = gc
+                            ++[
+                            GCEffect { se = "Updated " ++ show fs
+                                , ve = "Updated " ++ show fs ++ " from\n" ++ intercalate "\n\t" (map fromCDSLToString old) ++ "\nto\n" ++ intercalate "\n\t" (map fromCDSLToString s)
+                                , gcErr = []}]
+                    res <- confirmCommand c gce flg
+                    if res
+                        then
+                            return gd'
+                        else
+                            return gd
+
+                Nothing -> do
+                    let gce =[GCEffect { se = show fs ++ " not found in " ++ case lookup GameName gd of
+                            Just [Text gm] -> gm ++ "."
+                            _ -> "gamedata."
+                        , ve = show fs ++ " not found in " ++ case lookup GameName gd of
+                            Just [Text gm] -> gm ++ "."
+                            _ -> "gamedata."
+                        , gcErr = [GCError { errType = MissingFeatureError fs, input = showAll c }]}]
+                    printGCEffect gce flg
+                    return gd
     -- remove
-    Remove features _-> if null f
+    (Remove features flg) -> if null gd
         then
-            Right (NoGameError "No game to remove a feature from")
+            do
+                let gce = [GCEffect { se = "No GameData too remove from.", ve = "No GameData too remove '" ++ intercalate "," (map show features) ++ "' from.",
+                gcErr = [GCError { errType = NoGameDataError, input = showAll c }]}]
+                printGCEffect gce flg
+                return gd
         else
-            case removeFeature f features of
-                Left (ecc, fs') -> Left (ecc, fs')
-                Right e -> Right e
+            do
+                let (gd', gce) = removeFeature gd features
+                res <- confirmCommand c gce flg
+                if res
+                    then
+                        return gd'
+                    else
+                        return gd
     -- status
-    Status _ -> if null f
+    (Status flg) -> if null gd
       then
-          Right (NoGameError "No game to show status off")
+        do
+            let gce = [GCEffect { se = "No GameData too show status of.", ve = "No GameData too show status of.",
+                gcErr = [GCError { errType = NoGameDataError, input = showAll c }]}]
+            printGCEffect gce flg
+            return gd
       else
-          Left (f, gameDataStatus f)
+        do
+            let gce = [GCEffect { se = "Show GameData status", ve = "Show GameData status", gcErr = [] }]
+            res <- confirmCommand c gce flg
+            if res
+                then
+                    do
+                        printGCEffect (gameDataStatus gd) flg
+                        return gd
+                else
+                    return gd
     -- save
-    Save _ -> if null f
+    (Save flg) -> if null gd
         then
-            Right (NoGameError "No game to save")
+            do
+                let gce = [GCEffect { se = "No GameData too save.", ve = "No GameData too save." ,
+                gcErr = [GCError { errType = NoGameDataError, input = showAll c }]}]
+                printGCEffect gce flg
+                return gd
         else
-            case lookup Saved f of
-                Just _ -> do
-                    let (diff, _) = span ((/=Saved) . fst) (reverse f)
-                    Left (f ++ [(Saved, [Null])],[CommandEffect { short = "Saved game data", verbose = "Saved a total of " ++ show (length diff) ++ " new features" }])
+            do
+                gce <- case lookup Saved gd of
+                    Just _ -> do
+                        let (_, diff) = span ((/=Saved) . fst) gd
+                        let (_, ecc) = removeFeature gd [Saved]
+                        let gc = GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length diff - 1) ++ " new features", gcErr = [] }
+                        return (gc:ecc)
+                    Nothing -> return [GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length gd - 1) ++ " features", gcErr = [] }]
+                res <- confirmCommand c gce flg
+                if res
+                    then
+                        do
+                            let (gd', _) = removeFeature gd [Saved]
+                            return ((Saved, [Null]) : gd')
+                    else
+                        return gd
+    _ -> do
+        putStrLn "Command not added"
+        return gd
 
-                Nothing -> Left (f ++ [(Saved, [Null])], [CommandEffect { short = "Saved game data", verbose = "Saved a total of " ++ show (length f) ++ " new features" }])
-    _ -> Left (f, [])
+
+splitRes :: [(Either a b, Int)] -> ([(a, Int)], [(b, Int)])
+splitRes [] = ([], [])
+splitRes ((x, i):xs) = case x of
+    Left l -> case splitRes xs of
+        (ls, rs) -> ((l, i):ls, rs)
+    Right r -> case splitRes xs of
+        (ls, rs) -> (ls, (r, i):rs)
 
 
-gameDataStatus :: GameData -> [CommandEffect]
+removeFeature :: GameData -> [Feature] -> (GameData, [GCEffect])
+removeFeature fs xs = removeFeature' fs xs []
+
+removeFeature' :: GameData -> [Feature] -> [GCEffect] -> (GameData, [GCEffect])
+removeFeature' gd [] ecc = (gd, ecc)
+removeFeature' [] _ ecc = ([], ecc)
+removeFeature' gd (f:xs) ecc = case lookup f gd of
+        Just old -> do
+            let gd' = rmFirst f gd
+            removeFeature' gd' xs (GCEffect { se = "Removed: " ++ show f, ve = "Removed: " ++ show f ++ " : " ++ intercalate "," (map show old), gcErr = [] }:ecc)
+        Nothing -> removeFeature' gd xs (GCEffect { se = "No instance of " ++ show f ++ " found.", ve = "No instance of " ++ show f ++ " found."
+            , gcErr = [GCError { errType = MissingFeatureError f, input = show f }]}:ecc)
+    where
+        rmFirst :: Feature -> GameData -> GameData
+        rmFirst _ [] = []
+        rmFirst x (y@(z, _):ws)
+            | x == z = ws
+            | otherwise = y : rmFirst x ws
+
+
+
+gameDataStatus :: GameData -> [GCEffect]
 gameDataStatus [] = []
 gameDataStatus ((Saved, _):xs) = gameDataStatus xs
 gameDataStatus ((GameName, _):xs) = gameDataStatus xs
-gameDataStatus ((f, s):xs) = CommandEffect { short = show f, verbose = "Feature " ++ show f ++ " : Statement ->\n" ++ intercalate "\n\t" (map fromCDSLToString s)}: gameDataStatus xs
-
-
-removeFeature :: GameData -> [Feature] -> Either (GameData, [CommandEffect]) EditError
-removeFeature fs xs = removeFeature' fs xs []
-
-removeFeature' :: GameData -> [Feature] -> [CommandEffect] -> Either (GameData, [CommandEffect]) EditError
-removeFeature' fs [] ecc = Left (fs, ecc)
-removeFeature' [] _ ecc = Left ([], ecc)
-removeFeature' fs (f:xs) ecc = case lookup f fs of
-        Just _ -> do
-            let rs = filter (\(k, _) -> k /= f) fs
-            removeFeature' rs xs (CommandEffect ("Removed: " ++ show f) ("Removed: " ++ show f):ecc)
-        Nothing -> removeFeature' fs xs (CommandEffect ("No instance of " ++ show f ++ " found.") ("No instance of " ++ show f ++ " found."):ecc)
+gameDataStatus ((f, s):xs) = GCEffect { se = show f, ve = "Feature " ++ show f ++ " : Statement ->\n" ++ intercalate "\n\t" (map fromCDSLToString s), gcErr = []}: gameDataStatus xs
