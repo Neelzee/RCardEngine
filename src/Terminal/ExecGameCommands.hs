@@ -25,7 +25,7 @@ execGameCommands c = case c of
         return ()
     
     _ -> do
-        putStrLn "Command not added"
+        putStrLn ("No generic execuction for command '" ++ show c ++ "' found")
         return ()
 
 
@@ -33,15 +33,21 @@ execGameCommands c = case c of
 printGCEffect :: [GCEffect] -> Flag -> IO ()
 printGCEffect xs flg
     | "-verbose" `elem` flg = putStrLn (intercalate "\n" (map ve xs))
+    | "-quiet" `elem` flg = return ()
     | otherwise = putStrLn (intercalate "\n" (map se xs))
 
 
 confirmCommand :: GameCommand -> [GCEffect] -> Flag -> IO Bool
-confirmCommand c xs flg = if "-confirm" `notElem` flg
-    then
-        return True
-    else
-        do
+confirmCommand c xs flg
+    | "-confirm" `elem` flg && "-quiet" `elem` flg = do
+            printGCEffect xs flg
+            putStr "Continue? (y/n, default = n)"
+            hFlush stdout
+            ans <- getLine
+            case ans of
+                "y" -> return True
+                _ -> return False
+    | "-confirm" `elem` flg = do
             putStrLn ("The following command '" ++ showAll c ++ "', will result in these effects:")
             printGCEffect xs flg
             putStr "Continue? (y/n, default = n)"
@@ -50,6 +56,8 @@ confirmCommand c xs flg = if "-confirm" `notElem` flg
             case ans of
                 "y" -> return True
                 _ -> return False
+    | otherwise = return True
+        
 
 
 
@@ -79,7 +87,7 @@ listGameData = do
         listGameData' [] _ = []
         listGameData' (x:xs) n = case x of
             Left gd -> case lookup GameName gd of
-                Just (Text gm:_) -> GCEffect { se = gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map verbose (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1)
+                Just (Text gm:_) -> GCEffect { se = gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1)
                 _ -> GCEffect { se = "Failed listing game: " ++ show n ++ ", found no name", ve = "Failed loading game: " ++ show n ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ show n)]} : listGameData' xs (n + 1)
             Right e -> GCEffect { se = "Failed listing game: " ++ show n, ve = "Failed loading game: " ++ show n ++ ", error: " ++ show e, gcErr = [CDSLError (Right e)] } : listGameData' xs (n + 1)
 
@@ -92,18 +100,12 @@ printCommands xs = printTable (pc xs)
         pc (_:ys) = pc ys
 
 
-execFlags :: [GCEffect] -> Flag -> IO ()
-execFlags xs flg
-    | "-e" `elem` flg && "-verbose" `elem` flg = putStrLn (intercalate "\n" (map ve xs))
-    | "-e" `elem` flg = putStrLn (intercalate "\n" (map se xs))
-    | otherwise = return ()
-
 
 fromCDSLParseErrorOnLoad :: CDSLParseError -> GCEffect
 fromCDSLParseErrorOnLoad e = GCEffect { se = "Failed loading game", ve = "Failed loading game, error: " ++ show e, gcErr = [CDSLError (Right [e])] }
 
-gameDataStatus :: GameData -> [CommandEffect]
+gameDataStatus :: GameData -> [GCEffect]
 gameDataStatus [] = []
 gameDataStatus ((Saved, _):xs) = gameDataStatus xs
 gameDataStatus ((GameName, _):xs) = gameDataStatus xs
-gameDataStatus ((f, s):xs) = CommandEffect { short = show f, verbose = "Feature " ++ show f ++ " : Statement ->\n" ++ intercalate "\n\t" (map fromCDSLToString s)}: gameDataStatus xs
+gameDataStatus ((f, s):xs) = GCEffect { se = show f, ve = "Feature " ++ show f ++ " : Statement ->\n" ++ intercalate "\n\t" (map fromCDSLToString s), gcErr = []}: gameDataStatus xs

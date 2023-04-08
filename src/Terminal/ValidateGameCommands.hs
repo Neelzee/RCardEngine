@@ -139,10 +139,13 @@ suggestCorrection input cmds = do
 validateGCFlags :: [String] -> Either Flag GCError
 validateGCFlags [] = Left []
 validateGCFlags (x:xs) = case x of
-    "-e" -> case validateGCFlags xs of
-        Left lst -> Left ("-e":lst)
+    "-confirm" -> case validateGCFlags xs of
+        Left lst -> Left ("-confirm":lst)
         Right e -> Right e
     "-verbose" -> case validateGCFlags xs of
         Left lst -> Left ("-verbose":lst)
+        Right e -> Right e
+    "-quiet" -> case validateGCFlags xs of
+        Left lst -> (Left ("-quiet":lst))
         Right e -> Right e
     e -> Right (GCError { errType = UnknownFlagsError, input = e })

@@ -6,12 +6,6 @@ import Feature (Feature (AnyTime))
 import Data.List (intercalate)
 
 
-data CommandEffect = CommandEffect {
-    short :: String
-    , verbose :: String
-}
-    deriving (Show, Eq)
-
 
 data GCEffect =
     GCEffect

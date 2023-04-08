@@ -7,10 +7,10 @@ import Feature (Feature (Saved, GameName))
 import GameData.GD (GameData)
 import CDSL.CDSLExpr (CDSLExpr(Text, Null))
 import CDSL.ParseCardDSL (fromCDSLToString, validateCDSLExpression)
-import Terminal.GameCommands (GameCommand (Create, Add, Update, Remove, Status, Save, Test), GCEffect (GCEffect, se, ve, gcErr), GCError (MissingFeatureError, GCError, errType, input, OpenGameDataError, NoGameDataError, CDSLError), showAll, Flag)
+import Terminal.GameCommands (GameCommand (Create, Add, Update, Remove, Status, Save, Test, Close), GCEffect (GCEffect, se, ve, gcErr), GCError (MissingFeatureError, GCError, errType, input, OpenGameDataError, NoGameDataError, CDSLError), showAll, Flag)
 import Terminal.ValidateGameCommands (validateGameCommand)
 import Terminal.ExecGameCommands (confirmCommand, printGCEffect)
-
+import GameData.SaveGD (saveGameData)
 
 editor :: GameData -> IO ()
 editor gd = do
@@ -20,9 +20,26 @@ editor gd = do
     hFlush stdout
     c <- getLine
     case validateGameCommand c of
-        Left cm -> do
-            gd'<- execGameCommand cm gd
-            editor gd'
+        Left cm -> case cm of
+            (Close flg) -> do 
+                gce <-case (lookup Saved gd, lookup GameName gd) of
+                    (Just _, Just [Text gm]) -> do
+                        let (diff, _) = span ((/=Saved) . fst) gd
+                        let gc = GCEffect { se = "Closing GameData " ++ gm, ve = "Thrashed a total of " ++ show (length diff - 1) ++ " features", gcErr = [] }
+                        return ([gc])
+                    _ -> return [GCEffect { se = "Closing GameData", ve = "Trashed a total of " ++ show (length gd - 1) ++ " features", gcErr = [] }]
+                res <- confirmCommand cm gce flg
+                if res
+                    then
+                        do
+                            let (gd', _) = removeFeature gd [Saved]
+                            saveGameData gd'
+                            return ()
+                    else
+                        return ()
+            _ -> do
+                gd'<- execGameCommand cm gd
+                editor gd'
         Right e -> do
             print e
             editor gd
@@ -32,9 +49,6 @@ editor gd = do
 -- Takes in user input
 execGameCommand :: GameCommand -> GameData -> IO GameData
 execGameCommand c gd = case c of
-    
-
-
     -- Add feature command
     (Add fs s flg) -> if null gd
         then
@@ -173,11 +187,12 @@ execGameCommand c gd = case c of
                     then
                         do
                             let (gd', _) = removeFeature gd [Saved]
+                            _ <- saveGameData gd
                             return ((Saved, [Null]) : gd')
                     else
                         return gd
     _ -> do
-        putStrLn "Command not added"
+        putStrLn ("No Editor Execution for command '" ++ show c ++ "' found.")
         return gd
 
 
