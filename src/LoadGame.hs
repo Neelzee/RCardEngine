@@ -2,16 +2,17 @@ module LoadGame where
 import CardGame.Game
 import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
-import CardGame.Card (defaultCardSuits, defaultCardValues, makeDeck)
+import CardGame.Card (defaultCardSuits, defaultCardValues, makeDeck, Card (Card), defaultCardRanks)
 import Data.List.Extra (splitOn, trim)
-import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime))
+import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName))
 import Text.Read (readMaybe)
-import Data.Maybe (fromMaybe)
-import CardGame.Player (standardMoves, resetMoves, parsePlayerMovesExpr)
-import CDSL.CDSLExpr (CDSLExpr(Numeric))
-import CDSL.ExecCDSLExpr (execCDSLGame)
+import Data.Maybe (fromMaybe, mapMaybe)
+import CardGame.Player (standardMoves, resetMoves, parsePlayerMovesExpr, Player (pScore, hand))
+import CDSL.CDSLExpr (CDSLExpr(Numeric, If, Greatest, Players, Score, IsEqual, All, IsEmpty, Hand, CardValue, CardRank, CardSuit, Text))
+import CDSL.ExecCDSLExpr (execCDSLGame, execCDSLBool, execCDSLGameBool)
 import Data.CircularList (toList, fromList)
 import Functions (lookupAll, lookupOrDefault)
+import CDSL.ParseCardDSL (toNumeric)
 
 loadGame :: Game -> Int -> IO Game
 loadGame g n = do
@@ -28,10 +29,23 @@ loadGame g n = do
 
 loadGame' :: GameData -> Game -> IO Game
 loadGame' rls g = do
-    let cs = maybe defaultCardSuits (map trim . splitOn "," . show) (lookup CardSuits rls)
-    let cn = maybe defaultCardSuits (map trim . splitOn "," . show) (lookup CardRanks rls)
-    let cv = maybe defaultCardValues (map ((fromMaybe 0 . readMaybe) . trim) . splitOn "," . show) (lookup CardValues rls)
-    let cards' = makeDeck cs cn cv
+    -- gamename
+    gm <- case lookup GameName rls of
+        Just [Text nm] -> return nm
+        _ -> return "game"
+
+    cs <- case lookup CardSuits rls of
+        Just suits -> return suits
+        _ -> return defaultCardSuits
+    cr <- case lookup CardRanks rls of
+        Just ranks -> return ranks
+        _ -> return defaultCardRanks
+    cv <- case lookup CardValues rls of
+        Just values -> return (mapMaybe toNumeric values)
+        _ -> return defaultCardValues
+    
+    let cards' = makeDeck cs cr cv
+
     let cg = cycle cards'
     -- Player
     mv <- case lookup PlayerMoves rls of
@@ -53,7 +67,7 @@ loadGame' rls g = do
 
 
     -- Can place cards
-    let pc = placeCardStmt (lookupAll CardConstraints rls)
+    let pc = placeCardStmt (concat (lookupAll CardConstraints rls)) (==) (==)
     -- Rules that should be checked at specific times
     -- Anytime
     let at = map execCDSLGame (lookupAll AnyTime rls)
@@ -62,6 +76,7 @@ loadGame' rls g = do
     let st = map execCDSLGame (lookupAll StartTime rls)
     return g {
         deck = cards'
+        , gameName = gm
         , cardGen = cg
         , playerMoves = mv
         , players = fromList (map (`resetMoves` mv) (toList (players g)))
@@ -72,11 +87,30 @@ loadGame' rls g = do
         , canPlaceCard = [pc]
     }
 
-placeCardStmt :: [[CDSLExpr]] -> t
-placeCardStmt = undefined
+placeCardStmt :: [CDSLExpr] -> (Int -> Int -> Bool) -> (String -> String -> Bool) -> Game -> Card -> Bool
+placeCardStmt [] _ _ _ _ = True
+placeCardStmt (x:xs) fi fs g c@(Card s r v) = do
+    let (Card s' r' v') = head (pile g)
+    case x of
+        CardValue -> v `fi` v' && placeCardStmt xs fi fs g c
+        CardRank -> r `fs` r' && placeCardStmt xs fi fs g c
+        CardSuit -> s `fs` s' && placeCardStmt xs fi fs g c
+        _ -> placeCardStmt xs fi fs g c
 
-createEndCon :: [CDSLExpr] -> b
-createEndCon = undefined
 
-createWinCon :: [CDSLExpr] -> b
-createWinCon = undefined
+
+createEndCon :: [CDSLExpr] -> Game -> Bool
+createEndCon [] _ = False
+createEndCon (x:xs) g = case execCDSLGameBool x g of
+    Left b -> b || createEndCon xs g
+    Right _ -> createEndCon xs g
+
+createWinCon :: [CDSLExpr] -> Game -> [Player]
+createWinCon [] _ = []
+createWinCon (x:xs) g = case x of
+    (Greatest (Players Score)) -> undefined -- sort the players on the greatest score
+    (All (Players (IsEqual Score (Numeric n)))) -> filter ((== n) . pScore) (toList (players g)) ++ createWinCon xs g
+    (All (Players (IsEmpty Hand))) -> filter (null . hand) (toList (players g)) ++ createWinCon xs g
+    _ -> []
+
+

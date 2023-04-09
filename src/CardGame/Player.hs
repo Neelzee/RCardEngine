@@ -112,7 +112,7 @@ parsePlayerMoves s = mapMaybe parsePlayerMove (splitAndTrim s)
 
 parsePlayerMove :: String -> Maybe (Move, Bool)
 parsePlayerMove x = case words x of
-    ["PLAYCARD", b] -> Just (PlayCard, b == "TRUE")
-    ["DRAWCARD", b] -> Just (DrawCard, b == "TRUE")
+    ["PLAY_CARD", b] -> Just (PlayCard, b == "TRUE")
+    ["DRAW_CARD", b] -> Just (DrawCard, b == "TRUE")
     ["PASS", b] -> Just (Pass, b == "TRUE")
     _ -> Nothing

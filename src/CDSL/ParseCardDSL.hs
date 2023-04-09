@@ -304,3 +304,11 @@ processIfString str = do
     let r = map words (splitOn "," trimmedRight)
     (l, r)
 
+
+toNumeric :: CDSLExpr -> Maybe CDSLExpr
+toNumeric x = case x of
+    (Text t) -> case readMaybe t :: Maybe Int of
+        Just i -> Just (Numeric i)
+        _ -> Nothing
+    n@(Numeric _) -> Just n
+    _ -> Nothing

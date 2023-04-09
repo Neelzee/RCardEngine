@@ -2,6 +2,7 @@ module CardGame.Card where
 
 import System.Random
 import Functions (removeNth)
+import CDSL.CDSLExpr (CDSLExpr (Text, Numeric))
 
 
 data Card = Card {
@@ -32,21 +33,21 @@ shuffle' xs gen = y : shuffle' ys gen'
 
 
 
-defaultCardSuits :: [String]
-defaultCardSuits = ["Hearts", "Clubs", "Diamonds", "Spades"]
+defaultCardSuits :: [CDSLExpr]
+defaultCardSuits = [Text "Hearts", Text "Clubs", Text "Diamonds", Text "Spades"]
 
-defaultCardNames :: [String]
-defaultCardNames = ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"]
+defaultCardRanks :: [CDSLExpr]
+defaultCardRanks = [Text "Ace", Text "Two", Text "Three", Text "Four", Text "Five", Text "Six", Text "Seven", Text "Eight", Text "Nine", Text "Ten", Text "Jack", Text "Queen", Text "King"]
 
-defaultCardValues :: [Int]
-defaultCardValues = [1..13]
+defaultCardValues :: [CDSLExpr]
+defaultCardValues = map Numeric [1..13]
 
 defaultCardDeck :: Deck
-defaultCardDeck = [ Card s n sc | s <- defaultCardSuits, n <- defaultCardNames, sc <- defaultCardValues ]
+defaultCardDeck = [ Card s n sc | (Text s) <- defaultCardSuits, (Text n) <- defaultCardRanks, (Numeric sc) <- defaultCardValues ]
 
-makeDeck :: [String] -> [String] -> [Int] -> Deck
+makeDeck :: [CDSLExpr] -> [CDSLExpr] -> [CDSLExpr] -> Deck
 makeDeck suits ranks values =
-  let paddedValues = values ++ repeat 0
-      rankValuePairs = zip ranks paddedValues
+  let paddedValues = values ++ repeat (Numeric 0)
+      rankValuePairs = zipWith (curry (\(Text r, Numeric i) -> (r, i))) ranks paddedValues
       suitCards s = map (uncurry (Card s)) rankValuePairs
-  in concatMap suitCards suits
+  in concatMap (suitCards . (\(Text s) -> s)) suits
