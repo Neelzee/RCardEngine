@@ -9,7 +9,7 @@ import System.Console.ANSI (clearScreen)
 import Functions (allGames, mergeList, lookupManyWithKey)
 import Feature
 import GameData.LoadGD
-import Control.Monad (zipWithM)
+import Control.Monad (zipWithM, when)
 import Terminal.GameCommands
 import System.IO (hFlush, stdout)
 
@@ -23,18 +23,14 @@ execGameCommands c = case c of
     Clear -> do
         clearScreen
         return ()
-    
+
     (List flg) -> do
         let ge = GCEffect { se = "List of all Games.", ve = "List of all Games.", gcErr = []}
         res <- confirmCommand c [ge] flg
-        if res
-            then
-                do
+        when res $ do
                     inf <- listGameData
                     printGCEffect inf flg
                     return ()
-            else
-                return ()
     _ -> do
         putStrLn ("No generic execuction for command '" ++ show c ++ "' found")
         return ()
@@ -68,7 +64,7 @@ confirmCommand c xs flg
                 "y" -> return True
                 _ -> return False
     | otherwise = return True
-        
+
 
 
 

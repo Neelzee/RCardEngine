@@ -92,11 +92,7 @@ mainLoop = do
             -- Quit
             (Quit flgs) -> do
                 res <- confirmCommand gc [GCEffect { se = "Quitting program.", ve = "Quitting program.", gcErr = [] }] flgs
-                if res
-                    then
-                        return ()
-                    else
-                        mainLoop
+                unless res mainLoop
             -- Generic commands
             _ -> do
                 execGameCommands gc
