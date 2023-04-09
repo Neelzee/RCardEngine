@@ -8,6 +8,7 @@ import Data.Either (partitionEithers)
 import Control.Monad ((>=>), join, forM)
 import System.Directory (listDirectory)
 import Constants (gameFolder)
+import Data.CircularList (CList, focus, rotR, update, isEmpty, rotNL)
 
 
 -- Returns all Maybe lookups in a list
@@ -107,3 +108,42 @@ removeMaybe ((x, y):xs) = case x of
 allGames :: IO [String]
 allGames = listDirectory gameFolder
 
+
+count :: Eq a => a -> [a] -> Int
+count _ [] = 0
+count x (y:ys)
+  | x == y = 1 + count x ys
+  | otherwise = count x ys
+
+
+dropFilteredCount :: Eq a => (a -> Bool) -> Int -> [a] -> [a]
+dropFilteredCount _ _ [] = []
+dropFilteredCount _ 0 ys = ys
+dropFilteredCount f n (y:ys)
+  | f y = dropFilteredCount f (n - 1) ys
+  | otherwise = y : dropFilteredCount f n ys
+
+
+
+mapCLWhile :: CList a -> (a -> Bool) -> (a -> a) -> CList a
+mapCLWhile cs prd f
+    | isEmpty cs = cs
+    | otherwise = case focus cs of
+    Just _ -> go cs 0
+    Nothing -> mapCLWhile (rotR cs) prd f
+    where
+        go clst n = case focus clst of
+            Just y -> if prd y
+                then
+                    go (rotR (update (f y) cs)) (n + 1)
+                else
+                    rotNL n cs
+            Nothing -> go (rotR cs) (n + 1)
+
+mapCLCount :: CList a -> Int -> (a -> a) -> CList a
+mapCLCount cs 0 _ = cs
+mapCLCount cs n f
+    | isEmpty cs = cs
+    | otherwise = case focus cs of
+        Just a -> mapCLCount (update (f a) cs) (n - 1) f
+        Nothing -> mapCLCount cs n f

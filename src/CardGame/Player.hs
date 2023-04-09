@@ -4,8 +4,9 @@ import CardGame.Card ( Card(Card) )
 import Data.CircularList (CList, focus, size, rotR, update)
 import CDSL.CDSLExpr (CDSLExpr (Text))
 import Data.Maybe (mapMaybe)
-import Functions (splitAndTrim)
-import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass))
+import Functions (splitAndTrim, mapCLCount)
+import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass), prettyShow)
+import Data.List (intercalate)
 
 data Player = Player {
     name :: String
@@ -41,12 +42,14 @@ deal n deck players = deal' (n * size players) deck players
 deal' :: Int -> [Card] -> CList Player -> (CList Player, [Card])
 deal' 0 dck plrs = (plrs, dck)
 deal' _ [] plrs = (plrs, [])
-deal' n (c:dck) plrs = case focus plrs of
-    Just p -> deal' (n - 1) dck (rotR (update (p { hand = c:hand p}) plrs))
-    Nothing -> deal' n (c:dck) (rotR plrs)
+deal' n dck plrs = (giveCards plrs (take n dck), drop n dck) 
 
 
-
+giveCards :: CList Player -> [Card] -> CList Player
+giveCards plrs [] = plrs
+giveCards plrs (x:xs) = case focus plrs of
+    Just p -> giveCards (rotR (update (p { hand = x : hand p }) plrs)) xs
+    Nothing -> giveCards (rotR plrs) (x:xs)
 
 
 -- Deals the given card to the given player
@@ -116,3 +119,7 @@ parsePlayerMove x = case words x of
     ["DRAW_CARD", b] -> Just (DrawCard, b == "TRUE")
     ["PASS", b] -> Just (Pass, b == "TRUE")
     _ -> Nothing
+
+
+prettyPrintMoves :: [(Move, Bool)] -> IO ()
+prettyPrintMoves mv = putStrLn (intercalate ", " (map (\(a, _) -> prettyShow a) mv))

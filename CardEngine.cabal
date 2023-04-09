@@ -26,6 +26,7 @@ library
       CardGame.PlayGame
       CardGame.Player
       CardGame.PlayerMove
+      CardGame.PlayCommands
       Functions
       GameEditor
       GameData.GD

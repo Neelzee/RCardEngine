@@ -3,6 +3,7 @@ module CardGame.Card where
 import System.Random
 import Functions (removeNth)
 import CDSL.CDSLExpr (CDSLExpr (Text, Numeric))
+import Data.List (intercalate)
 
 
 data Card = Card {
@@ -51,3 +52,6 @@ makeDeck suits ranks values =
       rankValuePairs = zipWith (curry (\(Text r, Numeric i) -> (r, i))) ranks paddedValues
       suitCards s = map (uncurry (Card s)) rankValuePairs
   in concatMap (suitCards . (\(Text s) -> s)) suits
+
+prettyPrintCards :: [Card] -> IO ()
+prettyPrintCards xs = putStrLn (intercalate ", " (map show xs))

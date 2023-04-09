@@ -16,7 +16,7 @@ loadGameData :: GameData -> Int -> IO (Either GameData [CDSLParseError])
 loadGameData gd n = do
     g <- allGames
     let (_, gm) = break (=='.') (reverse (g !! n))
-    let gm' = (reverse (drop 1 gm))
+    let gm' = reverse (drop 1 gm)
     if n < 0 || n >= length g
     then -- Shouldnt happen
         return (Right [CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show n }])
