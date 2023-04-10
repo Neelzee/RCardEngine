@@ -1,7 +1,7 @@
 module CDSLExprTest.CDSLParseExprSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import CDSL.ParseCardDSL (parseCDSLFromString)
+import CDSL.ParseCardDSL (parseCDSLFromString, parseCDSLF)
 import CDSL.CDSLExpr
 
 
@@ -59,3 +59,10 @@ testParseCDSLFromStringSBC :: String -> Either CDSLExpr CDSLParseError -> Spec
 testParseCDSLFromStringSBC input result = describe (moduleName "parseCDSLFromString") $ do
     it (exprTest input) $ do
         parseCDSLFromString (words input) `shouldBe` result
+
+
+
+testParseCDSLFError :: String -> [CDSLParseError] -> Spec
+testParseCDSLFError input result = describe (moduleName "parseCDSLF") $ do
+    it (exprTest input) $ do
+        parseCDSLF input `shouldBe` Right result

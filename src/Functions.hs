@@ -11,6 +11,7 @@ import Constants (gameFolder)
 import Data.CircularList (CList, focus, rotR, update, isEmpty, rotNL)
 
 
+
 -- Returns all Maybe lookups in a list
 lookupAll :: Eq a => a -> [(a, b)] -> [b]
 lookupAll x pairs = [b | (a, b) <- pairs, a == x]
@@ -23,7 +24,7 @@ trim = dropWhile isSpace . reverse . dropWhile isSpace . reverse
 
 -- Split a string at the comma separator and trim each element
 splitAndTrim :: String -> [String]
-splitAndTrim = map trim . splitOn ","
+splitAndTrim  = map trim . splitOn ","
 
 
 
@@ -43,11 +44,9 @@ removeNth n xs = (xs !! n, take n xs ++ drop (n+1) xs)
 -- Removes the first instance of the given element
 removeFirst :: Eq a => [a] -> a -> [a]
 removeFirst [] _ = []
-removeFirst (x:xs) y = if x == y
-    then
-        xs
-    else
-        x : removeFirst xs y
+removeFirst (x:xs) y
+  | x == y = xs
+  | otherwise = x : removeFirst xs y
 
 
 -- Removes all duplicate elements from the given list
@@ -74,12 +73,11 @@ lookupOrDefault key def assocList = fromMaybe def (lookup key assocList)
 
 
 mergeList :: Eq a => [(a,b)] -> [(a,b)] -> [(a,b)]
+mergeList xs [] = xs
 mergeList [] ys = ys
-mergeList ((xk, xv):xs) ys =
-  case lookup xk ys of
-    Just yv -> mergeList xs ((xk, yv):ys)
-    Nothing -> mergeList xs ((xk, xv):ys)
-
+mergeList (x@(kX, _):xs) (y@(kY, _):ys)
+  | kX == kY = x : mergeList xs ys
+  | otherwise = x : y : mergeList xs ys
 
 
 lookupMany :: Eq a => [a] -> [(a, b)] -> [b]
@@ -147,3 +145,37 @@ mapCLCount cs n f
     | otherwise = case focus cs of
         Just a -> mapCLCount (update (f a) cs) (n - 1) f
         Nothing -> mapCLCount cs n f
+
+    
+
+
+stringToList :: String -> [String]
+stringToList s = do
+    let res = reverse (map reverse (stringToList' (tail (init s))))
+    rm res
+    where
+        rm :: [String] -> [String]
+        rm [] = []
+        rm (x:xs)
+            | x == "" = rm xs
+            | otherwise = x : rm xs
+
+stringToList' :: String -> [String]
+stringToList' "" = []
+stringToList' xs = do
+    let (acc, rem) = apd xs 0 "" []
+    acc ++ stringToList' rem
+
+    where
+        apd :: String -> Int -> String -> [String] -> ([String], String)
+        apd [] _ w wrds = (w:wrds, "")
+        apd (x:xs) 0 w wrds = case x of
+            '[' -> apd xs 1 (x:w) wrds
+            ']' -> (wrds, xs)
+            ' ' -> apd xs 0 "" (w:wrds)
+            ',' -> apd xs 0 "" (w:wrds)
+            y -> apd xs 0 (y:w) wrds
+        apd (x:xs) n w wrds = case x of
+            '[' -> apd xs (n + 1) (x:w) wrds
+            ']' -> apd xs (n - 1) (x:w) wrds
+            y -> apd xs n (y:w) wrds

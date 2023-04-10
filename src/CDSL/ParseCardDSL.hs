@@ -8,6 +8,7 @@ import CDSL.CDSLExpr
 import Data.List.Extra (splitOn, trim)
 import Data.Text (unpack, strip, pack)
 import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
+import Feature (Feature)
 
 
 
@@ -123,7 +124,7 @@ parseStringList xs = map (Text . trim) (splitOn "," xs)
 
 
 -- Parses a words line to an CDSLExpression, or gives an error
--- Only converts a string too CDSLExpr, does not check if its a valid statement
+-- Only converts a string to a CDSLExpr, does not check if its a valid statement
 parseCDSLFromString :: [String] -> Either CDSLExpr CDSLParseError
 parseCDSLFromString [] = Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Null, rawExpr = "" })
 parseCDSLFromString (x:xs) = case x of
@@ -312,3 +313,29 @@ toNumeric x = case x of
         _ -> Nothing
     n@(Numeric _) -> Just n
     _ -> Nothing
+
+
+parseCDSLF :: String -> Either (Feature, [CDSLExpr]) [CDSLParseError]
+parseCDSLF xs = case break (== "=") (words xs) of
+     -- validate feature and expressions
+    ([f], exprs) -> case (validateFeature f, validateCDSL exprs) of
+        (Left feature, Left expressions) -> Left (feature, expressions)
+        (Right err, _) -> Right [err]
+        (_, Right err) -> Right err
+    -- Not a statement error
+    _ -> Right [CDSLParseError
+        {
+            pErr = SyntaxError
+            , pExpr = Null
+            , rawExpr = xs
+        }]
+   
+
+
+
+validateFeature :: String -> Either Feature CDSLParseError
+validateFeature x = case x of
+    _ -> undefined
+
+validateCDSL :: [String] -> Either [CDSLExpr] [CDSLParseError]
+validateCDSL = undefined

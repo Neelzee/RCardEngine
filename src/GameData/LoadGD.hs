@@ -85,7 +85,7 @@ readGDE (f, x:xs) = case (parseIFCDSLFromString x, parseCDSLFromStringList x, pa
 parseFileHelper :: [String] -> Int -> Either [(String, [String])] CDSLParseError
 parseFileHelper [] _ = Left []
 parseFileHelper (('#':_):xs) n = parseFileHelper xs (n + 1) -- Ignores comments
-parseFileHelper ("":xs) n = parseFileHelper xs (n + 1)
+parseFileHelper ("":xs) n = parseFileHelper xs (n + 1) -- Ignores empty lines
 parseFileHelper (x:xs) n = case validateKeyWords x of
     Just rule -> do
         let (stmt, rest) = break isEnd xs
