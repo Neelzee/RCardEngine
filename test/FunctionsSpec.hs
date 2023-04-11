@@ -63,10 +63,16 @@ test = hspec $ do
     -- stringToLists
     testStringToList
         "[abcd = [dadsad = [da, ad], ad = [adsam, ads]], ab = [ad]]"
-        ["abcd", "=", "[dadsad = [da, ad], ad = [adsam, ads]]", "ab", "=", "[ad]"]
+        ["abcd = [dadsad = [da, ad], ad = [adsam, ads]]", "ab = [ad]"]
     testStringToList
-        "[isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : [take 1 deck pile]]"
-        ["isEmpty", "deck", ":", "[swap pile deck, shuffle deck, take 1 deck pile]", "isEmpty", "pile", ":", "[take 1 deck pile]"]
+        "[dadsad = [da, ad], ad = [adsam, ads]]"
+        ["dadsad = [da, ad]", "ad = [adsam, ads]"]
+    testStringToList
+        "[[isEmpty deck] : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : [take 1 deck pile]]"
+        ["[isEmpty deck] : [swap pile deck, shuffle deck, take 1 deck pile]", "isEmpty pile : [take 1 deck pile]"]
+    testStringToList
+        "[swap pile deck, shuffle deck, take 1 deck pile]"
+        ["swap pile deck", "shuffle deck", "take 1 deck pile"]
 
 
 testStringToList :: String -> [String] -> Spec

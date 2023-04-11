@@ -8,7 +8,9 @@ import CDSL.CDSLExpr
 import Data.List.Extra (splitOn, trim)
 import Data.Text (unpack, strip, pack)
 import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
-import Feature (Feature)
+import Feature
+import Functions (isList, stringToList)
+import Control.Applicative ((<|>))
 
 
 
@@ -153,9 +155,9 @@ parseCDSLFromString (x:xs) = case x of
     "isEqual" -> case length xs of
         2 -> case (parseCDSLFromString [head xs], parseCDSLFromString [xs !! 1]) of
             (Left l, Left r) -> Left (IsEqual l r)
-            (Right e@CDSLParseError {}, Left r) -> Right (e { pExpr = IsEqual (pExpr e) r, rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e })
-            (Left l, Right e@CDSLParseError {}) -> Right (e { pExpr = IsEqual l (pExpr e), rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e })
-            (Right e@CDSLParseError {}, _) -> Right (e { pExpr = IsEqual (pExpr e) Null, rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e })
+            (Right e, Left r) -> Right (e { pExpr = IsEqual (pExpr e) r, rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e })
+            (Left l, Right e) -> Right (e { pExpr = IsEqual l (pExpr e), rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e })
+            (Right e, _) -> Right (e { pExpr = IsEqual (pExpr e) Null, rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e })
         1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = IsEqual Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs})
         _ -> Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = IsEqual Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs})
     "isEmpty" -> case parseCDSLFromString xs of
@@ -164,8 +166,8 @@ parseCDSLFromString (x:xs) = case x of
     "swap" -> case length xs of
         2 -> case (parseCDSLFromString [head xs], parseCDSLFromString [xs !! 1]) of
             (Left l, Left r) -> Left (Swap l r)
-            (Right e@CDSLParseError {}, Left r) -> Right (e { pExpr = Swap (pExpr e) r })
-            (Left l, Right e@CDSLParseError {}) -> Right (e { pExpr = Swap l (pExpr e) })
+            (Right e, Left r) -> Right (e { pExpr = Swap (pExpr e) r })
+            (Left l, Right e) -> Right (e { pExpr = Swap l (pExpr e) })
             (Right l, _) -> Right l
         1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Swap Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs})
         _ -> Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = Swap Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs})
@@ -211,16 +213,16 @@ parseCDSLFromString (x:xs) = case x of
     "and" -> case length xs of
         2 -> case (parseCDSLFromString [head xs], parseCDSLFromString [xs !! 1]) of
             (Left l, Left r) -> Left (And l r)
-            (Right e@CDSLParseError {}, Left r) -> Right (e { pExpr = And (pExpr e) r })
-            (Left l, Right e@CDSLParseError {}) -> Right (e { pExpr = And l (pExpr e) })
+            (Right e, Left r) -> Right (e { pExpr = And (pExpr e) r })
+            (Left l, Right e) -> Right (e { pExpr = And l (pExpr e) })
             (Right l, _) -> Right l
         1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = And Null Null, rawExpr = x})
         _ -> Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = And Null Null, rawExpr = x})
     "or" -> case length xs of
         2 -> case (parseCDSLFromString [head xs], parseCDSLFromString [xs !! 1]) of
             (Left l, Left r) -> Left (Or l r)
-            (Right e@CDSLParseError {}, Left r) -> Right (e { pExpr = Or (pExpr e) r })
-            (Left l, Right e@CDSLParseError {}) -> Right (e { pExpr = Or l (pExpr e) })
+            (Right e, Left r) -> Right (e { pExpr = Or (pExpr e) r })
+            (Left l, Right e) -> Right (e { pExpr = Or l (pExpr e) })
             (Right l, _) -> Right l
         1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Or Null Null, rawExpr = x})
         _ -> Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = Or Null Null, rawExpr = x})
@@ -279,6 +281,7 @@ fromCDSLToString (PlayerAction a b) = show a ++ " " ++ if b then "TRUE" else "FA
 fromCDSLToString _ = ""
 
 
+
 parseIFCDSLFromString :: String -> Either CDSLExpr CDSLParseError
 parseIFCDSLFromString xs = if ':' `elem` xs
     then
@@ -287,12 +290,11 @@ parseIFCDSLFromString xs = if ':' `elem` xs
             (_, []) -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = If [Null] [Null], rawExpr = xs})
             (conds, exr) -> case (partitionEithers (map parseCDSLFromString conds), partitionEithers (map parseCDSLFromString exr)) of
                 ((cs, []), (es, [])) -> Left (If cs es)
-                ((_, e@CDSLParseError {}:_), (es, [])) -> Right (e { pExpr = If [Null] es })
-                ((cs, []), (_, e@CDSLParseError {}:_)) -> Right (e { pExpr = If cs [Null] })
-                (_, (_, e@CDSLParseError {}:_)) -> Right (e { pExpr = If [Null] [Null] })
+                ((_, e:_), (es, [])) -> Right (e { pExpr = If [Null] es })
+                ((cs, []), (_, e:_)) -> Right (e { pExpr = If cs [Null] })
+                (_, (_, e:_)) -> Right (e { pExpr = If [Null] [Null] })
     else
         Right (CDSLParseError { pErr = NotIfStatementError, pExpr = Null, rawExpr = xs})
-
 
 
 
@@ -315,27 +317,115 @@ toNumeric x = case x of
     _ -> Nothing
 
 
-parseCDSLF :: String -> Either (Feature, [CDSLExpr]) [CDSLParseError]
-parseCDSLF xs = case break (== "=") (words xs) of
-     -- validate feature and expressions
-    ([f], exprs) -> case (validateFeature f, validateCDSL exprs) of
-        (Left feature, Left expressions) -> Left (feature, expressions)
-        (Right err, _) -> Right [err]
-        (_, Right err) -> Right err
-    -- Not a statement error
-    _ -> Right [CDSLParseError
-        {
-            pErr = SyntaxError
-            , pExpr = Null
-            , rawExpr = xs
-        }]
-   
+parseCDSLF :: [String] -> [CDSLExpr] ->  ([CDSLExpr], [CDSLParseError])
+parseCDSLF [] expr = (expr, [])
+parseCDSLF (":":xs) expr = case parseOneCDSL xs 0 of
+    Left (xpr, []) -> (xpr:expr, [])
+    Left (xpr, ys) -> case parseCDSLF ys [] of
+        (x, err) -> ([If expr (xpr:x)], err)
+    Right (err, n) -> case parseCDSLF (drop n xs) [] of
+        (x, e) -> ([If expr x], err:e)
+
+parseCDSLF xs expr = case parseOneCDSL xs 0 of
+    Left (xpr, []) -> (xpr:expr, [])
+    Left (xpr, ys) -> case parseCDSLF ys (xpr:expr) of
+        (x, e) -> (xpr:x, e)
+    Right (err, n) -> case parseCDSLF (drop n xs) expr of
+        (x, e) -> (x, err:e)
+
+
+
+
+parseOneCDSL :: [String] -> Int -> Either (CDSLExpr, [String]) (CDSLParseError, Int)
+parseOneCDSL [] n = Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Null, rawExpr = "" }, n)
+parseOneCDSL (x:xs) n = case x of
+    "any" -> case parseOneCDSL xs (n + 1) of
+                Left (exr, ys) -> Left (Any exr, ys)
+                Right (e, i) -> Right (e { pExpr = Any (pExpr e), rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e }, i)
+    "all" -> case parseOneCDSL xs (n + 1) of
+        Left (exr, ys) -> Left (All exr, ys)
+        Right (e, i) -> Right (e { pExpr = All (pExpr e), rawExpr = x ++ " " ++ rawExpr e }, i)
+    "greatest" -> case parseOneCDSL xs (n + 1) of
+        Left (exr, ys) -> Left (Greatest exr, ys)
+        Right (e, i) -> Right (e { pExpr = Greatest (pExpr e), rawExpr = x ++ " " ++ rawExpr e}, i)
+    "players" -> case parseOneCDSL xs (n + 1) of
+        Left (exr, ys) -> Left (Players exr, ys)
+        Right (e, i) -> Right (e { pExpr = Players (pExpr e), rawExpr = x ++ " " ++ rawExpr e }, i)
+    "score" -> Left (Score, xs)
+    "hand" -> Left (Hand, xs)
+    "isEqual" -> case length xs of
+        1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = IsEqual Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs}, n + 1)
+        _ -> case (parseOneCDSL [head xs] 0, parseOneCDSL [xs !! 1] 0) of
+            (Left (l, _), Left (r, _)) -> Left (IsEqual l r, drop 2 xs)
+            (Right (e, i), Left (r, _)) -> Right (e { pExpr = IsEqual (pExpr e) r, rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e }, i)
+            (Left (l, _), Right (e, i)) -> Right (e { pExpr = IsEqual l (pExpr e), rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e }, i)
+            (Right (e, i), _) -> Right (e { pExpr = IsEqual (pExpr e) Null, rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e }, i)
+    "isEmpty" -> case parseOneCDSL xs (n + 1) of
+        Left (exr, ys) -> Left (IsEmpty exr, ys)
+        Right (e, i) -> Right (e { pExpr = IsEmpty (pExpr e), rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e }, i)
+    "swap" -> case length xs of
+        1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Swap Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs}, n + 1)
+        _ -> case (parseOneCDSL [head xs] 0, parseOneCDSL [xs !! 1] 0) of
+            (Left (l, _), Left (r, _)) -> Left (Swap l r, drop 2 xs)
+            (Right (e, i), Left (r, _)) -> Right (e { pExpr = Swap (pExpr e) r }, i)
+            (Left (l, _), Right (e, i)) -> Right (e { pExpr = Swap l (pExpr e) }, i)
+            (Right l, _) -> Right l
+    "shuffle" -> case parseOneCDSL xs (n + 1) of
+        Left (exr, ys) -> Left (Shuffle exr, ys)
+        Right (e, i) -> Right (e { pExpr = Shuffle (pExpr e), rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e }, i)
+    "deck" -> Left (Deck, xs)
+    "pile" -> Left (Pile, xs)
+    "take" -> case (parseOneCDSL [head xs] 0, parseOneCDSL [xs !! 1] 0, parseOneCDSL [xs !! 2] 0) of
+        (Left (i, _), Left (f, _), Left (t, _)) -> Left (Take i f t, drop 3 xs)
+        (Right (e, i), _, _) -> Right (e { pErr = IncompleteExpressionError, pExpr = Take Null Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs}, i)
+        (_, Right (e, i), _) -> Right (e { pErr = IncompleteExpressionError, pExpr = Take Null Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs}, i)
+        (_, _, Right (e, i)) -> Right (e { pErr = IncompleteExpressionError, pExpr = Take Null Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs}, i)
+    "always" -> Left (Always, xs)
+    "never" -> Left (Never, xs)
+    "not" -> case parseOneCDSL xs (n + 1) of
+        Left (exr, ys) -> Left (Not exr, ys)
+        Right (e, i) -> Right (e { pErr = IncompleteExpressionError, pExpr = Not Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs}, i)
+    "and" -> case length xs of
+        1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = And Null Null, rawExpr = x}, n + 1)
+        _ -> case (parseOneCDSL [head xs] 0, parseOneCDSL [xs !! 1] 0) of
+            (Left (l, _), Left (r, _)) -> Left (And l r, drop 2 xs)
+            (Right (e, i), Left (r, _)) -> Right (e { pExpr = And (pExpr e) r }, i)
+            (Left (l, _), Right (e, i)) -> Right (e { pExpr = And l (pExpr e) }, i)
+            (Right (e, i), _) -> Right (e { pExpr = And Null (pExpr e) }, i)
+    "or" -> case length xs of
+        1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Or Null Null, rawExpr = x}, n + 1)
+        _ -> case (parseOneCDSL [head xs] 0, parseOneCDSL [xs !! 1] 0) of
+            (Left (l, _), Left (r, _)) -> Left (Or l r, drop 2 xs)
+            (Right (e, i), Left (r, _)) -> Right (e { pExpr = Or (pExpr e) r }, i)
+            (Left (l, _), Right (e, i)) -> Right (e { pExpr = Or l (pExpr e) }, i)
+            (Right (e, i), _) -> Right (e { pExpr = Or Null (pExpr e) }, i)
+    "rank" -> Left (CardRank, xs)
+    "suit" -> Left (CardSuit, xs)
+    "value" -> Left (CardValue, xs)
+    "turnOrder" -> Left (TurnOrder, xs)
+    _ -> case readMaybe x :: Maybe Int of
+        Just i -> Left (Numeric i, xs)
+        _ -> parseOneCDSL xs (n + 1)
 
 
 
 validateFeature :: String -> Either Feature CDSLParseError
 validateFeature x = case x of
-    _ -> undefined
-
-validateCDSL :: [String] -> Either [CDSLExpr] [CDSLParseError]
-validateCDSL = undefined
+    -- Cards
+    "card_suits" -> Left CardSuits
+    "card_values" -> Left CardValues
+    "card_ranks" -> Left CardRanks
+    -- Player
+    "player_hand" -> Left PlayerHand
+    "player_moves" -> Left PlayerMoves
+    "any_time" -> Left AnyTime
+    "start_time" -> Left StartTime
+    y -> case fromStringToFeature y of
+        Just f -> Left f
+        Nothing -> Right (
+            CDSLParseError
+            {
+                pErr = NotAFeatureError
+                , pExpr = Null
+                , rawExpr = y
+            })

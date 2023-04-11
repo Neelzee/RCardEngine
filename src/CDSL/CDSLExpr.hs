@@ -77,7 +77,9 @@ data CDSLParseErrorCode =
     | MissingTerminationStatement Int
     | UnknownKeyWord Int
     | OnLoad Feature CDSLParseErrorCode
+    | NotAFeatureError
     deriving (Show, Eq)
+
 
 data CDSLExecError =
     CDSLExecError

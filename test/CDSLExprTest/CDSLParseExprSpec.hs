@@ -49,6 +49,10 @@ test = hspec $ do
     testParseCDSLFromStringSBE "any shuffle" (Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Any (Shuffle Null), rawExpr = "any shuffle" }))
     testParseCDSLFromStringSBE "any always never" (Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = Any Always, rawExpr = "any always never" }))
 
+    -- Testing new parseCDSL
+    testParseCDSLFError ["any", "always"] ([Any Always], [])
+    testParseCDSLFError [":", "any", "never"] ([If [Always] [Any Never]], [])
+
 testParseCDSLFromStringSBE :: String -> Either CDSLExpr CDSLParseError -> Spec
 testParseCDSLFromStringSBE input result = describe (moduleName "parseCDSLFromString") $ do
     it (exprTest' input) $ do
@@ -62,7 +66,7 @@ testParseCDSLFromStringSBC input result = describe (moduleName "parseCDSLFromStr
 
 
 
-testParseCDSLFError :: String -> [CDSLParseError] -> Spec
+testParseCDSLFError :: [String] -> ([CDSLExpr], [CDSLParseError]) -> Spec
 testParseCDSLFError input result = describe (moduleName "parseCDSLF") $ do
-    it (exprTest input) $ do
-        parseCDSLF input `shouldBe` Right result
+    it (exprTest (show input)) $ do
+        parseCDSLF input [] `shouldBe` result

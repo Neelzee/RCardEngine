@@ -26,14 +26,13 @@ test = hspec $ do
 
 gameData :: Either GameData [CDSLParseError]
 gameData = Left [
-    (CardSuits, [Text "Hearts", Text "Diamonds", Text "Clubs", Text "Spades"])
-    , (CardRanks, [Text "Ace", Text "2", Text "3", Text "4", Text "5", Text "6", Text "7", Text "8", Text "9", Text "10", Text "Jack", Text "Queen", Text "King"])
-    , (CardValues, [Text "1", Text "2", Text "3", Text "4", Text "5", Text "6", Text "7", Text "8", Text "9", Text "10", Text "11", Text "12", Text "13"])
-    , (WinCon, [Greatest (Players Score)])
+    (WinCon, [Greatest (Players Score)])
     , (EndCon, [Any (Players (IsEmpty Hand)), Any (Players (IsEqual Score (Numeric 10)))])
-    , (CardConstraints, [CardRank])
-    , (PlayerMoves, [PlayerAction PlayCard False, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction Pass False])
+    , (CardSuits, [Text "Hearts", Text "Diamonds", Text "Clubs", Text "Spades"])
+    , (CardValues, [Numeric 1, Numeric 2, Numeric 3, Numeric 4, Numeric 5, Numeric 6, Numeric 7, Numeric 8, Numeric 9, Numeric 10, Numeric 11, Numeric 12, Numeric 13])
+    , (CardRanks, [Text "Ace", Numeric 2, Numeric 3, Numeric 4, Numeric 5, Numeric 6, Numeric 7, Numeric 8, Numeric 9, Numeric 10, Text "Jack", Text "Queen", Text "King"])
     , (PlayerHand, [Numeric 4])
-    , (AnyTime, [If [IsEmpty Deck] [Swap Pile Deck, Shuffle Deck, Take (Numeric 1) Deck Pile]])
-    , (StartTime, [If [Always] [Shuffle Deck]])
+    , (PlayerMoves, [PlayerAction PlayCard False, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction Pass False])
+    , (AnyTime, [If [IsEmpty Deck] [Swap Pile Deck, Take (Numeric 1) Deck Pile, Shuffle Deck]])
+    , (StartTime, [If [Always] [Shuffle Deck], If [Always] [Take (Numeric 1) Deck Pile]])
     ]

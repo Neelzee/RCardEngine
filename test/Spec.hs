@@ -15,5 +15,5 @@ main = do
     CDSLParseIfExprSpec.test
     CDSLParseListSpec.test
     CDSLParsePlayerActionSpec.test
-    --CDSLLoaderSPec.test TODO: Fix
+    --CDSLLoaderSPec.test
     FunctionsSpec.test

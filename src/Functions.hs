@@ -152,7 +152,7 @@ mapCLCount cs n f
 stringToList :: String -> [String]
 stringToList s = do
     let res = reverse (map reverse (stringToList' (tail (init s))))
-    rm res
+    map trim (rm res)
     where
         rm :: [String] -> [String]
         rm [] = []
@@ -169,13 +169,16 @@ stringToList' xs = do
     where
         apd :: String -> Int -> String -> [String] -> ([String], String)
         apd [] _ w wrds = (w:wrds, "")
-        apd (x:xs) 0 w wrds = case x of
-            '[' -> apd xs 1 (x:w) wrds
-            ']' -> (wrds, xs)
-            ' ' -> apd xs 0 "" (w:wrds)
-            ',' -> apd xs 0 "" (w:wrds)
-            y -> apd xs 0 (y:w) wrds
-        apd (x:xs) n w wrds = case x of
-            '[' -> apd xs (n + 1) (x:w) wrds
-            ']' -> apd xs (n - 1) (x:w) wrds
-            y -> apd xs n (y:w) wrds
+        apd (y:ys) 0 w wrds = case y of
+            '[' -> apd ys 1 (y:w) wrds
+            ']' -> (wrds, ys)
+            ',' -> apd ys 0 "" (w:wrds)
+            z -> apd ys 0 (z:w) wrds
+        apd (y:ys) n w wrds = case y of
+            '[' -> apd ys (n + 1) (y:w) wrds
+            ']' -> apd ys (n - 1) (y:w) wrds
+            z -> apd ys n (z:w) wrds
+
+
+isList :: String -> Bool
+isList xs = '[' `elem` xs && ']' `elem` xs && '=' `notElem` xs

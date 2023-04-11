@@ -1,6 +1,6 @@
 # Define the win condition
 WIN_CON
-{greatest players score}
+[greatest players score]
 END
 
 # Define the end conditions
