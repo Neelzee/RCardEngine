@@ -3,6 +3,7 @@ module CDSL.CDSLExpr where
 import Feature (Feature)
 import CardGame.PlayerMove (Move)
 
+-- Card Domain Specific Language
 data CDSLExpr =
     -- ATM, only used to signal Any Player
     Any CDSLExpr
@@ -78,6 +79,7 @@ data CDSLParseErrorCode =
     | UnknownKeyWord Int
     | OnLoad Feature CDSLParseErrorCode
     | NotAFeatureError
+    | MissMatchFeatureError
     deriving (Show, Eq)
 
 

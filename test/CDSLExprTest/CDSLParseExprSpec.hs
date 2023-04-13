@@ -1,8 +1,10 @@
 module CDSLExprTest.CDSLParseExprSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import CDSL.ParseCardDSL (parseCDSLFromString, parseCDSLF)
+import CDSL.ParseCardDSL
 import CDSL.CDSLExpr
+import CDSL.CDSLExpr (CDSLExpr)
+import Feature
 
 
 moduleName :: String -> String
@@ -51,7 +53,42 @@ test = hspec $ do
 
     -- Testing new parseCDSL
     testParseCDSLFError ["any", "always"] ([Any Always], [])
-    testParseCDSLFError [":", "any", "never"] ([If [Always] [Any Never]], [])
+    testParseCDSLFError ["always", ":", "any", "never"] ([If [Always] [Any Never]], [])
+    testParseCDSLFError ["always", ":", "always", ":", "never"] ([If [Always] [If [Always] [Never]]], [])
+
+    testReadCDSL "card_suits = any always" (CardSuits, [Any Always])
+    testReadCDSL "card_suits = [any always, any always]" (CardSuits, [Any Always, Any Always])
+    testReadCDSL
+        "card_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]"
+            (CardValues,
+                [Numeric 1, Numeric 2, Numeric 3, Numeric 4, Numeric 5, Numeric 6, Numeric 7, Numeric 8, Numeric 9, Numeric 10, Numeric 11, Numeric 12, Numeric 13])
+    
+    testReadCDSL
+        "any_time = [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]"
+            (AnyTime, [If [IsEmpty Deck] [Swap Pile Deck, Take (Numeric 1) Deck Pile, Shuffle Deck]])
+
+
+    testReadCDSL
+        "card_ranks = [Ace, 2, 3, 4, 5, 6, 7, 8, 9, 10, Jack, Queen, King]"
+            (CardRanks,
+                [Text "Ace", Numeric 2, Numeric 3, Numeric 4, Numeric 5, Numeric 6, Numeric 7, Numeric 8, Numeric 9, Numeric 10, Text "Jack", Text "Queen", Text "King"])
+    
+    testParseOneCDSL ["any", "always", "any", "always"] (Any Always, ["any", "always"])
+
+
+
+    testParseCDSL ["any", "always", "any", "always"] ([Any Always, Any Always], [])
+
+
+testParseCDSL :: [String] -> ([CDSLExpr], [CDSLParseError]) -> Spec
+testParseCDSL input result = describe (moduleName "parseOneCDSL") $ do
+    it (exprTest (show input)) $ do
+        parseCDSLF input [] `shouldBe` result
+
+testParseOneCDSL :: [String] -> (CDSLExpr, [String]) -> Spec
+testParseOneCDSL input result = describe (moduleName "parseOneCDSL") $ do
+    it (exprTest (show input)) $ do
+        parseOneCDSL input 0 `shouldBe` Left result
 
 testParseCDSLFromStringSBE :: String -> Either CDSLExpr CDSLParseError -> Spec
 testParseCDSLFromStringSBE input result = describe (moduleName "parseCDSLFromString") $ do
@@ -70,3 +107,11 @@ testParseCDSLFError :: [String] -> ([CDSLExpr], [CDSLParseError]) -> Spec
 testParseCDSLFError input result = describe (moduleName "parseCDSLF") $ do
     it (exprTest (show input)) $ do
         parseCDSLF input [] `shouldBe` result
+
+
+
+
+testReadCDSL :: String -> (Feature, [CDSLExpr]) -> Spec
+testReadCDSL input result = describe (moduleName "readCDSL") $ do
+    it (exprTest (show input)) $ do
+        readCDSL input `shouldBe` Left result

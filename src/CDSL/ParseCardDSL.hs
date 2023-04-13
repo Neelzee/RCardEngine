@@ -5,12 +5,11 @@ import Data.List (groupBy, intercalate)
 import Data.Either (partitionEithers)
 import CDSL.ExecCDSLExpr (execCDSLBool)
 import CDSL.CDSLExpr
-import Data.List.Extra (splitOn, trim)
+import Data.List.Extra (splitOn)
 import Data.Text (unpack, strip, pack)
 import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
 import Feature
-import Functions (isList, stringToList)
-import Control.Applicative ((<|>))
+import Functions (isList, stringToList, trim, mapIf, removeFirst)
 
 
 
@@ -317,21 +316,50 @@ toNumeric x = case x of
     _ -> Nothing
 
 
-parseCDSLF :: [String] -> [CDSLExpr] ->  ([CDSLExpr], [CDSLParseError])
-parseCDSLF [] expr = (expr, [])
-parseCDSLF (":":xs) expr = case parseOneCDSL xs 0 of
-    Left (xpr, []) -> (xpr:expr, [])
-    Left (xpr, ys) -> case parseCDSLF ys [] of
-        (x, err) -> ([If expr (xpr:x)], err)
-    Right (err, n) -> case parseCDSLF (drop n xs) [] of
-        (x, e) -> ([If expr x], err:e)
+readCDSL :: String -> Either (Feature, [CDSLExpr]) [CDSLParseError]
+readCDSL xs = do
+    let (y, ys) = (trim (takeWhile (/='=') xs), trim (removeFirst (dropWhile (/='=') xs) '='))
+    case validateFeature y of
+        Left f -> if isList ys
+            then
+                case ct (map (`parseCDSLF` []) (mp (stringToList ys))) of
+                    (exprs, []) -> Left (f, exprs)
+                    (_, errs) -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show (concatMap words (stringToList ys)) }:errs)
+            else
+                case parseCDSLF (words ys) [] of
+                    (expr, []) -> Left (f, expr)
+                    (_, errs) -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = ys }:errs)
+        Right e -> Right [e]
 
-parseCDSLF xs expr = case parseOneCDSL xs 0 of
-    Left (xpr, []) -> (xpr:expr, [])
-    Left (xpr, ys) -> case parseCDSLF ys (xpr:expr) of
-        (x, e) -> (xpr:x, e)
-    Right (err, n) -> case parseCDSLF (drop n xs) expr of
-        (x, e) -> (x, err:e)
+    where
+        mp :: [String] -> [[String]]
+        mp [] = []
+        mp (y:ys)
+            | isList y = stringToList y : mp ys
+            | otherwise = words y : mp ys
+        ct :: [([a], [b])] -> ([a], [b])
+        ct [] = ([], [])
+        ct ((l, r):ys) = case ct ys of
+            (ls, rs) -> (l ++ ls, r ++ rs)
+
+
+
+
+parseCDSLF :: [String] -> [CDSLExpr] ->  ([CDSLExpr], [CDSLParseError])
+parseCDSLF [] expr = (reverse expr, [])
+parseCDSLF ("":xs) expr = parseCDSLF xs expr
+parseCDSLF ((' ':xs):ys) expr = parseCDSLF (xs:ys) expr
+parseCDSLF xs expr
+    | ":" `elem` xs = do
+        let (cond, ep) = break (== ":") xs
+        case (parseCDSLF cond [], parseCDSLF ep []) of
+            ((c, ce), (e, ee)) -> ([If c e], ce ++ ee)
+    | otherwise = case parseOneCDSL xs 0 of
+        Left (xpr, ys) -> parseCDSLF ys (xpr:expr)
+        Right (err, n) -> case parseCDSLF (drop n xs) expr of
+            (x, e) -> (x, err:e)
+
+
 
 
 
@@ -405,7 +433,7 @@ parseOneCDSL (x:xs) n = case x of
     "turnOrder" -> Left (TurnOrder, xs)
     _ -> case readMaybe x :: Maybe Int of
         Just i -> Left (Numeric i, xs)
-        _ -> parseOneCDSL xs (n + 1)
+        _ -> Left (Text x, xs)
 
 
 
@@ -415,6 +443,7 @@ validateFeature x = case x of
     "card_suits" -> Left CardSuits
     "card_values" -> Left CardValues
     "card_ranks" -> Left CardRanks
+    "card_constraints" -> Left CardConstraints
     -- Player
     "player_hand" -> Left PlayerHand
     "player_moves" -> Left PlayerMoves

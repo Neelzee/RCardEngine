@@ -1,12 +1,6 @@
-# Define the win condition
-WIN_CON
-[greatest players score]
-END
-
-# Define the end conditions
-# If multiple statements, the games ends if either is true
-END_CON
-[any players isEmpty hand, any players isEqual score 10]
+GAME
+win_con = [greatest players score]
+end_con = [any players isEmpty hand, any players isEqual score 10]
 END
 
 
@@ -26,8 +20,8 @@ END
 
 # Define the game actions
 ACTIONS
-any_time = [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : [take 1 deck pile]]
-start_time = [always : shuffle deck, always : [take 1 deck pile]]
+any_time = [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]
+start_time = [always : shuffle deck, always : take 1 deck pile]
 END
 
 

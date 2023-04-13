@@ -19,6 +19,8 @@ test = hspec $ do
     testTrim "x" "x"
     testTrim " x" "x"
     testTrim " x " "x"
+    testTrim " [x] " "[x]"
+    testTrim " [ x ] " "[ x ]"
 
     -- splitAndTrim
     testSplitAndTrim "" [""]
@@ -73,12 +75,19 @@ test = hspec $ do
     testStringToList
         "[swap pile deck, shuffle deck, take 1 deck pile]"
         ["swap pile deck", "shuffle deck", "take 1 deck pile"]
+    testStringToList "[any always]" ["any always"]
+    testStringToList "[any always, any always]" ["any always", "any always"]
+    testStringToList
+        "[isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]"
+        ["isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile]", "isEmpty pile : take 1 deck pile"]
+
 
 
 testStringToList :: String -> [String] -> Spec
 testStringToList inp res = describe (moduleName "stringToList") $ do
     it ("Input: " ++ inp ++ " Result: " ++ show res) $ do
         stringToList inp `shouldBe` res
+
 testMergeList :: (Show a, Eq a, Show b, Eq b) => [(a, b)] -> [(a, b)] -> [(a, b)] -> Spec
 testMergeList lstA lstB res = describe (moduleName "mergeList") $ do
     it ("List A: " ++ show lstA ++ " List B: " ++ show lstB ++ " Result: " ++ show res) $ do

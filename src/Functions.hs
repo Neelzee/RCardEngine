@@ -182,3 +182,10 @@ stringToList' xs = do
 
 isList :: String -> Bool
 isList xs = '[' `elem` xs && ']' `elem` xs && '=' `notElem` xs
+
+
+mapIf :: (a -> Bool) -> (a -> a) -> [a] -> [a]
+mapIf _ _ [] = []
+mapIf prd f (x:xs)
+  | prd x = f x : mapIf prd f xs
+  | otherwise = x : mapIf prd f xs

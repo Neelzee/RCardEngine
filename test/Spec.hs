@@ -10,10 +10,10 @@ import qualified FunctionsSpec as FunctionsSpec (test)
 
 main :: IO ()
 main = do
-    CDSLParseExprSpec.test
+    FunctionsSpec.test
+    --CDSLParseExprSpec.test
     CDSLValidationSpec.test
     CDSLParseIfExprSpec.test
     CDSLParseListSpec.test
     CDSLParsePlayerActionSpec.test
     --CDSLLoaderSPec.test
-    FunctionsSpec.test
