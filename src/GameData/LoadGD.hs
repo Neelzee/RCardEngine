@@ -57,7 +57,7 @@ readGD ((f, x:xs):ys) = case readCDSL x of
         else
             case readGD ((f, xs):ys) of
                 (fex, ferr) -> (fex, (f, [CDSLParseError {rawExpr=x, pExpr=Null, pErr=MissMatchFeatureError}]):ferr)
-    Right err -> case readGD ((f, xs):ys) of
+    Right (_, err) -> case readGD ((f, xs):ys) of
                 (fex, ferr) -> (fex, (f, err):ferr)
 
 

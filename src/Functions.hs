@@ -1,7 +1,7 @@
 module Functions where
 
 import Data.List.Extra (splitOn)
-import Data.Char (isSpace)
+import Data.Char (isSpace, isAlpha)
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Bifunctor (bimap)
 import Data.Either (partitionEithers)
@@ -146,13 +146,15 @@ mapCLCount cs n f
         Just a -> mapCLCount (update (f a) cs) (n - 1) f
         Nothing -> mapCLCount cs n f
 
-    
+
 
 
 stringToList :: String -> [String]
-stringToList s = do
-    let res = reverse (map reverse (stringToList' (tail (init s))))
-    map trim (rm res)
+stringToList s
+    | hlst s && llst (reverse s) = do
+        let res = reverse (map reverse (stringToList' (tail (init (trim s)))))
+        map trim (rm res)
+    | otherwise = [s]
     where
         rm :: [String] -> [String]
         rm [] = []
@@ -160,11 +162,23 @@ stringToList s = do
             | x == "" = rm xs
             | otherwise = x : rm xs
 
+        hlst :: String -> Bool
+        hlst [] = False
+        hlst (y:ys)
+            | y == ' ' = hlst ys
+            | otherwise = '[' == y
+
+        llst :: String -> Bool
+        llst [] = False
+        llst (y:ys)
+            | y == ' ' = llst ys
+            | otherwise = ']' == y
+
 stringToList' :: String -> [String]
 stringToList' "" = []
 stringToList' xs = do
-    let (acc, rem) = apd xs 0 "" []
-    acc ++ stringToList' rem
+    let (acc, rems) = apd xs 0 "" []
+    acc ++ stringToList' rems
 
     where
         apd :: String -> Int -> String -> [String] -> ([String], String)
@@ -184,8 +198,61 @@ isList :: String -> Bool
 isList xs = '[' `elem` xs && ']' `elem` xs && '=' `notElem` xs
 
 
-mapIf :: (a -> Bool) -> (a -> a) -> [a] -> [a]
-mapIf _ _ [] = []
+mapIf :: (a -> Bool) -> (a -> b) -> [a] -> ([a], [b])
+mapIf _ _ [] = ([], [])
 mapIf prd f (x:xs)
-  | prd x = f x : mapIf prd f xs
-  | otherwise = x : mapIf prd f xs
+  | prd x = case mapIf prd f xs of
+    (as, bs) -> (as, f x:bs)
+  | otherwise = case mapIf prd f xs of
+    (as, bs) -> (x:as, bs)
+
+
+
+
+parseList :: String -> [String]
+parseList = go []
+  where
+    go :: [String] -> String -> [String]
+    go acc [] = acc
+    go acc (x:xs)
+        | x == '[' = let (ys, rest) = splitList xs in go (acc ++ parseList ys) rest
+        | x == ']' = go acc xs
+        | otherwise = let (ys, rest) = span (`notElem` ",]") xs in go (acc ++ [x:ys]) rest
+
+
+    splitList :: String -> (String, String)
+    splitList = go 0 ""
+      where
+        go :: Int -> String -> String -> (String, String)
+        go _ ys [] = error $ "Invalid list: " ++ ys
+        go 0 ys (']':xs) = (ys, xs)
+        go 0 ys ('[':xs) = (ys, xs)
+        go n ys (x:xs) = go n' (ys ++ [x]) xs
+          where n'
+                  | x == '[' = n + 1
+                  | x == ']' = n - 1
+                  | otherwise = n
+
+
+
+
+unlist :: String -> [String]
+unlist = unlistHelper ""
+
+
+unlistHelper :: String -> String -> [String]
+unlistHelper _ [] = []
+unlistHelper wrd (x:xs)
+    | x == '[' = case ulh xs of
+        (w, rems) -> wrd : w : unlistHelper "" rems
+    | x == ' ' = wrd : unlistHelper "" xs
+    | x == ',' = wrd : unlistHelper "" xs
+    | otherwise = unlistHelper (x:wrd) xs
+
+    where
+        ulh :: String -> (String, String)
+        ulh [] = ([], [])
+        ulh (y:ys)
+            | y == ']' = ([], ys)
+            | otherwise = case ulh ys of
+                (zs, ws) -> (y: zs, ws)

@@ -5,9 +5,9 @@ version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/CardEngine#readme>
 homepage:       https://github.com/githubuser/CardEngine#readme
 bug-reports:    https://github.com/githubuser/CardEngine/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2023 Author name here
+author:         Nils Michael Fitjar
+maintainer:     nilsien2001@gmail.com
+copyright:      2023 Nils Michael Fitjar
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple

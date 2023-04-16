@@ -21,14 +21,14 @@ test = hspec $ do
 
 gameData :: Either GameData [CDSLParseError]
 gameData = Left [
-        (WinCon, [Greatest (Players Score)])
-        , (EndCon, [Any (Players (IsEmpty Hand)), Any (Players (IsEqual Score (Numeric 10)))])
-        , (CardSuits, [Text "Hearts", Text "Diamonds", Text "Clubs", Text "Spades"])
-        , (CardValues, [Numeric 1, Numeric 2, Numeric 3, Numeric 4, Numeric 5, Numeric 6, Numeric 7, Numeric 8, Numeric 9, Numeric 10, Numeric 11, Numeric 12, Numeric 13])
-        , (CardRanks, [Text "Ace", Numeric 2, Numeric 3, Numeric 4, Numeric 5, Numeric 6, Numeric 7, Numeric 8, Numeric 9, Numeric 10, Text "Jack", Text "Queen", Text "King"])
-        , (CardConstraints, [CardRank])
-        , (PlayerMoves, [PlayerAction PlayCard False, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction Pass False])
-        , (PlayerHand, [Numeric 4])
-        , (AnyTime, [If [IsEmpty Deck] [Swap Pile Deck, Take (Numeric 1) Deck Pile, Shuffle Deck]])
-        , (StartTime, [If [Always] [Shuffle Deck], If [Always] [Take (Numeric 1) Deck Pile]])
+    (WinCon, [Greatest (Players Score)])
+    , (EndCon, [Any (Players (IsEmpty Hand)), Any (Players (IsEqual Score (Numeric 10)))])
+    , (CardSuits, [Text "Hearts", Text "Diamonds", Text "Clubs", Text "Spades"])
+    , (CardValues, [Numeric 1, Numeric 2, Numeric 3, Numeric 4, Numeric 5, Numeric 6, Numeric 7, Numeric 8, Numeric 9, Numeric 10, Numeric 11, Numeric 12, Numeric 13])
+    , (CardRanks, [Text "Ace", Numeric 2, Numeric 3, Numeric 4, Numeric 5, Numeric 6, Numeric 7, Numeric 8, Numeric 9, Numeric 10, Text "Jack", Text "Queen", Text "King"])
+    , (CardConstraints, [CardRank])
+    , (PlayerHand, [Numeric 4])
+    , (PlayerMoves, [PlayerAction PlayCard False, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction Pass False])
+    , (AnyTime, [If [IsEmpty Deck] [Swap Pile Deck, Shuffle Deck, Take (Numeric 1) Deck Pile], If [IsEmpty Pile] [Take (Numeric 1) Deck Pile]])
+    , (StartTime, [If [Always] [Shuffle Deck], If [Always] [Take (Numeric 1) Deck Pile]])
     ]

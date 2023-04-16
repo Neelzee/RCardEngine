@@ -11,9 +11,9 @@ import qualified FunctionsSpec as FunctionsSpec (test)
 main :: IO ()
 main = do
     FunctionsSpec.test
-    --CDSLParseExprSpec.test
+    CDSLParseExprSpec.test
     CDSLValidationSpec.test
     CDSLParseIfExprSpec.test
     CDSLParseListSpec.test
     CDSLParsePlayerActionSpec.test
-    --CDSLLoaderSPec.test
+    CDSLLoaderSPec.test

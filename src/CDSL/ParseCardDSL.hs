@@ -10,6 +10,8 @@ import Data.Text (unpack, strip, pack)
 import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
 import Feature
 import Functions (isList, stringToList, trim, mapIf, removeFirst)
+import CardGame.Player (getMoveFromString, parsePlayerMovesExpr, parsePlayerMoves, parsePlayerMove)
+import Data.Maybe (mapMaybe)
 
 
 
@@ -315,53 +317,44 @@ toNumeric x = case x of
     n@(Numeric _) -> Just n
     _ -> Nothing
 
-
-readCDSL :: String -> Either (Feature, [CDSLExpr]) [CDSLParseError]
+readCDSL :: String -> Either (Feature, [CDSLExpr]) (Maybe Feature, [CDSLParseError])
 readCDSL xs = do
-    let (y, ys) = (trim (takeWhile (/='=') xs), trim (removeFirst (dropWhile (/='=') xs) '='))
-    case validateFeature y of
-        Left f -> if isList ys
-            then
-                case ct (map (`parseCDSLF` []) (mp (stringToList ys))) of
-                    (exprs, []) -> Left (f, exprs)
-                    (_, errs) -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show (concatMap words (stringToList ys)) }:errs)
-            else
-                case parseCDSLF (words ys) [] of
-                    (expr, []) -> Left (f, expr)
-                    (_, errs) -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = ys }:errs)
-        Right e -> Right [e]
-
-    where
-        mp :: [String] -> [[String]]
-        mp [] = []
-        mp (y:ys)
-            | isList y = stringToList y : mp ys
-            | otherwise = words y : mp ys
-        ct :: [([a], [b])] -> ([a], [b])
-        ct [] = ([], [])
-        ct ((l, r):ys) = case ct ys of
-            (ls, rs) -> (l ++ ls, r ++ rs)
+    let (y, ys) = (takeWhile (/='=') xs, removeFirst (dropWhile (/='=') xs) '=')
+    case validateFeature (unpack $ strip $ pack y) of
+        Left PlayerMoves -> Left (PlayerMoves, map (uncurry PlayerAction) (mapMaybe parsePlayerMove (stringToList ys)))
+        Left f -> case parseExpr (stringToList ys) of
+            Left exprs -> Left (f, exprs)
+            Right err -> Right (Just f, err)
+        Right err -> Right (Nothing, [err])
 
 
 
+parseExpr :: [String] -> Either [CDSLExpr] [CDSLParseError]
+parseExpr [] = Left []
+parseExpr ("":xs) = parseExpr xs
+parseExpr (x:xs)
+    | ':' `elem` x = case parseIfExpr x of
+        Left ex -> case parseExpr xs of
+            Left exs -> Left (ex:exs)
+            Right errs -> Right errs
+        Right err -> case parseExpr xs of
+            Right errs -> Right (err ++ errs)
+            _ -> Right err
+    | otherwise = case parseOneCDSL (words x) 0 of
+        Left (ex, ys) -> case parseExpr (unwords ys:xs) of
+            Left exs -> Left (ex:exs)
+            Right errs -> Right errs
+        Right (er, _) -> Right [er]
 
-parseCDSLF :: [String] -> [CDSLExpr] ->  ([CDSLExpr], [CDSLParseError])
-parseCDSLF [] expr = (reverse expr, [])
-parseCDSLF ("":xs) expr = parseCDSLF xs expr
-parseCDSLF ((' ':xs):ys) expr = parseCDSLF (xs:ys) expr
-parseCDSLF xs expr
-    | ":" `elem` xs = do
-        let (cond, ep) = break (== ":") xs
-        case (parseCDSLF cond [], parseCDSLF ep []) of
-            ((c, ce), (e, ee)) -> ([If c e], ce ++ ee)
-    | otherwise = case parseOneCDSL xs 0 of
-        Left (xpr, ys) -> parseCDSLF ys (xpr:expr)
-        Right (err, n) -> case parseCDSLF (drop n xs) expr of
-            (x, e) -> (x, err:e)
 
 
-
-
+parseIfExpr :: String -> Either CDSLExpr [CDSLParseError]
+parseIfExpr xs = do
+    let (y, ys) = (takeWhile (/= ':') xs, removeFirst (dropWhile (/= ':') xs) ':')
+    case (parseExpr (stringToList y), parseExpr (stringToList ys)) of
+        (Left cond, Left expr) -> Left (If cond expr)
+        (Right err, _) -> Right err
+        (_, Right err) -> Right err
 
 
 parseOneCDSL :: [String] -> Int -> Either (CDSLExpr, [String]) (CDSLParseError, Int)
@@ -434,8 +427,6 @@ parseOneCDSL (x:xs) n = case x of
     _ -> case readMaybe x :: Maybe Int of
         Just i -> Left (Numeric i, xs)
         _ -> Left (Text x, xs)
-
-
 
 validateFeature :: String -> Either Feature CDSLParseError
 validateFeature x = case x of

@@ -1,5 +1,5 @@
 GAME
-win_con = [greatest players score]
+win_con = greatest players score
 end_con = [any players isEmpty hand, any players isEqual score 10]
 END
 
@@ -14,7 +14,7 @@ END
 # Player stats
 PLAYER
 player_hand = 4
-player_moves = [PLAYCARD FALSE, DRAWCARD TRUE, DRAWCARD TRUE, DRAWCARD TRUE, PASS FALSE]
+player_moves = [PLAY_CARD FALSE, DRAW_CARD TRUE, DRAW_CARD TRUE, DRAW_CARD TRUE, PASS FALSE]
 END
 
 

@@ -78,7 +78,7 @@ test = hspec $ do
     testStringToList "[any always]" ["any always"]
     testStringToList "[any always, any always]" ["any always", "any always"]
     testStringToList
-        "[isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]"
+        " [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]"
         ["isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile]", "isEmpty pile : take 1 deck pile"]
 
 

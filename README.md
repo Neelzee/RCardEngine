@@ -1,5 +1,9 @@
 # Haskell-Project
 
+This is a Card Game Engine, for the terminal.
+One can create Card Games for terminals, in a terminal.
+
+# How to use
 
 run with `stack run`
 
