@@ -176,19 +176,12 @@ gameStart gi = do
     game' <- case lookup PlayerHand (rules game) of
         Just [Numeric n] -> return (dealCards game n)
         _ -> return (dealCards game 3)
-    let game'' = game' {
-        pile = case lookup PileCount (rules game') of
-            Just [Numeric i] -> take i (deck game)
-            _ -> take 1 (deck game)
-        , deck = case lookup PileCount (rules game') of
-            Just [Numeric i] -> drop i (deck game)
-            _ ->  drop 1 (deck game)
-    }
+    
 
-    let g = gameActions (lookupAll Start (actions game'')) game''
+    let g = gameActions (lookupAll Start (actions game')) game'
 
-    game''' <- gameLoop g
-    gameEnd game'''
+    game'' <- gameLoop g
+    gameEnd game''
 
 gameEnd :: Game -> IO ()
 gameEnd g = case find (not . null) (map ($ g) (winCon g)) of
