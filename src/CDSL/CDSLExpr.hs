@@ -2,6 +2,7 @@ module CDSL.CDSLExpr where
 
 import Feature (Feature)
 import CardGame.PlayerMove (Move)
+import CardGame.Card (CardEffect, Card)
 
 -- Card Domain Specific Language
 data CDSLExpr =
@@ -55,6 +56,8 @@ data CDSLExpr =
     | CardValue
     -- References Player Action
     | PlayerAction Move Bool
+    -- CardEffect
+    | CEffect CardEffect [Card]
     -- A string
     | Text String
     -- Null value, is not used in normal expressions, and just in error messages
@@ -80,6 +83,7 @@ data CDSLParseErrorCode =
     | OnLoad Feature CDSLParseErrorCode
     | NotAFeatureError
     | MissMatchFeatureError
+    | InvalidFeatureArgumentError
     deriving (Show, Eq)
 
 

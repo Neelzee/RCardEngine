@@ -12,6 +12,7 @@ import Feature
 import Functions (isList, stringToList, trim, mapIf, removeFirst)
 import CardGame.Player (getMoveFromString, parsePlayerMovesExpr, parsePlayerMoves, parsePlayerMove)
 import Data.Maybe (mapMaybe)
+import CardGame.Card
 
 
 
@@ -321,12 +322,28 @@ readCDSL :: String -> Either (Feature, [CDSLExpr]) (Maybe Feature, [CDSLParseErr
 readCDSL xs = do
     let (y, ys) = (takeWhile (/='=') xs, removeFirst (dropWhile (/='=') xs) '=')
     case validateFeature (unpack $ strip $ pack y) of
+        -- Cards
+        Left CEDrawCard -> case readMaybe (unwords (drop 1 (words y))) :: Maybe Int of
+            Just i -> Left (CardEffects, [CEffect (DrawCards i) (getCards (stringToList ys))])
+            Nothing -> Right (Just CardEffects, [CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = show (drop 1 (words y)) }])
+        Left CESwapHand -> Left (CardEffects, [CEffect SwapHand (getCards (stringToList ys))])
+        Left CEChangeCard -> Left (CardEffects, [CEffect ChangeCard (getCards (stringToList ys))])
+        Left CETakeFromHand -> Left (CardEffects, [CEffect TakeFromHand (getCards (stringToList ys))])
+        Left CEPassNext -> Left (CardEffects, [CEffect PassNext (getCards (stringToList ys))])
+        Left CEGiveCard -> Left (CardEffects, [CEffect GiveCard (getCards (stringToList ys))])
+
         Left PlayerMoves -> Left (PlayerMoves, map (uncurry PlayerAction) (mapMaybe parsePlayerMove (stringToList ys)))
         Left f -> case parseExpr (stringToList ys) of
             Left exprs -> Left (f, exprs)
             Right err -> Right (Just f, err)
         Right err -> Right (Nothing, [err])
 
+getCards :: [String] -> [Card]
+getCards [] = []
+getCards (x:xs) = case splitOn "." x of
+    [s,r] -> Card (trim s) (trim r) 0 : getCards xs
+    [s] -> Card (trim s) "" 0 : getCards xs
+    _ -> getCards xs
 
 
 parseExpr :: [String] -> Either [CDSLExpr] [CDSLParseError]
@@ -429,23 +446,40 @@ parseOneCDSL (x:xs) n = case x of
         _ -> Left (Text x, xs)
 
 validateFeature :: String -> Either Feature CDSLParseError
-validateFeature x = case x of
+validateFeature x = case words x of
+    -- Card Effects
+    ["CARD_EFFECTS"] -> Left CardEffects
+    ["change_card"] -> Left CEChangeCard
+    ["swap_hand"] -> Left CESwapHand
+    ["take_from_hand"] -> Left CETakeFromHand
+    ["give_card"] -> Left CEGiveCard
+    ["pass_next"] -> Left CEPassNext
+    ("draw_card":xs) -> case readMaybe (concat xs) :: Maybe Int of
+        Just _ -> Left CEDrawCard
+        Nothing -> Right (
+            CDSLParseError
+            {
+                pErr = InvalidFeatureArgumentError
+                , pExpr = Null
+                , rawExpr = x
+            })
     -- Cards
-    "card_suits" -> Left CardSuits
-    "card_values" -> Left CardValues
-    "card_ranks" -> Left CardRanks
-    "card_constraints" -> Left CardConstraints
+    ["card_suits"] -> Left CardSuits
+    ["card_values"] -> Left CardValues
+    ["card_ranks"] -> Left CardRanks
+    ["card_constraints"] -> Left CardConstraints
     -- Player
-    "player_hand" -> Left PlayerHand
-    "player_moves" -> Left PlayerMoves
-    "any_time" -> Left AnyTime
-    "start_time" -> Left StartTime
-    y -> case fromStringToFeature y of
+    ["player_hand"] -> Left PlayerHand
+    ["player_moves"] -> Left PlayerMoves
+    -- Time
+    ["any_time"] -> Left AnyTime
+    ["start_time"] -> Left StartTime
+    y -> case fromStringToFeature (unwords y) of
         Just f -> Left f
         Nothing -> Right (
             CDSLParseError
             {
                 pErr = NotAFeatureError
                 , pExpr = Null
-                , rawExpr = y
+                , rawExpr = unwords y
             })

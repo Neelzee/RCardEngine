@@ -7,7 +7,7 @@ import CardGame.Player
       resetMoves,
       deal,
       standardMoves)
-import CardGame.Card ( Deck, Card, defaultCardDeck )
+import CardGame.Card ( Deck, Card, CardEffect )
 
 import Data.CircularList ( fromList, toList, CList )
 import Text.Read (readMaybe)
@@ -18,6 +18,7 @@ import Feature (Feature)
 import Functions (unique, quicksort)
 import CardGame.PlayerMove (Move)
 import CDSL.CDSLExpr (CDSLExpr)
+import CardGame.CardFunctions (defaultCardDeck)
 
 data GameState = Start | TurnStart | TurnEnd | RoundStart | RoundEnd | End
     deriving (Show, Eq)
@@ -26,6 +27,7 @@ data Game = Game {
     gameName :: String
     , playerMoves :: [(Move, Bool)]
     , cardGen :: [Card]
+    , cardEffects :: [(Card, CardEffect)]
     , deck :: [Card]
     , pile :: [Card]
     , players :: CList Player

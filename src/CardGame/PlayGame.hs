@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-unused-do-bind #-}
 module CardGame.PlayGame where
 
 import Data.CircularList
@@ -16,7 +17,7 @@ import System.IO ( hFlush, stdout )
 import CardGame.PlayCommands (validatePLCommand, PLCommand (plc), UserActions (Play, Draw, PassTurn, HelpUA, Moves, HandUA, ScoreUA, QuitUA), printUACommands)
 import System.Console.ANSI (clearScreen)
 import CardGame.Game (Game (players, state, Game, pile, deck, actions, rules, winCon, canPlaceCard, gameName, endCon), GameState (Start, TurnEnd, TurnStart), dealCards, gameActions)
-import CardGame.Card (prettyPrintCards)
+import CardGame.CardFunctions
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
@@ -52,7 +53,9 @@ doPlayerTurn g = do
             putStr ("Playing -> " ++ gameName game ++ " -> " ++ name plr ++ " > ")
             hFlush stdout
             putStr "\nPile: "
-            prettyPrintCards [head (pile game)]
+            case pile game of
+                [] -> putStrLn "no cards on deck"
+                p -> prettyPrintCards [head p]
             action <- getLine
             case validatePLCommand action of
                 Left cm -> case plc cm of

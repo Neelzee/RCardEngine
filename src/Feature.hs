@@ -18,7 +18,14 @@ data Feature = WinCon
     | PlayerFeatures
     | Actions
     | GameFeatures
-    deriving (Eq, Enum)
+    | CardEffects
+    | CEChangeCard
+    | CESwapHand
+    | CETakeFromHand
+    | CEGiveCard
+    | CEPassNext
+    | CEDrawCard
+    deriving (Eq)
 
 
 instance Show Feature where
@@ -40,6 +47,13 @@ instance Show Feature where
         PlayerFeatures -> "PLAYER"
         Actions -> "ACTIONS"
         GameFeatures -> "GAME"
+        CardEffects -> "CARD_EFFECTS"
+        CEChangeCard -> "change_card"
+        CESwapHand -> "swap_hand"
+        CETakeFromHand -> "take_from_hand"
+        CEGiveCard -> "give_card"
+        CEPassNext -> "pass_next"
+        CEDrawCard -> "draw_card"
 
 
 -- Checks if the given feature is valid
@@ -61,6 +75,13 @@ fromStringToFeature x = case x of
     "PLAYER" -> Just PlayerFeatures
     "ACTIONS" -> Just Actions
     "GAME" -> Just GameFeatures
+    "CARD_EFFECTS" -> Just CardEffects
+    "change_card" -> Just CEChangeCard
+    "swap_hand" -> Just CESwapHand
+    "take_from_hand" -> Just CETakeFromHand
+    "give_card" -> Just CEGiveCard
+    "pass_next" -> Just CEPassNext
+    "draw_card" -> Just CEDrawCard
     _ -> Nothing
 
 
@@ -83,10 +104,25 @@ validateKeyWords x = case x of
     "PLAYER" -> Just "PLAYER"
     "ACTIONS" -> Just "ACTIONS"
     "GAME" -> Just "GAME"
+    "CARD_EFFECTS" -> Just "CARD_EFFECTS"
+    "change_card" -> Just "change_card"
+    "swap_hand" -> Just "swap_hand"
+    "take_from_hand" -> Just "take_from_hand"
+    "give_card" -> Just "give_card"
+    "pass_next" -> Just "pass_next"
+    "draw_card" -> Just "draw_card"
     _ -> Nothing
 
 
 isAFeatureOf :: Feature -> Feature -> Bool
+isAFeatureOf CEChangeCard CardEffects = True
+isAFeatureOf CEDrawCard CardEffects = True
+isAFeatureOf CEGiveCard CardEffects = True
+isAFeatureOf CEPassNext CardEffects = True
+isAFeatureOf CETakeFromHand CardEffects = True
+isAFeatureOf CESwapHand CardEffects = True
+isAFeatureOf CardEffects CardEffects = True
+
 isAFeatureOf CardConstraints CardFeatures = True
 isAFeatureOf CardSuits CardFeatures = True
 isAFeatureOf CardRanks CardFeatures = True

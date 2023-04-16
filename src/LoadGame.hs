@@ -2,7 +2,7 @@ module LoadGame where
 import CardGame.Game
 import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
-import CardGame.Card (defaultCardSuits, defaultCardValues, makeDeck, Card (Card), defaultCardRanks)
+import CardGame.Card (Card (Card))
 import Data.List.Extra (splitOn, trim)
 import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName))
 import Text.Read (readMaybe)
@@ -13,6 +13,7 @@ import CDSL.ExecCDSLExpr (execCDSLGame, execCDSLBool, execCDSLGameBool)
 import Data.CircularList (toList, fromList)
 import Functions (lookupAll, lookupOrDefault)
 import CDSL.ParseCardDSL (toNumeric)
+import CardGame.CardFunctions (defaultCardSuits, defaultCardRanks, defaultCardValues, makeDeck)
 
 loadGame :: Game -> Int -> IO Game
 loadGame g n = do

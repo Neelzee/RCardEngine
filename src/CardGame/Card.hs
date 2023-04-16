@@ -2,8 +2,22 @@ module CardGame.Card where
 
 import System.Random
 import Functions (removeNth)
-import CDSL.CDSLExpr (CDSLExpr (Text, Numeric))
-import Data.List (intercalate)
+
+
+data CardEffect =
+    -- Choose a new card to change to, i.e. standard "Vri-Åttern"
+    ChangeCard
+    -- Swap hand with another Player
+    | SwapHand
+    -- Takes a Card from an Player's Hand
+    | TakeFromHand
+    -- Gives a Card too another Player
+    | GiveCard
+    -- Passes the next Player's round
+    | PassNext
+    -- Makes the Player draw the given amount of cards, and skip their turn
+    | DrawCards Int
+    deriving (Show, Eq)
 
 
 data Card = Card {
@@ -30,28 +44,3 @@ shuffle' xs gen = y : shuffle' ys gen'
   where
     (index, gen') = randomR (0, length xs - 1) gen
     (y, ys) = removeNth index xs
-
-
-
-
-defaultCardSuits :: [CDSLExpr]
-defaultCardSuits = [Text "Hearts", Text "Clubs", Text "Diamonds", Text "Spades"]
-
-defaultCardRanks :: [CDSLExpr]
-defaultCardRanks = [Text "Ace", Text "Two", Text "Three", Text "Four", Text "Five", Text "Six", Text "Seven", Text "Eight", Text "Nine", Text "Ten", Text "Jack", Text "Queen", Text "King"]
-
-defaultCardValues :: [CDSLExpr]
-defaultCardValues = map Numeric [1..13]
-
-defaultCardDeck :: Deck
-defaultCardDeck = [ Card s n sc | (Text s) <- defaultCardSuits, (Text n) <- defaultCardRanks, (Numeric sc) <- defaultCardValues ]
-
-makeDeck :: [CDSLExpr] -> [CDSLExpr] -> [CDSLExpr] -> Deck
-makeDeck suits ranks values =
-  let paddedValues = values ++ repeat (Numeric 0)
-      rankValuePairs = zipWith (curry (\(Text r, Numeric i) -> (r, i))) ranks paddedValues
-      suitCards s = map (uncurry (Card s)) rankValuePairs
-  in concatMap (suitCards . (\(Text s) -> s)) suits
-
-prettyPrintCards :: [Card] -> IO ()
-prettyPrintCards xs = putStrLn (intercalate ", " (map show xs))

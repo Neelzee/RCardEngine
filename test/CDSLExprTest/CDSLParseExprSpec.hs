@@ -6,6 +6,7 @@ import CDSL.CDSLExpr
 import CDSL.CDSLExpr (CDSLExpr)
 import Feature
 import CardGame.PlayerMove
+import CardGame.Card (CardEffect(DrawCards), Card (Card))
 
 
 moduleName :: String -> String
@@ -49,6 +50,10 @@ test = hspec $ do
     testReadCDSLValid
         "player_moves = [PLAY_CARD FALSE, DRAW_CARD TRUE, DRAW_CARD TRUE, DRAW_CARD TRUE, PASS FALSE]"
             (PlayerMoves, [PlayerAction PlayCard False, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction DrawCard True, PlayerAction Pass False])
+
+    testReadCDSLValid
+        "draw_card 2 = [Hearts.Queen, Spades.Queen]"
+            (CardEffects, [CEffect (DrawCards 2) [Card "Hearts" "Queen" 0, Card "Spades" "Queen" 0]])
 
 
 testReadCDSLValid :: String -> (Feature, [CDSLExpr]) -> Spec
