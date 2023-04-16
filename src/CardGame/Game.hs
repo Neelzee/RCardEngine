@@ -27,7 +27,7 @@ data Game = Game {
     gameName :: String
     , playerMoves :: [(Move, Bool)]
     , cardGen :: [Card]
-    , cardEffects :: [(Card, CardEffect)]
+    , cardEffects :: [CDSLExpr]
     , deck :: [Card]
     , pile :: [Card]
     , players :: CList Player
@@ -77,6 +77,7 @@ createGame = do
                     gameName = "Default Game"
                     , playerMoves = []
                     , cardGen = []
+                    , cardEffects = []
                     , deck = drop 1 deck'
                     , pile = [head deck'], players = plrs'
                     , endCon = [defaultWinCon]

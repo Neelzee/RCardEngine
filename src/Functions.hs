@@ -256,3 +256,11 @@ unlistHelper wrd (x:xs)
             | y == ']' = ([], ys)
             | otherwise = case ulh ys of
                 (zs, ws) -> (y: zs, ws)
+
+
+deleteAt :: Int -> [a] -> [a]
+deleteAt n xs = take n xs ++ drop (n+1) xs
+
+
+updateAt :: Int -> a -> [a] -> [a]
+updateAt n x xs = take n xs ++ [x] ++ drop (n+1) xs

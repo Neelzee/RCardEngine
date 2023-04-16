@@ -1,13 +1,15 @@
 module CDSL.ExecCDSLExpr where
 
 import CardGame.Game (Game (deck, pile, players, cardGen))
-import Data.CircularList (toList)
-import CardGame.Player (Player(hand, pScore))
+import Data.CircularList (toList, size, update, fromList, rotNR, rotNL)
+import CardGame.Player (Player(hand, pScore, name))
 import Data.Either (partitionEithers)
-import CardGame.Card (shuffle, Card (suit, rank, cScore))
+import CardGame.Card (shuffle, Card (suit, rank, cScore), CardEffect (..))
 import CDSL.CDSLExpr
-import Data.List (elemIndex)
-import Functions (takeUntilDuplicate)
+import Data.List (elemIndex, intercalate)
+import Functions (takeUntilDuplicate, deleteAt, removeFirst, updateAt)
+import Text.Read (readMaybe)
+import CardGame.CardFunctions (prettyPrintCards)
 
 
 placeCardStmt :: [CDSLExpr] -> (Game -> Card -> Bool)
@@ -113,3 +115,47 @@ fromCDSLToCard x = case x of
     Pile -> Just pile
     Deck -> Just deck
     _ -> Nothing
+
+
+execCardEffect :: CardEffect -> Game -> Player -> IO Game
+execCardEffect ce g plr = case ce of
+    ChangeCard -> return g
+    SwapHand -> do
+        (p, i) <- choosePlayer g plr
+        let plrs = rotNR i (update (plr { hand = hand p }) (players g))
+        return (g { players = rotNL i (update (p { hand = hand plr }) plrs) })
+
+    TakeFromHand -> do
+        (p, i) <- choosePlayer g plr
+        (p', c) <- chooseCard p
+        let plrs = rotNR i (update (p { hand = c:hand p }) (players g)  )
+        return (g { players = rotNL i (update p' plrs) })
+
+    PassNext -> return g
+
+    (DrawCards n) -> return g
+    _ -> return g
+
+
+
+choosePlayer :: Game -> Player -> IO (Player, Int)
+choosePlayer g p = do
+    putStrLn (intercalate "," (map name (removeFirst (toList (players g)) p)) )
+    putStrLn ("Choose player (1/" ++ show (size (players g) - 1) ++ ")")
+    c <- getLine
+    case readMaybe c :: Maybe Int of
+        Just i -> return (removeFirst (toList (players g)) p !! (i - 2), i - 2)
+        Nothing -> do
+            putStrLn "Invalid choice"
+            choosePlayer g p
+
+chooseCard :: Player -> IO (Player, Card)
+chooseCard p = do
+    prettyPrintCards (hand p)
+    putStrLn ("Choose Card (1/" ++ show (length (hand p)) ++ ")")
+    c <- getLine
+    case readMaybe c :: Maybe Int of
+        Just i -> return ((p { hand = deleteAt (i - 1) (hand p) }), hand p !! (i - 1))
+        Nothing -> do
+            putStrLn "Invalid choice"
+            chooseCard p

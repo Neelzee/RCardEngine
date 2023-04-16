@@ -4,7 +4,7 @@ import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
 import CardGame.Card (Card (Card))
 import Data.List.Extra (splitOn, trim)
-import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName))
+import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects))
 import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe, mapMaybe)
 import CardGame.Player (standardMoves, resetMoves, parsePlayerMovesExpr, Player (pScore, hand))
@@ -47,6 +47,10 @@ loadGame' rls g = do
     
     let cards' = makeDeck cs cr cv
 
+
+    let ce = concat (lookupAll CardEffects rls)
+
+
     let cg = cycle cards'
     -- Player
     mv <- case lookup PlayerMoves rls of
@@ -77,6 +81,7 @@ loadGame' rls g = do
     let st = map execCDSLGame (lookupAll StartTime rls)
     return g {
         deck = cards'
+        , cardEffects = ce
         , gameName = gm
         , cardGen = cg
         , playerMoves = mv
