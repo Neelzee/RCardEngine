@@ -31,6 +31,7 @@ loadGameData gd n = do
 loadGameData' :: GameData -> [String] -> Either GameData [CDSLParseError]
 loadGameData' fs c = case parseFileHelper c 1 of
     Left nGd -> do
+        -- TODO: Change in such a way that an error is shown on invalid feature
         let gd = removeMaybe (map (first fromStringToFeature) nGd)
         let (gd', errs) = readGD gd
         let gd'' = mergeList fs gd'
@@ -65,7 +66,7 @@ readGD ((f, x:xs):ys) = case readCDSL x of
 
 
 parseFileHelper :: [String] -> Int -> Either [(String, [String])] CDSLParseError
-parseFileHelper xs = parseFileHelper' (map removeComments xs)
+parseFileHelper xs = parseFileHelper' (removeComments xs)
 
 
 parseFileHelper' :: [String] -> Int -> Either [(String, [String])] CDSLParseError
@@ -91,9 +92,9 @@ parseFileHelper' (x:xs) n = case validateKeyWords x of
             Nothing -> onlyNothing ys
 
 
-removeComments :: String -> String
-removeComments "" = ""
-removeComments ('#':_) = ""
+removeComments :: [String] -> [String]
+removeComments [] = []
+removeComments (('#':_):xs) = removeComments xs
 removeComments (y:ys) = y : removeComments ys
 
 
