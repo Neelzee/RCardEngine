@@ -61,11 +61,9 @@ execCDSLGame ((Take (Numeric n) a b):xs) g = if (a == Deck || a == Pile) && (b =
     then
         case (a, b) of
             (Pile, Deck) -> do
-                print "yuhu"
                 execCDSLGame xs (g { deck =  take n (pile g) ++ deck g, pile = drop n (pile g) })
             (Deck, Pile) -> do
-                print "yhauhdau"
-                execCDSLGame xs (g { deck =  drop n (pile g) ++ deck g, pile = take n (pile g) })
+                execCDSLGame xs (g { deck =  drop n (deck g) ++ deck g, pile = take n (deck g) })
             _ -> execCDSLGame xs g
     else
         execCDSLGame xs g

@@ -71,8 +71,6 @@ doPlayerTurn g = do
                             then
                                 do
                                     let card = hand plr !! (cardIndex - 1)
-                                    
-
 
                                     -- checks if card can be placed
                                     if foldr ((&&) . (\f -> f game card)) True (canPlaceCard game)

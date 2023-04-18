@@ -157,7 +157,7 @@ sleepPrint s n = do
     sleepPrint s (n - 1)
 
 gameActions :: [[Game -> IO Game]] -> Game -> IO Game
-gameActions fs = go (concat fs)
+gameActions xs = go (concat xs)
     where
         go :: [Game -> IO Game] -> Game -> IO Game
         go [] gm = return gm
