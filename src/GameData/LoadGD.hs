@@ -6,7 +6,7 @@ import Data.Maybe (mapMaybe)
 import Data.Bifunctor (first)
 import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords, isAFeatureOf)
 import CDSL.CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord, MissMatchFeatureError))
-import CDSL.ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLFromStringList, processIfString, parseStringList, parseCDSLPlayerAction, readCDSL)
+import CDSL.ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLFromStringList, processIfString, parseStringList, parseCDSLPlayerAction, readCDSL, validateFeature)
 import GameData.GD (GameData)
 import Functions (mergeList, removeMaybe, allGames)
 
@@ -65,15 +65,19 @@ readGD ((f, x:xs):ys) = case readCDSL x of
 
 
 parseFileHelper :: [String] -> Int -> Either [(String, [String])] CDSLParseError
-parseFileHelper [] _ = Left []
-parseFileHelper (('#':_):xs) n = parseFileHelper xs (n + 1) -- Ignores comments
-parseFileHelper ("":xs) n = parseFileHelper xs (n + 1) -- Ignores empty lines
-parseFileHelper (x:xs) n = case validateKeyWords x of
+parseFileHelper xs = parseFileHelper' (map removeComments xs)
+
+
+parseFileHelper' :: [String] -> Int -> Either [(String, [String])] CDSLParseError
+parseFileHelper' [] _ = Left []
+parseFileHelper' (('#':_):xs) n = parseFileHelper' xs (n + 1) -- Ignores comments
+parseFileHelper' ("":xs) n = parseFileHelper' xs (n + 1) -- Ignores empty lines
+parseFileHelper' (x:xs) n = case validateKeyWords x of
     Just rule -> do
         let (stmt, rest) = break isEnd xs
         if onlyNothing (map validateKeyWords stmt)
             then -- Adding two, since we're skiping both the feature, and the end
-                case parseFileHelper (drop 1 rest) (n + 2 + length stmt) of
+                case parseFileHelper' (drop 1 rest) (n + 2 + length stmt) of
                     Left rs -> Left ((rule, stmt):rs)
                     e -> e
             else
@@ -85,5 +89,11 @@ parseFileHelper (x:xs) n = case validateKeyWords x of
         onlyNothing (y:ys) = case y of
             Just _ -> False
             Nothing -> onlyNothing ys
+
+
+removeComments :: String -> String
+removeComments "" = ""
+removeComments ('#':_) = ""
+removeComments (y:ys) = y : removeComments ys
 
 

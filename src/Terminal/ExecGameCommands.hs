@@ -94,7 +94,7 @@ listGameData = do
         listGameData' [] _ = []
         listGameData' (x:xs) n = case x of
             Left gd -> case lookup GameName gd of
-                Just (Text gm:_) -> GCEffect { se = gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1)
+                Just (Text gm:_) -> GCEffect { se = show n ++ " " ++ gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1)
                 _ -> GCEffect { se = "Failed listing game: " ++ show n ++ ", found no name", ve = "Failed loading game: " ++ show n ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ show n)]} : listGameData' xs (n + 1)
             Right e -> GCEffect { se = "Failed listing game: " ++ show n, ve = "Failed loading game: " ++ show n ++ ", error: " ++ show e, gcErr = [CDSLError (Right e)] } : listGameData' xs (n + 1)
 
@@ -115,4 +115,4 @@ gameDataStatus :: GameData -> [GCEffect]
 gameDataStatus [] = []
 gameDataStatus ((Saved, _):xs) = gameDataStatus xs
 gameDataStatus ((GameName, _):xs) = gameDataStatus xs
-gameDataStatus ((f, s):xs) = GCEffect { se = show f, ve = "Feature " ++ show f ++ " : Statement ->\n" ++ intercalate "\n\t" (map fromCDSLToString s), gcErr = []}: gameDataStatus xs
+gameDataStatus ((f, s):xs) = GCEffect { se = show f, ve = "Feature " ++ show f ++ " : Statement ->\n\t" ++ intercalate "\n\t" (map fromCDSLToString s), gcErr = []}: gameDataStatus xs
