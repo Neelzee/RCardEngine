@@ -264,3 +264,18 @@ deleteAt n xs = take n xs ++ drop (n+1) xs
 
 updateAt :: Int -> a -> [a] -> [a]
 updateAt n x xs = take n xs ++ [x] ++ drop (n+1) xs
+
+
+removeLookup :: Eq a => a -> b -> [(a, b)] -> [(a, b)]
+removeLookup _ _ [] = []
+removeLookup k v (x@(ok, _):xs)
+  | k == ok = (k, v):xs
+  | otherwise = x : removeLookup k v xs
+
+
+removeLookupAll :: Eq a => a -> [b] -> [(a, b)] -> [(a, b)]
+removeLookupAll _ _ [] = []
+removeLookupAll k v (x@(ok, _):xs)
+  | k == ok && null v = removeLookupAll k v xs
+  | k == ok = map (\val -> (k, val)) v ++ removeLookupAll k [] xs
+  | otherwise = x : removeLookupAll k v xs

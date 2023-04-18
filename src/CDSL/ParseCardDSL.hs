@@ -441,6 +441,13 @@ parseOneCDSL (x:xs) n = case x of
     "suit" -> Left (CardSuit, xs)
     "value" -> Left (CardValue, xs)
     "turnOrder" -> Left (TurnOrder, xs)
+    "reset" -> case parseOneCDSL xs (n + 1) of
+        Left (ex, ys) -> Left (Reset ex, ys)
+        Right (e, i) -> Right (e { pExpr = Reset (pExpr e) }, i)
+    "player" -> case parseOneCDSL xs (n + 1) of
+        Left (ex, ys) -> Left (CurrentPlayer ex, ys)
+        Right (e, i) -> Right (e { pExpr = CurrentPlayer (pExpr e) }, i)
+    "moves" -> Left (PMoves, xs)
     _ -> case readMaybe x :: Maybe Int of
         Just i -> Left (Numeric i, xs)
         _ -> Left (Text x, xs)

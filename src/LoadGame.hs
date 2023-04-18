@@ -34,7 +34,6 @@ loadGame' rls g = do
     gm <- case lookup GameName rls of
         Just [Text nm] -> return nm
         _ -> return "game"
-
     cs <- case lookup CardSuits rls of
         Just suits -> return suits
         _ -> return defaultCardSuits
@@ -44,7 +43,7 @@ loadGame' rls g = do
     cv <- case lookup CardValues rls of
         Just values -> return (mapMaybe toNumeric values)
         _ -> return defaultCardValues
-    
+
     let cards' = makeDeck cs cr cv
 
 
@@ -88,20 +87,20 @@ loadGame' rls g = do
         , players = fromList (map (`resetMoves` mv) (toList (players g)))
         , endCon = ec
         , winCon = wc
-        , actions = [(Start, at), (Start, st), (TurnStart, st), (TurnEnd, st)]
+        , actions = [(Start, map (\val -> (val, True)) at), (Start, map (\val -> (val, True)) st), (TurnStart, map (\val -> (val, True)) st), (TurnEnd, map (\val -> (val, True)) st)]
         , rules = [(PlayerHand, hc),(PileCount, pl)]
         , canPlaceCard = [pc]
     }
 
 placeCardStmt :: [CDSLExpr] -> (Int -> Int -> Bool) -> (String -> String -> Bool) -> Game -> Card -> Bool
 placeCardStmt [] _ _ _ _ = True
-placeCardStmt (x:xs) fi fs g c@(Card s r v) = do
-    let (Card s' r' v') = head (pile g)
-    case x of
-        CardValue -> v `fi` v' && placeCardStmt xs fi fs g c
-        CardRank -> r `fs` r' && placeCardStmt xs fi fs g c
-        CardSuit -> s `fs` s' && placeCardStmt xs fi fs g c
-        _ -> placeCardStmt xs fi fs g c
+placeCardStmt (x:xs) fi fs g c@(Card s r v) = null (pile g) || (do
+            let (Card s' r' v') = head (pile g)
+            case x of
+                CardValue -> v `fi` v' && placeCardStmt xs fi fs g c
+                CardRank -> r `fs` r' && placeCardStmt xs fi fs g c
+                CardSuit -> s `fs` s' && placeCardStmt xs fi fs g c
+                _ -> placeCardStmt xs fi fs g c)
 
 
 

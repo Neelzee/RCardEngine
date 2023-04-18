@@ -1,8 +1,8 @@
 module CDSL.ExecCDSLExpr where
 
-import CardGame.Game (Game (deck, pile, players, cardGen))
-import Data.CircularList (toList, size, update, fromList, rotNR, rotNL)
-import CardGame.Player (Player(hand, pScore, name))
+import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves), GameState (TurnEnd))
+import Data.CircularList (toList, size, update, fromList, rotNR, rotNL, focus)
+import CardGame.Player (Player(hand, pScore, name, moves))
 import Data.Either (partitionEithers)
 import CardGame.Card (shuffle, Card (suit, rank, cScore), CardEffect (..))
 import CDSL.CDSLExpr
@@ -40,7 +40,7 @@ compareCards (x:xs) g c = do
 execCDSLGame :: [CDSLExpr] -> Game -> Game
 execCDSLGame [] g = g
 execCDSLGame ((If l r):xs) g = case partitionEithers (map execCDSLBool l) of
-    (res, []) -> if all (== True) res
+    (res, []) -> if and res
         then
             execCDSLGame xs (execCDSLGame r g)
         else
@@ -66,6 +66,9 @@ execCDSLGame ((Shuffle a):xs) g = case a of
     Deck -> execCDSLGame xs (g { deck = shuffle (deck g) })
     Pile -> execCDSLGame xs (g { pile = shuffle (pile g) })
     _ -> execCDSLGame xs g
+execCDSLGame [Reset (CurrentPlayer PMoves)] g = case focus (players g) of
+    Just p -> g { players = update (p { moves = playerMoves g }) (players g) }
+    Nothing -> g
 execCDSLGame (_:xs) g = execCDSLGame xs g
 
 
@@ -131,9 +134,10 @@ execCardEffect ce g plr = case ce of
         let plrs = rotNR i (update (p { hand = c:hand p }) (players g)  )
         return (g { players = rotNL i (update p' plrs) })
 
-    PassNext -> return g
+    PassNext -> return (g { actions = (TurnEnd, [(execCDSLGame [AffectPlayer PassNext], False)]) : actions g})
 
-    (DrawCards n) -> return g
+    (DrawCards n) -> return (g { actions = (TurnEnd, [(execCDSLGame [AffectPlayer (DrawCards n)], False)]) : actions g})
+
     _ -> return g
 
 

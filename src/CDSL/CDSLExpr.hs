@@ -46,6 +46,8 @@ data CDSLExpr =
     | And CDSLExpr CDSLExpr
     -- Evals too true if any condition is true
     | Or CDSLExpr CDSLExpr
+    -- The following expression affects the next player
+    | AffectPlayer CardEffect
     -- References the turn order
     | TurnOrder
     -- References Card Rank
@@ -58,6 +60,12 @@ data CDSLExpr =
     | PlayerAction Move Bool
     -- CardEffect
     | CEffect CardEffect [Card]
+    -- Current Player
+    | CurrentPlayer CDSLExpr
+    -- Resets a player ability
+    | Reset CDSLExpr
+    -- Moves
+    | PMoves
     -- A string
     | Text String
     -- Null value, is not used in normal expressions, and just in error messages

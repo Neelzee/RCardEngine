@@ -9,7 +9,7 @@ import CardGame.Player
       standardMoves)
 import CardGame.Card ( Deck, Card, CardEffect )
 
-import Data.CircularList ( fromList, toList, CList )
+import Data.CircularList ( fromList, toList, CList, empty )
 import Text.Read (readMaybe)
 import System.Time.Extra ( sleep )
 import Data.List (sortBy)
@@ -35,7 +35,7 @@ data Game = Game {
     , winCon :: [Game -> [Player]]
     , state :: GameState
     , rules :: [(Feature, [CDSLExpr])]
-    , actions :: [(GameState, [Game -> Game])]
+    , actions :: [(GameState, [(Game -> Game, Bool)])]
     , rounds :: Int
     , canPlaceCard :: [Game -> Card -> Bool]
 }
@@ -63,6 +63,25 @@ updatePlayers game plrs = game { players = plrs }
 
 updateState :: Game -> GameState -> Game
 updateState game st = game { state = st }
+
+
+createEmptyGame :: Game
+createEmptyGame = Game {
+                    gameName = "Default Game"
+                    , playerMoves = []
+                    , cardGen = []
+                    , cardEffects = []
+                    , deck = []
+                    , pile = []
+                    , players = empty
+                    , endCon = []
+                    , winCon = []
+                    , state = Start
+                    , rules = []
+                    , actions = []
+                    , rounds = 0
+                    , canPlaceCard = []
+                    }
 
 createGame :: IO Game
 createGame = do

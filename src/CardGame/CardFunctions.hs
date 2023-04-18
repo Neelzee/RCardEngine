@@ -25,3 +25,11 @@ makeDeck suits ranks values =
 
 prettyPrintCards :: [Card] -> IO ()
 prettyPrintCards xs = putStrLn (intercalate ", " (map show xs))
+
+
+
+cardElem :: Card -> [Card] -> Bool
+cardElem _ [] = False
+cardElem c@(Card s r _) ((Card ss rr _):xs)
+    | (ss == "" || s == ss) && (rr == "" || rr == r) = True
+    | otherwise = cardElem c xs 

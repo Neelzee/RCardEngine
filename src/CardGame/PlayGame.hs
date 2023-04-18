@@ -8,16 +8,18 @@ import System.Time.Extra ( sleep )
 import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore), prettyPrintMoves )
 import Text.Read (readMaybe)
 import Data.List (find, intercalate)
-import Feature ( Feature(PileCount, PlayerHand) )
-import CDSL.CDSLExpr (CDSLExpr(Numeric))
+import Feature ( Feature(PileCount, PlayerHand, CardEffects) )
+import CDSL.CDSLExpr (CDSLExpr(Numeric, CEffect))
 import LoadGame (loadGame)
-import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique)
+import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique, removeLookup, removeLookupAll)
 import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
 import System.IO ( hFlush, stdout )
 import CardGame.PlayCommands (validatePLCommand, PLCommand (plc), UserActions (Play, Draw, PassTurn, HelpUA, Moves, HandUA, ScoreUA, QuitUA), printUACommands)
 import System.Console.ANSI (clearScreen)
-import CardGame.Game (Game (players, state, Game, pile, deck, actions, rules, winCon, canPlaceCard, gameName, endCon), GameState (Start, TurnEnd, TurnStart), dealCards, gameActions)
+import CardGame.Game (Game (players, state, Game, pile, deck, actions, rules, winCon, canPlaceCard, gameName, endCon, playerMoves, cardEffects), GameState (Start, TurnEnd, TurnStart), dealCards, gameActions, createEmptyGame)
 import CardGame.CardFunctions
+import CardGame.Card (Card, CardEffect)
+import CDSL.ExecCDSLExpr (execCardEffect)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
@@ -38,7 +40,11 @@ gameLoop g = do
                     do
                         g' <- doPlayerTurn g
                         -- new player turn
-                        gameLoop (g' { players = rotR (players g') })
+                        let game = g' { state = TurnEnd, players = rotR (players g') }
+                        let acts = map (map fst) (lookupAll (state game) (actions game))
+                        let game' = gameActions acts  game
+                        let acts' = map (filter snd) (lookupAll (state game) (actions game))
+                        gameLoop (game' { actions = removeLookupAll TurnEnd acts' (actions game) })
 
 
 
@@ -47,7 +53,8 @@ doPlayerTurn :: Game -> IO Game
 doPlayerTurn g = do
     -- Applies actions on game start
     let g' = g { state = TurnStart }
-    let game = gameActions (lookupAll (state g') (actions g')) g'
+    let acts = map (map fst) (lookupAll (state g') (actions g'))
+    let game = gameActions acts g'
     case focus (players game) of
         Just plr -> do
             putStr ("Playing -> " ++ gameName game ++ " -> " ++ name plr ++ " > ")
@@ -66,12 +73,14 @@ doPlayerTurn g = do
                                     let card = hand plr !! (cardIndex - 1)
                                     -- TODO:
                                     -- Check card effect
+                                    game <- checkCardEffect card g
+
 
                                     -- checks if card can be placed
                                     if foldr ((&&) . (\f -> f game card)) True (canPlaceCard game)
                                         then
                                             do
-                                                putStrLn ("Plays " ++ show card ++ " on " ++ show (head (pile game)))
+                                                putStrLn ("Plays " ++ show card)
                                                 let plr' = plr { hand = removeFirst (hand plr) card, moves = removeFirst (moves plr) (PlayCard, b) }
                                                 -- If player can play card again, 
                                                 if b
@@ -84,7 +93,7 @@ doPlayerTurn g = do
                                                             return game { state = TurnEnd, pile = card:pile game, players = update plr' (players game)}
                                         else
                                             do
-                                                putStrLn ("Cannot place " ++ show card ++ " on " ++ show (head (pile game)))
+                                                putStrLn ("Cannot place " ++ show card)
                                                 sleep 1
                                                 doPlayerTurn game
                             else
@@ -178,13 +187,14 @@ doPlayerTurn g = do
 gameStart :: Int -> IO ()
 gameStart gi = do
     plrs <- createPlayer
-    game <- loadGame (Game { players = fromList plrs, state = Start }) gi
+    let gm = createEmptyGame
+    game <- loadGame (gm { players = fromList plrs, state = Start }) gi
     game' <- case lookup PlayerHand (rules game) of
         Just [Numeric n] -> return (dealCards game n)
         _ -> return (dealCards game 3)
-    
 
-    let g = gameActions (lookupAll Start (actions game')) game'
+    let acts = map (map fst) (lookupAll (state game') (actions game'))
+    let g = gameActions acts game'
 
     game'' <- gameLoop g
     gameEnd game''
@@ -205,3 +215,18 @@ createPlayer = do
             sleep 1
             createPlayer
 
+
+
+checkCardEffect :: Card -> Game -> IO Game
+checkCardEffect c g = case checkCE (cardEffects g) of
+    Just ef -> case focus (players g) of
+        Just p -> execCardEffect ef g p
+        Nothing -> return g
+    Nothing -> return g
+    where
+        checkCE :: [CDSLExpr] -> Maybe CardEffect
+        checkCE [] = Nothing
+        checkCE  (CEffect ef xs:ys)
+            | c `cardElem` xs = Just ef
+            | otherwise = checkCE ys
+        checkCE (_:xs) = checkCE xs

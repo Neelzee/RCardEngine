@@ -2,7 +2,7 @@ module CardGame.Player where
 
 import CardGame.Card ( Card(Card) )
 import Data.CircularList (CList, focus, size, rotR, update)
-import CDSL.CDSLExpr (CDSLExpr (Text))
+import CDSL.CDSLExpr (CDSLExpr (Text, PlayerAction))
 import Data.Maybe (mapMaybe)
 import Functions (splitAndTrim, mapCLCount)
 import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass), prettyShow)
@@ -105,6 +105,7 @@ toString (a, b) = show a ++ " " ++ (if b then "TRUE" else "FALSE")
 parsePlayerMovesExpr :: [CDSLExpr] -> [(Move, Bool)]
 parsePlayerMovesExpr [] = []
 parsePlayerMovesExpr (Text m:xs) = parsePlayerMoves m ++ parsePlayerMovesExpr xs
+parsePlayerMovesExpr (PlayerAction m b:xs) = (m, b) : parsePlayerMovesExpr xs 
 parsePlayerMovesExpr (_:xs) = parsePlayerMovesExpr xs
 
 
