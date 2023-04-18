@@ -40,7 +40,7 @@ compareCards (x:xs) g c = do
 
 execCDSLGame :: [CDSLExpr] -> Game -> IO Game
 execCDSLGame [] g = return g
-execCDSLGame ((If l r):xs) g = case partitionEithers (map execCDSLBool l) of
+execCDSLGame ((If l r):xs) g = case partitionEithers (map (`execCDSLGameBool` g) l) of
     (res, []) -> if and res
         then
             do
@@ -60,8 +60,12 @@ execCDSLGame ((Swap a b):xs) g = if (a == Deck || a == Pile) && (b == Deck || b 
 execCDSLGame ((Take (Numeric n) a b):xs) g = if (a == Deck || a == Pile) && (b == Deck || b == Pile)
     then
         case (a, b) of
-            (Pile, Deck) -> execCDSLGame xs (g { deck =  take n (pile g) ++ deck g, pile = drop n (pile g) })
-            (Deck, Pile)->  execCDSLGame xs (g { deck =  drop n (pile g) ++ deck g, pile = take n (pile g) })
+            (Pile, Deck) -> do
+                print "yuhu"
+                execCDSLGame xs (g { deck =  take n (pile g) ++ deck g, pile = drop n (pile g) })
+            (Deck, Pile) -> do
+                print "yhauhdau"
+                execCDSLGame xs (g { deck =  drop n (pile g) ++ deck g, pile = take n (pile g) })
             _ -> execCDSLGame xs g
     else
         execCDSLGame xs g
@@ -126,6 +130,8 @@ execCDSLGameBool e@(Any (Players (IsEqual a b))) g = case ((a == Score, b == Sco
     ((False, _), (_, Right _)) -> Right (CDSLExecError { err = InvalidSyntaxError, expr = a })
     ((_, False), (Right _, _)) -> Right (CDSLExecError { err = InvalidSyntaxError, expr = b })
     _ -> Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
+execCDSLGameBool Always _ = Left True  
+execCDSLGameBool Never _ = Left False  
 execCDSLGameBool e _ = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
 

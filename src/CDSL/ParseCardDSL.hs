@@ -263,7 +263,7 @@ fromCDSLToString Hand = "hand"
 fromCDSLToString (IsEqual l r) = "isEqual " ++ fromCDSLToString l ++ fromCDSLToString r
 fromCDSLToString (Numeric i) = show i ++ " "
 fromCDSLToString (IsEmpty e) = "isEmpty " ++ fromCDSLToString e
-fromCDSLToString (If cond stmt) = intercalate "," (map fromCDSLToString cond) ++ " : " ++ intercalate "," (map fromCDSLToString stmt)
+fromCDSLToString (If cond stmt) = intercalate ", " (map fromCDSLToString cond) ++ " : " ++ intercalate ", " (map fromCDSLToString stmt)
 fromCDSLToString (Swap l r) = "swap " ++ fromCDSLToString l ++ fromCDSLToString r
 fromCDSLToString (Shuffle e) = "shuffle " ++ fromCDSLToString e
 fromCDSLToString Deck = "deck"
@@ -271,7 +271,7 @@ fromCDSLToString Pile = "pile"
 fromCDSLToString (Take c f t) = "take " ++ fromCDSLToString c ++ fromCDSLToString f ++ fromCDSLToString t
 fromCDSLToString Always = "always"
 fromCDSLToString Never = "never"
-fromCDSLToString (Not e) = "not " ++ fromCDSLToString e
+fromCDSLToString (Not e) = "!" ++ fromCDSLToString e
 fromCDSLToString (And l r) = "and " ++ fromCDSLToString l ++ fromCDSLToString r
 fromCDSLToString (Or l r) = "or " ++ fromCDSLToString l ++ fromCDSLToString r
 fromCDSLToString TurnOrder = "turnOrder"
@@ -280,7 +280,10 @@ fromCDSLToString CardSuit = "suit"
 fromCDSLToString CardValue = "value"
 fromCDSLToString (Text s) = s
 fromCDSLToString (PlayerAction a b) = show a ++ " " ++ if b then "TRUE" else "FALSE"
-fromCDSLToString _ = ""
+fromCDSLToString (Reset (CurrentPlayer PMoves)) = "reset player moves"
+fromCDSLToString (AffectPlayer ce) = "affect_player " ++ show ce
+fromCDSLToString (CEffect ce cs) = "card_effect " ++ show ce ++ " " ++ show cs
+fromCDSLToString _ = "(NOT ADDED)"
 
 
 

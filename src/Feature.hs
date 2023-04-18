@@ -37,8 +37,8 @@ instance Show Feature where
         CardValues -> "CARD_VALUES"
         CardRanks -> "CARD_RANKS"
         EndCon -> "END_CON"
-        AnyTime -> "ANY_TIME"
-        StartTime -> "START_TIME"
+        AnyTime -> "any_time"
+        StartTime -> "start_time"
         TurnEndTime -> "turn_end"
         TurnStartTime -> "turn_start"
         PlayerHand -> "PLAYER_HAND"
@@ -68,12 +68,12 @@ fromStringToFeature x = case x of
     "CARD_VALUES" -> Just CardValues
     "CARD_RANKS" -> Just CardRanks
     "end_con" -> Just EndCon
-    "ANY_TIME" -> Just AnyTime
+    "any_time" -> Just AnyTime
     "PLAYER_HAND" -> Just PlayerHand
     "PLAYER_MOVES" -> Just PlayerMoves
     "PILE_COUNT" -> Just PileCount
     "GAME_NAME" -> Just GameName
-    "START_TIME" -> Just StartTime
+    "start_time" -> Just StartTime
     "CARD_CONSTRAINTS" -> Just CardConstraints
     "CARD" -> Just CardFeatures
     "PLAYER" -> Just PlayerFeatures
@@ -99,12 +99,12 @@ validateKeyWords x = case x of
     "CARD_VALUES" -> Just "CARD_VALUES"
     "CARD_RANKS" -> Just "CARD_RANKS"
     "end_con" -> Just "end_con"
-    "ANY_TIME" -> Just "ANY_TIME"
+    "any_time" -> Just "any_time"
     "PILE_COUNT" -> Just "PILE_COUNT"
     "PLAYER_HAND" -> Just "PLAYER_HAND"
     "PLAYER_MOVES" -> Just "PLAYER_MOVES"
     "GAME_NAME" -> Just "GAME_NAME"
-    "START_TIME" -> Just "START_TIME"
+    "start_time" -> Just "start_time"
     "CARD_CONSTRAINTS" -> Just "CARD_CONSTRAINTS"
     "CARD" -> Just "CARD"
     "PLAYER" -> Just "PLAYER"

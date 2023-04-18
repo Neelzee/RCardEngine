@@ -3,11 +3,11 @@ module CDSLExprTest.CDSLParseExprSpec where
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
 import CDSL.ParseCardDSL
 import CDSL.CDSLExpr
-import CDSL.CDSLExpr (CDSLExpr (CurrentPlayer, PMoves))
+import CDSL.CDSLExpr (CDSLExpr (CurrentPlayer, PMoves, Always))
 import Feature
 import CardGame.PlayerMove
 import CardGame.Card (CardEffect(DrawCards), Card (Card))
-import Feature (Feature(TurnStartTime))
+import Feature (Feature(TurnStartTime, TurnEndTime))
 
 
 moduleName :: String -> String
@@ -60,6 +60,10 @@ test = hspec $ do
     testReadCDSLValid
         "turn_start = [always : reset player moves]"
             (TurnStartTime, [If [Always] [Reset (CurrentPlayer PMoves)]])
+
+    testReadCDSLValid
+        "turn_end = [always : reset player moves]"
+            (TurnEndTime, [If [Always] [Reset (CurrentPlayer PMoves)]])
 
 
 testReadCDSLValid :: String -> (Feature, [CDSLExpr]) -> Spec
