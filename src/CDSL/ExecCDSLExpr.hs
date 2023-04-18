@@ -1,7 +1,7 @@
 module CDSL.ExecCDSLExpr where
 
 import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves), GameState (TurnEnd))
-import Data.CircularList (toList, size, update, fromList, rotNR, rotNL, focus)
+import Data.CircularList (toList, size, update, fromList, rotNR, rotNL, focus, rotR, isEmpty)
 import CardGame.Player (Player(hand, pScore, name, moves))
 import Data.Either (partitionEithers)
 import CardGame.Card (shuffle, Card (suit, rank, cScore), CardEffect (..))
@@ -10,6 +10,7 @@ import Data.List (elemIndex, intercalate)
 import Functions (takeUntilDuplicate, deleteAt, removeFirst, updateAt)
 import Text.Read (readMaybe)
 import CardGame.CardFunctions (prettyPrintCards)
+import Extra (sleep)
 
 
 placeCardStmt :: [CDSLExpr] -> (Game -> Card -> Bool)
@@ -37,15 +38,17 @@ compareCards (x:xs) g c = do
 
 
 
-execCDSLGame :: [CDSLExpr] -> Game -> Game
-execCDSLGame [] g = g
+execCDSLGame :: [CDSLExpr] -> Game -> IO Game
+execCDSLGame [] g = return g
 execCDSLGame ((If l r):xs) g = case partitionEithers (map execCDSLBool l) of
     (res, []) -> if and res
         then
-            execCDSLGame xs (execCDSLGame r g)
+            do
+                g' <- execCDSLGame r g
+                execCDSLGame xs g'
         else
-            g
-    _ -> g
+            return g
+    _ -> return g
 execCDSLGame ((Swap a b):xs) g = if (a == Deck || a == Pile) && (b == Deck || b == Pile)
     then
         case (a, b) of
@@ -66,9 +69,26 @@ execCDSLGame ((Shuffle a):xs) g = case a of
     Deck -> execCDSLGame xs (g { deck = shuffle (deck g) })
     Pile -> execCDSLGame xs (g { pile = shuffle (pile g) })
     _ -> execCDSLGame xs g
-execCDSLGame [Reset (CurrentPlayer PMoves)] g = case focus (players g) of
-    Just p -> g { players = update (p { moves = playerMoves g }) (players g) }
-    Nothing -> g
+execCDSLGame (Reset (CurrentPlayer PMoves):xs) g = case focus (players g) of
+    Just p -> execCDSLGame xs (g { players = update (p { moves = playerMoves g }) (players g) })
+    Nothing -> return g
+execCDSLGame (AffectPlayer ce:xs) g = case ce of
+    PassNext -> do
+        putStrLn "Your turn was passed."
+        sleep 1
+        execCDSLGame xs (g { players = rotR (players g) })
+    (DrawCards n) -> case focus (players g) of
+        Just p -> do
+            putStrLn ("You must draw " ++ show n ++ " cards")
+            sleep 1
+            let crds = take n (deck g)
+            execCDSLGame xs (g { players = update (p { hand = crds ++ hand p }) (players g) })
+        Nothing -> if isEmpty (players g)
+            then
+                return g
+            else
+                 execCDSLGame (AffectPlayer ce:xs) (g { players = rotR (players g) })
+    _ -> execCDSLGame xs g
 execCDSLGame (_:xs) g = execCDSLGame xs g
 
 
@@ -123,6 +143,13 @@ fromCDSLToCard x = case x of
 execCardEffect :: CardEffect -> Game -> Player -> IO Game
 execCardEffect ce g plr = case ce of
     ChangeCard -> return g
+
+    GiveCard -> do
+        (p, i) <- choosePlayer g plr
+        (p', c) <- chooseCard plr
+        let plrs = rotNR i (update (p { hand = c:hand p }) (players g)  )
+        return (g { players = rotNL i (update p' plrs) })
+
     SwapHand -> do
         (p, i) <- choosePlayer g plr
         let plrs = rotNR i (update (plr { hand = hand p }) (players g))

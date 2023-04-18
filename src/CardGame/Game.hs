@@ -35,7 +35,7 @@ data Game = Game {
     , winCon :: [Game -> [Player]]
     , state :: GameState
     , rules :: [(Feature, [CDSLExpr])]
-    , actions :: [(GameState, [(Game -> Game, Bool)])]
+    , actions :: [(GameState, [(Game -> IO Game, Bool)])]
     , rounds :: Int
     , canPlaceCard :: [Game -> Card -> Bool]
 }
@@ -156,5 +156,9 @@ sleepPrint s n = do
     sleep 1
     sleepPrint s (n - 1)
 
-gameActions :: [[Game -> Game]] -> Game -> Game
-gameActions acs g = foldl' (foldl' (flip ($))) g acs
+gameActions :: [[Game -> IO Game]] -> Game -> IO Game
+gameActions fs = go (concat fs)
+    where
+        go :: [Game -> IO Game] -> Game -> IO Game
+        go [] gm = return gm
+        go (f:fs) gm = f gm >>= go fs

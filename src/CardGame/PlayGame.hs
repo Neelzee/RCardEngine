@@ -42,7 +42,7 @@ gameLoop g = do
                         -- new player turn
                         let game = g' { state = TurnEnd, players = rotR (players g') }
                         let acts = map (map fst) (lookupAll (state game) (actions game))
-                        let game' = gameActions acts  game
+                        game' <- gameActions acts game
                         let acts' = map (filter snd) (lookupAll (state game) (actions game))
                         gameLoop (game' { actions = removeLookupAll TurnEnd acts' (actions game) })
 
@@ -54,7 +54,7 @@ doPlayerTurn g = do
     -- Applies actions on game start
     let g' = g { state = TurnStart }
     let acts = map (map fst) (lookupAll (state g') (actions g'))
-    let game = gameActions acts g'
+    game <- gameActions acts g'
     case focus (players game) of
         Just plr -> do
             putStr ("Playing -> " ++ gameName game ++ " -> " ++ name plr ++ " > ")
@@ -71,9 +71,7 @@ doPlayerTurn g = do
                             then
                                 do
                                     let card = hand plr !! (cardIndex - 1)
-                                    -- TODO:
-                                    -- Check card effect
-                                    game <- checkCardEffect card g
+                                    
 
 
                                     -- checks if card can be placed
@@ -82,6 +80,8 @@ doPlayerTurn g = do
                                             do
                                                 putStrLn ("Plays " ++ show card)
                                                 let plr' = plr { hand = removeFirst (hand plr) card, moves = removeFirst (moves plr) (PlayCard, b) }
+                                                -- Check card effect
+                                                game <- checkCardEffect card g
                                                 -- If player can play card again, 
                                                 if b
                                                     then
@@ -194,7 +194,7 @@ gameStart gi = do
         _ -> return (dealCards game 3)
 
     let acts = map (map fst) (lookupAll (state game') (actions game'))
-    let g = gameActions acts game'
+    g <- gameActions acts game'
 
     game'' <- gameLoop g
     gameEnd game''
@@ -220,7 +220,9 @@ createPlayer = do
 checkCardEffect :: Card -> Game -> IO Game
 checkCardEffect c g = case checkCE (cardEffects g) of
     Just ef -> case focus (players g) of
-        Just p -> execCardEffect ef g p
+        Just p -> do
+            print ef
+            execCardEffect ef g p
         Nothing -> return g
     Nothing -> return g
     where

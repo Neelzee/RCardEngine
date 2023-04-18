@@ -3,7 +3,7 @@ import CardGame.Game
 import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
 import CardGame.Card (Card (Card))
-import Data.List.Extra (splitOn, trim)
+import Data.List.Extra (splitOn, trim, sortBy)
 import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects))
 import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe, mapMaybe)
@@ -113,7 +113,7 @@ createEndCon (x:xs) g = case execCDSLGameBool x g of
 createWinCon :: [CDSLExpr] -> Game -> [Player]
 createWinCon [] _ = []
 createWinCon (x:xs) g = case x of
-    (Greatest (Players Score)) -> undefined -- sort the players on the greatest score
+    (Greatest (Players Score)) -> sortBy (\p1 p2 -> compare (pScore p1) (pScore p2)) (toList (players g))
     (All (Players (IsEqual Score (Numeric n)))) -> filter ((== n) . pScore) (toList (players g)) ++ createWinCon xs g
     (All (Players (IsEmpty Hand))) -> filter (null . hand) (toList (players g)) ++ createWinCon xs g
     _ -> []
