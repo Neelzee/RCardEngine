@@ -4,7 +4,7 @@ import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
 import CardGame.Card (Card (Card))
 import Data.List.Extra (splitOn, trim, sortBy)
-import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects))
+import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects, TurnStartTime, TurnEndTime))
 import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe, mapMaybe)
 import CardGame.Player (standardMoves, resetMoves, parsePlayerMovesExpr, Player (pScore, hand))
@@ -78,6 +78,11 @@ loadGame' rls g = do
 
     -- Start
     let st = map execCDSLGame (lookupAll StartTime rls)
+
+    -- TurnStart
+    let ts = map execCDSLGame (lookupAll TurnStartTime rls)
+    let te = map execCDSLGame (lookupAll TurnEndTime rls)
+
     return g {
         deck = cards'
         , cardEffects = ce
@@ -87,7 +92,14 @@ loadGame' rls g = do
         , players = fromList (map (`resetMoves` mv) (toList (players g)))
         , endCon = ec
         , winCon = wc
-        , actions = [(Start, map (\val -> (val, True)) at), (Start, map (\val -> (val, True)) st), (TurnStart, map (\val -> (val, True)) st), (TurnEnd, map (\val -> (val, True)) st)]
+        , actions = [
+            (Start, map (\val -> (val, True)) at)
+            , (Start, map (\val -> (val, True)) st)
+            , (TurnStart, map (\val -> (val, True)) at)
+            , (TurnEnd, map (\val -> (val, True)) at)
+            , (TurnStart, map (\val -> (val, True)) ts)
+            , (TurnEnd, map (\val -> (val, True)) te)
+            ]
         , rules = [(PlayerHand, hc),(PileCount, pl)]
         , canPlaceCard = [pc]
     }

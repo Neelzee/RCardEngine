@@ -9,6 +9,7 @@ data Feature = WinCon
     | AnyTime
     | StartTime
     | TurnStartTime
+    | TurnEndTime
     | PlayerHand
     | PlayerMoves
     | PileCount
@@ -38,6 +39,7 @@ instance Show Feature where
         EndCon -> "END_CON"
         AnyTime -> "ANY_TIME"
         StartTime -> "START_TIME"
+        TurnEndTime -> "turn_end"
         TurnStartTime -> "turn_start"
         PlayerHand -> "PLAYER_HAND"
         PlayerMoves -> "PLAYER_MOVES"
@@ -85,6 +87,7 @@ fromStringToFeature x = case x of
     "pass_next" -> Just CEPassNext
     "draw_card" -> Just CEDrawCard
     "turn_start" -> Just TurnStartTime
+    "turn_end" -> Just TurnEndTime
     _ -> Nothing
 
 
@@ -115,6 +118,7 @@ validateKeyWords x = case x of
     "pass_next" -> Just "pass_next"
     "draw_card" -> Just "draw_card"
     "turn_start" -> Just "turn_start"
+    "turn_end" -> Just "turn_end"
     _ -> Nothing
 
 
@@ -138,6 +142,7 @@ isAFeatureOf PlayerMoves PlayerFeatures = True
 isAFeatureOf AnyTime Actions = True
 isAFeatureOf StartTime Actions = True
 isAFeatureOf TurnStartTime Actions = True
+isAFeatureOf TurnEndTime Actions = True
 
 isAFeatureOf WinCon GameFeatures = True
 isAFeatureOf EndCon GameFeatures = True
