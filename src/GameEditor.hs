@@ -6,12 +6,13 @@ import Data.List (intercalate)
 import Feature (Feature (Saved, GameName))
 import GameData.GD (GameData)
 import CDSL.CDSLExpr (CDSLExpr(Text, Null))
-import CDSL.ParseCardDSL (fromCDSLToString, validateCDSLExpression)
+import CDSL.ParseCardDSL (fromCDSLToString)
 import Terminal.GameCommands (GameCommand (Create, Add, Update, Remove, Status, Save, Test, Close), GCEffect (GCEffect, se, ve, gcErr), GCError (MissingFeatureError, GCError, errType, input, OpenGameDataError, NoGameDataError, CDSLError), showAll, Flag)
 import Terminal.ValidateGameCommands (validateGameCommand)
 import Terminal.ExecGameCommands (confirmCommand, printGCEffect)
 import qualified Terminal.ExecGameCommands as ExecGameCommands (execGameCommands)
 import GameData.SaveGD (saveGameData)
+import CDSL.CDSLValidater (validateCDSLExpression)
 
 editor :: GameData -> IO ()
 editor gd = do
@@ -81,7 +82,7 @@ execGameCommand c gd = case c of
                 ++ "/" ++ show (length r) ++ " valid expressions.\n"
                 ++ intercalate "\n" (map (\(e, i) -> "The expression at " ++ show i ++ " failed, giving the error " ++ show e) er)
 
-                , gcErr = map (\(e, _) -> CDSLError (Left [e])) er
+                , gcErr = map (\(e, _) -> CDSLError (Left e)) er
             }
         res <- confirmCommand c [GCEffect { se = "Check validity of: " ++ intercalate "," (map show exprs), ve = "Check validity of: " ++ intercalate "\n\t" (map show exprs), gcErr = []}] flgs
         if res

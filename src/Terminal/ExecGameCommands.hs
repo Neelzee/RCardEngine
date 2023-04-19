@@ -1,7 +1,7 @@
 module Terminal.ExecGameCommands where
 
 import Data.List.Extra (trim, intercalate)
-import CDSL.ParseCardDSL (validateCDSLExpression, fromCDSLToString)
+import CDSL.ParseCardDSL (fromCDSLToString)
 import GameData.GD (GameData)
 import CDSL.CDSLExpr
 import GameData.SaveGD (saveGameData)

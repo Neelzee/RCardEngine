@@ -94,7 +94,7 @@ validateGameCommand xs = case map trim (words xs) of
     ("list":ys) -> case validateGCFlags ys of
         Left flgs -> Left (List flgs)
         Right e -> Right e
-    
+
     ["help"] -> Left Help
 
     ("play":ys) -> case readMaybe (unwords ys) :: Maybe Int of
@@ -130,8 +130,8 @@ findMatches wrd wrds =
 
 -- Suggest a correction for the given command
 suggestCorrection :: String -> [GameCommand] -> Maybe String
-suggestCorrection input cmds = do
-    case findMatches input (map (show . cmd) cmds) of
+suggestCorrection inp cmds = do
+    case findMatches inp (map (show . cmd) cmds) of
         Just (x:_) -> Just x
         _ -> Nothing
 
@@ -146,6 +146,6 @@ validateGCFlags (x:xs) = case x of
         Left lst -> Left ("-verbose":lst)
         Right e -> Right e
     "-quiet" -> case validateGCFlags xs of
-        Left lst -> (Left ("-quiet":lst))
+        Left lst -> Left ("-quiet":lst)
         Right e -> Right e
     e -> Right (GCError { errType = UnknownFlagsError, input = e })

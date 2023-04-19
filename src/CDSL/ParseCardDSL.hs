@@ -16,68 +16,6 @@ import CardGame.Card
 
 
 
--- Checks if a given CDSLExpr is valid
-validateCDSLExpression :: CDSLExpr -> Either CDSLExpr CDSLExecError
-validateCDSLExpression e@(Any (Players (IsEmpty Hand))) = Left e
-validateCDSLExpression e@(All (Players (IsEmpty Hand))) = Left e
-validateCDSLExpression e@(Any (Players (IsEqual a (Numeric _)))) = if a == Hand || a == Score
-    then
-        Left e
-    else
-        Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-validateCDSLExpression e@(Any (Players (IsEqual (Numeric _) a))) = if a == Hand || a == Score
-    then
-        Left e
-    else
-        Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-
-validateCDSLExpression e@(All (Players (IsEqual a (Numeric _)))) = if a == Hand || a == Score
-    then
-        Left e
-    else
-        Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-validateCDSLExpression e@(All (Players (IsEqual (Numeric _) a))) = if a == Hand || a == Score
-    then
-        Left e
-    else
-        Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-validateCDSLExpression e@(Shuffle a) = if a == Deck || a == Pile || a == Players TurnOrder
-    then
-        Left e
-    else
-        Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-validateCDSLExpression e@(Greatest (Players a)) = if a == Score || a == Hand
-    then
-        Left e
-    else
-        Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-validateCDSLExpression e@(IsEmpty a) = if a == Deck || a == Pile
-    then
-        Left e
-    else
-        Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-validateCDSLExpression e@(Swap a b) = if (a == Pile || a == Deck) && (b == Pile || b == Deck)
-    then
-        Left e
-    else
-        Right (CDSLExecError { err = InvalidSyntaxError, expr = e})
-validateCDSLExpression e@(Take (Numeric _) f t) = if (f == Pile || f == Deck) && (t == Pile || t == Deck)
-    then
-        Left e
-    else
-        Right (CDSLExecError { err = InvalidSyntaxError, expr = e})
-validateCDSLExpression (And l r) = case (execCDSLBool l, execCDSLBool r) of
-    (Left _, Left _) -> Left (And l r)
-    (Right er, _) -> Right er
-    (_, Right er) -> Right er
-validateCDSLExpression (Or l r) = case (execCDSLBool l, execCDSLBool r) of
-    (Left _, Left _) -> Left (Or l r)
-    (Right er, _) -> Right er
-    (_, Right er) -> Right er
-validateCDSLExpression Always = Left Always
-validateCDSLExpression Never = Left Never
-validateCDSLExpression e = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-
 isCDSLExprNumeric :: CDSLExpr -> Bool
 isCDSLExprNumeric (Numeric _) = True
 isCDSLExprNumeric _ = False
@@ -209,10 +147,10 @@ parseCDSLFromString (x:xs) = case x of
             Left Never
         else
             Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = Never, rawExpr = x ++ " " ++ " " ++ unwords xs})
-    "not" -> case parseCDSLFromString xs of
+    "!" -> case parseCDSLFromString xs of
         Left exr -> Left (Not exr)
         e -> e
-    "and" -> case length xs of
+    "&&" -> case length xs of
         2 -> case (parseCDSLFromString [head xs], parseCDSLFromString [xs !! 1]) of
             (Left l, Left r) -> Left (And l r)
             (Right e, Left r) -> Right (e { pExpr = And (pExpr e) r })
@@ -220,7 +158,7 @@ parseCDSLFromString (x:xs) = case x of
             (Right l, _) -> Right l
         1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = And Null Null, rawExpr = x})
         _ -> Right (CDSLParseError { pErr = UnnecessaryOperandError, pExpr = And Null Null, rawExpr = x})
-    "or" -> case length xs of
+    "||" -> case length xs of
         2 -> case (parseCDSLFromString [head xs], parseCDSLFromString [xs !! 1]) of
             (Left l, Left r) -> Left (Or l r)
             (Right e, Left r) -> Right (e { pExpr = Or (pExpr e) r })
@@ -272,8 +210,8 @@ fromCDSLToString (Take c f t) = "take " ++ fromCDSLToString c ++ " " ++ fromCDSL
 fromCDSLToString Always = "always"
 fromCDSLToString Never = "never"
 fromCDSLToString (Not e) = "!" ++ fromCDSLToString e
-fromCDSLToString (And l r) = "and " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
-fromCDSLToString (Or l r) = "or " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString (And l r) = "&& " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString (Or l r) = "|| " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
 fromCDSLToString TurnOrder = "turnOrder"
 fromCDSLToString CardRank = "rank"
 fromCDSLToString CardSuit = "suit"
@@ -425,17 +363,17 @@ parseOneCDSL (x:xs) n = case x of
         (_, _, Right (e, i)) -> Right (e { pErr = IncompleteExpressionError, pExpr = Take Null Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs}, i)
     "always" -> Left (Always, xs)
     "never" -> Left (Never, xs)
-    "not" -> case parseOneCDSL xs (n + 1) of
+    "!" -> case parseOneCDSL xs (n + 1) of
         Left (exr, ys) -> Left (Not exr, ys)
         Right (e, i) -> Right (e { pErr = IncompleteExpressionError, pExpr = Not Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs}, i)
-    "and" -> case length xs of
+    "&&" -> case length xs of
         1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = And Null Null, rawExpr = x}, n + 1)
         _ -> case (parseOneCDSL [head xs] 0, parseOneCDSL [xs !! 1] 0) of
             (Left (l, _), Left (r, _)) -> Left (And l r, drop 2 xs)
             (Right (e, i), Left (r, _)) -> Right (e { pExpr = And (pExpr e) r }, i)
             (Left (l, _), Right (e, i)) -> Right (e { pExpr = And l (pExpr e) }, i)
             (Right (e, i), _) -> Right (e { pExpr = And Null (pExpr e) }, i)
-    "or" -> case length xs of
+    "||" -> case length xs of
         1 -> Right (CDSLParseError { pErr = IncompleteExpressionError, pExpr = Or Null Null, rawExpr = x}, n + 1)
         _ -> case (parseOneCDSL [head xs] 0, parseOneCDSL [xs !! 1] 0) of
             (Left (l, _), Left (r, _)) -> Left (Or l r, drop 2 xs)

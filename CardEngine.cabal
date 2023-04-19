@@ -37,6 +37,7 @@ library
       CDSL.ParseCardDSL
       CDSL.CDSLExpr
       CDSL.ExecCDSLExpr
+      CDSL.CDSLValidater
       Feature
       LoadGame
       Terminal.GameCommands

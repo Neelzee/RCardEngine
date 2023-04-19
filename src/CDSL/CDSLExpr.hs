@@ -107,4 +107,5 @@ data CDSLExecErrorCode =
     InvalidSyntaxError
     | SyntaxErrorRightOperand
     | SyntaxErrorLeftOperand
+    | InvalidBoolEvaluationError
     deriving (Show, Eq)

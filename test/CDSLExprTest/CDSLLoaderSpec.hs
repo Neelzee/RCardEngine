@@ -14,7 +14,7 @@ test :: IO ()
 test = hspec $ do
     describe "module.function" $ do
         it "loading file CardSL.cdsl" $ do
-            rawC <- readFile "test/CDSLExprTest/CardDSL.cdsl"
+            rawC <- readFile "games/CardDSL.cdsl"
             let c = lines rawC
             loadGameData' [] c `shouldBe` gameData
 

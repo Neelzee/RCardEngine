@@ -1,13 +1,11 @@
 GAME
 win_con = greatest players score
-end_con = [any players isEmpty hand, any players isEqual score 10]
 END
 
 
 CARD
 card_suits = [Hearts, Diamonds, Clubs, Spades]
-card_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-card_ranks = [Ace, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King]
+card_ranks = [Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace, Two]
 card_constraints = rank
 END
 
@@ -30,10 +28,5 @@ END
 
 # Define some card effects
 CARD_EFFECTS
-change_card = Hearts.Ace
-swap_hand = [Diamonds.Ace, Spades.Ace]
-take_from_hand = [Clubs.Ace]
-give_card = Hearts.Two
-pass_next = [Hearts.King]
-draw_card 2 = [Hearts.Queen, Spades.Queen]
+change_card = [Hearts.Six, Diamonds.Six, Spades.Six, Clubs.Six]
 END

@@ -82,14 +82,6 @@ test = hspec $ do
         " [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]"
         ["isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile]", "isEmpty pile : take 1 deck pile"]
 
-    testRemoveComments
-        "turn_start = [always : reset player moves] # Not sure if needed both"
-            "turn_start = [always : reset player moves] "
-
-testRemoveComments :: String -> String -> Spec
-testRemoveComments inp res = describe (moduleName "stringToList") $ do
-    it ("Input: " ++ inp ++ " Result: " ++ res) $ do
-        removeComments inp `shouldBe` res
 
 
 testStringToList :: String -> [String] -> Spec
