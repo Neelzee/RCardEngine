@@ -1,4 +1,4 @@
-module GameData.GD where
+module GameData.GD (GameData) where
 
 import Feature (Feature)
 import CDSL.CDSLExpr (CDSLExpr)

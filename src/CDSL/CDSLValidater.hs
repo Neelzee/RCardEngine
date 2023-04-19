@@ -1,6 +1,5 @@
-module CDSL.CDSLValidater where
+module CDSL.CDSLValidater (validateCDSLExpression) where
 import CDSL.CDSLExpr
-import CDSL.ExecCDSLExpr (execCDSLBool)
 import Data.Either (partitionEithers)
 
 

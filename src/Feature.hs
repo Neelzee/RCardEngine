@@ -1,4 +1,9 @@
-module Feature where
+module Feature (
+    Feature (..)
+    , fromStringToFeature
+    , validateKeyWords
+    , isAFeatureOf
+) where
 
 
 data Feature = WinCon

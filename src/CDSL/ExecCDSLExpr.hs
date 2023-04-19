@@ -1,4 +1,12 @@
-module CDSL.ExecCDSLExpr where
+module CDSL.ExecCDSLExpr (
+    placeCardStmt
+    , compareCards
+    , execCDSLGame
+    , execCDSLBool
+    , execCDSLGameBool
+    , execCDSLInt
+    , execCardEffect
+    , fromCDSLToCard) where
 
 import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves), GameState (TurnEnd))
 import Data.CircularList (toList, size, update, fromList, rotNR, rotNL, focus, rotR, isEmpty)

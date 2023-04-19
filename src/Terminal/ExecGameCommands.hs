@@ -1,4 +1,12 @@
-module Terminal.ExecGameCommands where
+module Terminal.ExecGameCommands (
+    execGameCommands
+    , printGCEffect
+    , confirmCommand
+    , printTable
+    , listGameData
+    , printCommands
+    , fromCDSLParseErrorOnLoad
+    ) where
 
 import Data.List.Extra (trim, intercalate)
 import CDSL.ParseCardDSL (fromCDSLToString)

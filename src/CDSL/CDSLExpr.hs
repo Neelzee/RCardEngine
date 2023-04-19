@@ -1,4 +1,10 @@
-module CDSL.CDSLExpr where
+module CDSL.CDSLExpr (
+    CDSLExpr (..)
+    , CDSLParseError (..)
+    , CDSLParseErrorCode (..)
+    , CDSLExecError (..)
+    , CDSLExecErrorCode (..)
+) where
 
 import Feature (Feature)
 import CardGame.PlayerMove (Move)

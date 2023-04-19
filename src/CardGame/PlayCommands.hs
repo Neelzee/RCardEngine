@@ -1,8 +1,14 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use newtype instead of data" #-}
-module CardGame.PlayCommands where
+module CardGame.PlayCommands (
+    PLCommand (..)
+    , UserActions (..)
+    , validatePLCommand
+    , plCommands
+    , printUACommands
+    , info
+    , example
+) where
 
-import Terminal.GameCommands (GCError (GCError, InvalidCommandArgumentError, errType, input, UnknownCommandError), GCEffect (gcErr, se, ve))
+import Terminal.GameCommands (GCError (GCError, InvalidCommandArgumentError, errType, input, UnknownCommandError))
 import Data.List.Extra (trim)
 import Text.Read (readMaybe)
 import Terminal.ExecGameCommands (printTable)

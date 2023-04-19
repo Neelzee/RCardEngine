@@ -1,4 +1,7 @@
-module Constants where
+module Constants (
+    gameFolder
+    , gameExtension
+) where
 
 
 gameFolder :: FilePath

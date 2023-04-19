@@ -1,4 +1,14 @@
-module CardGame.CardFunctions where
+module CardGame.CardFunctions (
+  defaultCardDeck
+  , defaultCardRanks
+  , defaultCardSuits
+  , defaultCardValues
+  , prettyPrintCards
+  , cardElem
+  , makeDeck
+) where
+
+
 import CDSL.CDSLExpr
 import CardGame.Card
 import Data.List (intercalate)
@@ -13,10 +23,10 @@ defaultCardRanks = [Text "Ace", Text "Two", Text "Three", Text "Four", Text "Fiv
 defaultCardValues :: [CDSLExpr]
 defaultCardValues = map Numeric [1..13]
 
-defaultCardDeck :: Deck
+defaultCardDeck :: [Card]
 defaultCardDeck = [ Card s n sc | (Text s) <- defaultCardSuits, (Text n) <- defaultCardRanks, (Numeric sc) <- defaultCardValues ]
 
-makeDeck :: [CDSLExpr] -> [CDSLExpr] -> [CDSLExpr] -> Deck
+makeDeck :: [CDSLExpr] -> [CDSLExpr] -> [CDSLExpr] -> [Card]
 makeDeck suits ranks values =
   let paddedValues = values ++ repeat (Numeric 0)
       rankValuePairs = zipWith (curry (\(Text r, Numeric i) -> (r, i))) ranks paddedValues

@@ -1,23 +1,26 @@
 module CDSLExprTest.CDSLLoaderSPec where
 
 
-import Test.Hspec ( describe, it, shouldBe, hspec )
+import Test.Hspec ( describe, it, shouldBe, hspec, Spec )
 import GameData.LoadGD (loadGameData')
-import GameData.GD (GameData)
-import CDSL.CDSLExpr (CDSLParseError, CDSLExpr (Greatest, Players, Score, Any, IsEmpty, Hand, IsEqual, Numeric, Text, If, Deck, Pile, Shuffle, Take, Always, CardRank, Swap, CardValue, PlayerAction, CEffect))
-import Feature (Feature(GameFeatures, CardFeatures, Actions, PlayerFeatures, WinCon, EndCon, CardValues, CardRanks, CardConstraints, PlayerMoves, PlayerHand, AnyTime, StartTime, CardSuits, CardEffects))
-import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
-import CardGame.Card (CardEffect(ChangeCard, TakeFromHand, SwapHand, GiveCard, PassNext, DrawCards), Card (..))
+import GameData.GD ( GameData )
+import CDSL.CDSLExpr
+import Feature
+import CardGame.PlayerMove
+import CardGame.Card
+
+
 
 
 test :: IO ()
-test = hspec $ do
-    describe "module.function" $ do
-        it "loading file CardSL.cdsl" $ do
-            rawC <- readFile "games/CardDSL.cdsl"
-            let c = lines rawC
-            loadGameData' [] c `shouldBe` gameData
-
+test = do
+    hspec $ do
+        describe "GameData.LoadGD" $ do
+            it "loading file CardSL.cdsl" $ do
+                rawC <- readFile "games/CardDSL.cdsl"
+                let c = lines rawC
+                loadGameData' [] c `shouldBe` gameData
+    
 
 
 gameData :: Either GameData [CDSLParseError]

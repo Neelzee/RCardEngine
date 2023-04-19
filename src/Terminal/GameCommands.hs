@@ -1,4 +1,11 @@
-module Terminal.GameCommands where
+module Terminal.GameCommands (
+    GCEffect (..)
+    , GameCommand (..)
+    , GCError (..)
+    , showAll
+    , commands
+    , Flag
+) where
 
 
 import CDSL.CDSLExpr (CDSLExpr (Text, Null), CDSLExecError, CDSLParseError)

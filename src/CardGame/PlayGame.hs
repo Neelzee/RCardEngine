@@ -1,5 +1,6 @@
-{-# OPTIONS_GHC -Wno-unused-do-bind #-}
-module CardGame.PlayGame where
+module CardGame.PlayGame (
+    gameStart
+    ) where
 
 import Data.CircularList
     ( focus, fromList, rotR, update, toList, removeR )
@@ -17,9 +18,9 @@ import System.IO ( hFlush, stdout )
 import CardGame.PlayCommands (validatePLCommand, PLCommand (plc), UserActions (Play, Draw, PassTurn, HelpUA, Moves, HandUA, ScoreUA, QuitUA), printUACommands)
 import System.Console.ANSI (clearScreen)
 import CardGame.Game (Game (players, state, Game, pile, deck, actions, rules, winCon, canPlaceCard, gameName, endCon, playerMoves, cardEffects), GameState (Start, TurnEnd, TurnStart), dealCards, gameActions, createEmptyGame)
-import CardGame.CardFunctions
 import CardGame.Card (Card, CardEffect)
 import CDSL.ExecCDSLExpr (execCardEffect)
+import CardGame.CardFunctions (prettyPrintCards, cardElem)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do

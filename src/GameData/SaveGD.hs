@@ -1,4 +1,4 @@
-module GameData.SaveGD where
+module GameData.SaveGD (saveGameData) where
 
 import GameData.GD (GameData)
 import Feature (Feature(..))

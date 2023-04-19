@@ -1,4 +1,8 @@
-module CardGame.Card where
+module CardGame.Card (
+    CardEffect (..)
+    , Card (..)
+    , shuffle
+    ) where
 
 import System.Random
 import Functions (removeNth)
@@ -31,8 +35,6 @@ instance Show Card where
 instance Eq Card where
     (Card s1 cn1 _) == (Card s2 cn2 _) = s1 == s2 && cn1 == cn2
 
-
-type Deck = [Card]
 
 shuffle :: [a] -> [a]
 shuffle xs = shuffle' xs (mkStdGen 420)

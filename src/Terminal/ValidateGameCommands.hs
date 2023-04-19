@@ -1,4 +1,7 @@
-module Terminal.ValidateGameCommands where
+module Terminal.ValidateGameCommands (
+    validateGameCommand
+    , validateGCFlags 
+    ) where
 
 import Terminal.GameCommands (GCError (GCError, errType, UnknownFlagsError, input, UnknownCommandError, InvalidCommandArgumentError, CDSLError), GameCommand (Help, Create, Save, cmd, Edit, Add, Update, Test, Remove, Copy, Rename, Status, Close, Clear, Quit, List, Play), Flag, commands)
 import Data.List.Extra (trim, sort, sortOn, partition, groupBy)

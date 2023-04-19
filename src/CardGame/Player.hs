@@ -1,4 +1,15 @@
-module CardGame.Player where
+module CardGame.Player (
+    Player (..)
+    , createPlayers
+    , deal
+    , resetMoves
+    , getMoveFromString
+    , standardMoves
+    , parsePlayerMovesExpr
+    , parsePlayerMove
+    , parsePlayerMoves
+    , prettyPrintMoves
+) where
 
 import CardGame.Card ( Card(Card) )
 import Data.CircularList (CList, focus, size, rotR, update)
