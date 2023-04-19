@@ -32,7 +32,7 @@ placeCardStmt xs
 compareCards :: [CDSLExpr] -> Game -> Card -> Bool
 compareCards [] _ _ = True
 compareCards (x:xs) g c = do
-    let pc = head (pile g)
+    let pc = fst $ head (pile g)
     let suits = map suit (takeUntilDuplicate (cardGen g))
     let ranks = map rank (takeUntilDuplicate (cardGen g))
     let values = map cScore (takeUntilDuplicate (cardGen g))
@@ -60,8 +60,8 @@ execCDSLGame ((If l r):xs) g = case partitionEithers (map (`execCDSLGameBool` g)
 execCDSLGame ((Swap a b):xs) g = if (a == Deck || a == Pile) && (b == Deck || b == Pile)
     then
         case (a, b) of
-            (Deck, Pile) -> execCDSLGame xs (g { deck = pile g, pile = deck g })
-            (Pile, Deck) -> execCDSLGame xs (g { deck = pile g, pile = deck g })
+            (Deck, Pile) -> execCDSLGame xs (g { deck = map fst (pile g), pile = map (\c -> (c, Nothing)) (deck g) })
+            (Pile, Deck) -> execCDSLGame xs (g { deck = map fst (pile g), pile = map (\c -> (c, Nothing)) (deck g) })
             _ -> execCDSLGame xs g
     else
         execCDSLGame xs g
@@ -69,9 +69,9 @@ execCDSLGame ((Take (Numeric n) a b):xs) g = if (a == Deck || a == Pile) && (b =
     then
         case (a, b) of
             (Pile, Deck) -> do
-                execCDSLGame xs (g { deck =  take n (pile g) ++ deck g, pile = drop n (pile g) })
+                execCDSLGame xs (g { deck =  take n (map fst (pile g)) ++ deck g, pile = drop n (pile g) })
             (Deck, Pile) -> do
-                execCDSLGame xs (g { deck =  drop n (deck g) ++ deck g, pile = take n (deck g) })
+                execCDSLGame xs (g { deck =  drop n (deck g) ++ deck g, pile = take n (map (\c -> (c, Nothing)) (deck g)) })
             _ -> execCDSLGame xs g
     else
         execCDSLGame xs g
@@ -125,9 +125,11 @@ execCDSLGameBool :: CDSLExpr -> Game -> Either Bool CDSLExecError
 execCDSLGameBool (IsEmpty Deck) g = Left (null (deck g))
 execCDSLGameBool (IsEmpty Pile) g = Left (null (pile g))
 execCDSLGameBool e@(IsEqual a b) g = case (fromCDSLToCard a, fromCDSLToCard b) of
-    (Just fa, Just fb) -> Left (fa g == fb g)
+    (Just (Left fa), Just (Right fb)) -> Left (fa g == map fst (fb g))
+    (Just (Right fb), Just (Left fa)) -> Left (fa g == map fst (fb g))
     (Nothing, _) -> Right (CDSLExecError { err = SyntaxErrorLeftOperand, expr = e })
     (_, Nothing) -> Right (CDSLExecError { err = SyntaxErrorRightOperand, expr = e })
+    _ -> Right (CDSLExecError { err = SyntaxErrorLeftOperand, expr = e })
 execCDSLGameBool (Any (Players (IsEmpty Hand))) g = Left (any (null . hand) (toList (players g)))
 execCDSLGameBool (All (Players (IsEmpty Hand))) g = Left (all (null . hand) (toList (players g)))
 execCDSLGameBool e@(Any (Players (IsEqual a b))) g = case ((a == Score, b == Score), (execCDSLInt a, execCDSLInt b)) of
@@ -136,8 +138,8 @@ execCDSLGameBool e@(Any (Players (IsEqual a b))) g = case ((a == Score, b == Sco
     ((False, _), (_, Right _)) -> Right (CDSLExecError { err = InvalidSyntaxError, expr = a })
     ((_, False), (Right _, _)) -> Right (CDSLExecError { err = InvalidSyntaxError, expr = b })
     _ -> Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
-execCDSLGameBool Always _ = Left True  
-execCDSLGameBool Never _ = Left False  
+execCDSLGameBool Always _ = Left True
+execCDSLGameBool Never _ = Left False
 execCDSLGameBool e _ = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
 
@@ -145,10 +147,10 @@ execCDSLInt :: CDSLExpr -> Either Int CDSLExecError
 execCDSLInt (Numeric n) = Left n
 execCDSLInt e = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
-fromCDSLToCard :: CDSLExpr -> Maybe (Game -> [Card])
+fromCDSLToCard :: CDSLExpr -> Maybe (Either (Game -> [Card]) (Game -> [(Card, Maybe Card)]))
 fromCDSLToCard x = case x of
-    Pile -> Just pile
-    Deck -> Just deck
+    Pile -> Just (Right pile)
+    Deck -> Just (Left deck)
     _ -> Nothing
 
 

@@ -107,7 +107,7 @@ loadGame' rls g = do
 placeCardStmt :: [CDSLExpr] -> (Int -> Int -> Bool) -> (String -> String -> Bool) -> Game -> Card -> Bool
 placeCardStmt [] _ _ _ _ = True
 placeCardStmt (x:xs) fi fs g c@(Card s r v) = null (pile g) || (do
-            let (Card s' r' v') = head (pile g)
+            let (Card s' r' v') = fst $ head (pile g)
             case x of
                 CardValue -> v `fi` v' && placeCardStmt xs fi fs g c
                 CardRank -> r `fs` r' && placeCardStmt xs fi fs g c

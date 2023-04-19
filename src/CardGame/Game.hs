@@ -24,7 +24,7 @@ data Game = Game {
     , cardGen :: [Card]
     , cardEffects :: [CDSLExpr]
     , deck :: [Card]
-    , pile :: [Card]
+    , pile :: [(Card, Maybe Card)]
     , players :: CList Player
     , endCon :: [Game -> Bool]
     , winCon :: [Game -> [Player]]

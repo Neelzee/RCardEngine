@@ -63,7 +63,7 @@ doPlayerTurn g = do
             putStr "\nPile: "
             case pile game of
                 [] -> putStrLn "no cards on deck"
-                p -> prettyPrintCards [head p]
+                p -> prettyPrintCards [fst (head p)]
             action <- getLine
             case validatePLCommand action of
                 Left cm -> case plc cm of
@@ -84,12 +84,12 @@ doPlayerTurn g = do
                                                 -- If player can play card again, 
                                                 if b
                                                     then
-                                                        doPlayerTurn game { pile = card:pile game, players = update plr' (players game)}
+                                                        doPlayerTurn game { pile = (card, Nothing):pile game, players = update plr' (players game)}
                                                     else
                                                         do
                                                             putStrLn "Hit Enter to go to next turn."
                                                             getLine
-                                                            return game { state = TurnEnd, pile = card:pile game, players = update plr' (players game)}
+                                                            return game { state = TurnEnd, pile = (card, Nothing):pile game, players = update plr' (players game)}
                                         else
                                             do
                                                 putStrLn ("Cannot place " ++ show card)
