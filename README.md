@@ -3,6 +3,47 @@
 This is a Card Game Engine, for the terminal.
 One can create Card Games for terminals, in a terminal.
 
+# CDSL
+
+Card Domain Specific Language
+<br>
+The scripting language used to create card games.
+Lets talk about some of the keywords in CDSL.
+<br>
+
+Certain keywords in this scripting language, can only be used in certain contexts.
+For example both, `any` and `all` are keywords specific for `players`, which itself references a list of all the players playing the card game.
+This can be used to create end and/or win conditions for your game.
+An example would be, the game ends once any player has an empty hand.
+```
+any players hand isEmpty
+```
+In this context, `hand` references the hand for each player, the cards they are holding, so if any player has an empty hand, this would evaluate to true.
+
+An example of a win condition, using `all`, could be this:
+```
+all players score isEqual 10
+```
+Which would return a list, of all the players whose score is equal too 10.
+
+One could also make conditional statements, that are check at specific points in the game.
+
+Lets say, that we want to check if the deck, where players draw their cards, is empty, at the start of each new turn.
+Then we need to add it to the list of CDSL-statements too be executed at turn start.
+This is how we would do that:
+```
+turn_start = isEmpty deck : [swap pile deck, take 1 deck pile, shuffle deck]
+```
+
+Here, several things are happening.
+the use of `:`, indicates that this is an if-statement, where the expression on the left side of `:`, is the condition, and the expressions on the right side, are the statements to be executed, if the condition evaluates too true.
+
+so, if the `deck` is empty, i.e. it's just an empty list, then we execute the following statments, in order.
+First, we `swap` `pile` and `deck`. `swap` is a keyword, that can swap two lists that contains the same type, in this case, cards. 
+`pile` is a reference too the list that contains the cards that the players play.
+So, we take the cards from `pile` and place them in `deck`.
+Then, we `take` a single item, in this case a card, from `deck`, which now has all the cards in play, except the ones in the players hands, and we place this card in the `pile`, this would be the same card that was on the top, so from a players point of view, nothing would be different, except there would now be cards in `deck`. We then `shuffle` the `deck`.
+
 # How to use
 
 run with `stack run`
