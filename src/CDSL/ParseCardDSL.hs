@@ -272,6 +272,11 @@ readCDSL xs = do
         Left CEPassNext -> Left (CardEffects, [CEffect PassNext (getCards (stringToList ys))])
         Left CEGiveCard -> Left (CardEffects, [CEffect GiveCard (getCards (stringToList ys))])
         Left PlayerMoves -> Left (PlayerMoves, map (uncurry PlayerAction) (mapMaybe parsePlayerMove (stringToList ys)))
+        Left ExceptionConstraints -> case getCardComperator (unwords (drop 1 (words y))) of
+            Just cc -> case parseExpr (stringToList ys) of
+                Left expr -> Left (ExceptionConstraints, cc:expr)
+                Right err -> Right (Just ExceptionConstraints, err)
+            _ -> Right (Just ExceptionConstraints, [CDSLParseError {rawExpr=xs, pExpr=Null, pErr=InvalidFeatureArgumentError}])
         Left IgnoreConstraints -> Left (IgnoreConstraints, [Cards (getCards (stringToList ys))])
         Left f -> case parseExpr (stringToList ys) of
             Left exprs -> Left (f, exprs)
@@ -388,6 +393,11 @@ parseOneCDSL (x:xs) n = case x of
         Left (ex, ys) -> Left (CurrentPlayer ex, ys)
         Right (e, i) -> Right (e { pExpr = CurrentPlayer (pExpr e) }, i)
     "moves" -> Left (PMoves, xs)
+    "le" -> Left (CLe, xs)
+    "ge" -> Left (CGr, xs)
+    "lte" -> Left (CLEq, xs)
+    "gte" -> Left (CGRq, xs)
+    "eq" -> Left (CEq, xs)
     _ -> case readMaybe x :: Maybe Int of
         Just i -> Left (Numeric i, xs)
         _ -> Left (Text x, xs)
@@ -424,6 +434,15 @@ validateFeature x = case words x of
     -- Time
     ["any_time"] -> Left AnyTime
     ["start_time"] -> Left StartTime
+    ("exception_constraints":xs) -> case getCardComperator (concat xs) of
+        Just _ -> Left ExceptionConstraints
+        Nothing -> Right (
+            CDSLParseError
+            {
+                pErr = InvalidFeatureArgumentError
+                , pExpr = Null
+                , rawExpr = x
+            })
     y -> case fromStringToFeature (unwords y) of
         Just f -> Left f
         Nothing -> Right (
@@ -433,3 +452,12 @@ validateFeature x = case words x of
                 , pExpr = Null
                 , rawExpr = unwords y
             })
+
+
+getCardComperator :: String -> Maybe CDSLExpr
+getCardComperator "equal" = Just CEq
+getCardComperator "lesser_than" = Just CLEq
+getCardComperator "greater_than" = Just CGRq
+getCardComperator "lesser" = Just CLe
+getCardComperator "greater" = Just CGr
+getCardComperator _ = Nothing

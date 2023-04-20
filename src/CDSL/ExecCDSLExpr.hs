@@ -243,6 +243,11 @@ fromCDSLToString (Reset ce) = "reset " ++ fromCDSLToString ce
 fromCDSLToString (CurrentPlayer ce) = "player " ++ fromCDSLToString ce
 fromCDSLToString PMoves = "moves"
 fromCDSLToString (Cards ce) = show ce
+fromCDSLToString CLe = "le"
+fromCDSLToString CGr = "ge"
+fromCDSLToString CGRq = "gte"
+fromCDSLToString CLEq = "lte"
+fromCDSLToString CEq = "eq"
 fromCDSLToString _ = "(NOT ADDED)"
 
 createCard :: [CDSLExpr] -> Game -> IO Card
@@ -279,7 +284,7 @@ createCard = cc []
                     Just i -> if i >= 1 && i <= length (cardRanks g)
                         then
                             do
-                                putStrLn ("Choose: " ++ show (cardRanks g !! (i - 1)))
+                                putStrLn ("Choose: " ++ fromCDSLToString (cardRanks g !! (i - 1)))
                                 cc ((CardRank, fromCDSLToString (cardRanks g !! (i - 1))):xs) ys g
                         else
                             do

@@ -2,13 +2,13 @@ module LoadGame where
 import CardGame.Game
 import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
-import CardGame.Card (Card (Card))
+import CardGame.Card (Card (Card, cScore, suit), rank)
 import Data.List.Extra (splitOn, trim, sortBy)
-import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects, TurnStartTime, TurnEndTime, IgnoreConstraints))
+import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects, TurnStartTime, TurnEndTime, IgnoreConstraints, CardCompare, ExceptionConstraints))
 import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe, mapMaybe)
 import CardGame.Player (standardMoves, resetMoves, parsePlayerMovesExpr, Player (pScore, hand))
-import CDSL.CDSLExpr (CDSLExpr(Numeric, If, Greatest, Players, Score, IsEqual, All, IsEmpty, Hand, CardValue, CardRank, CardSuit, Text))
+import CDSL.CDSLExpr (CDSLExpr(Numeric, If, Greatest, Players, Score, IsEqual, All, IsEmpty, Hand, CardValue, CardRank, CardSuit, Text, CLe, CGr, CLEq, CGRq, Null))
 import CDSL.ExecCDSLExpr (execCDSLGame, execCDSLBool, execCDSLGameBool, cardFromCDSL)
 import Data.CircularList (toList, fromList)
 import Functions (lookupAll, lookupOrDefault)
@@ -43,7 +43,8 @@ loadGame' rls g = do
     cv <- case lookup CardValues rls of
         Just values -> return (mapMaybe toNumeric values)
         _ -> return defaultCardValues
-
+    let ccI = getComparatorInt (lookupOrDefault CardCompare [] rls)
+    let ccS = getComparatorString (lookupOrDefault CardCompare [] rls)
     let cards' = makeDeck cs cr cv
 
 
@@ -69,9 +70,14 @@ loadGame' rls g = do
     -- Win con
     let wc = map createWinCon (lookupAll WinCon rls)
 
+    cex <- case lookupOrDefault ExceptionConstraints [] rls of
+        [cc, CardSuit] -> return (Right (getComparatorString [cc]), CardSuit)
+        [cc, CardRank] -> return (Right (getComparatorString [cc]), CardRank)
+        [cc, CardValue] -> return (Left (getComparatorInt [cc]), CardValue)
+        _ -> return (Left (\_ _ -> False), Null)
 
     -- Can place cards
-    let pc = placeCardStmt (concat (lookupAll CardConstraints rls)) (==) (==)
+    let pc = placeCardStmt (concat (lookupAll CardConstraints rls)) ccI ccS cex
     -- Rules that should be checked at specific times
     -- Anytime
     let at = map execCDSLGame (lookupAll AnyTime rls)
@@ -82,6 +88,8 @@ loadGame' rls g = do
     -- TurnStart
     let ts = map execCDSLGame (lookupAll TurnStartTime rls)
     let te = map execCDSLGame (lookupAll TurnEndTime rls)
+
+
 
     return g {
         deck = cards'
@@ -106,31 +114,56 @@ loadGame' rls g = do
         , canPlaceCard = [pc]
     }
     where
-        placeCardStmt :: [CDSLExpr] -> (Int -> Int -> Bool) -> (String -> String -> Bool) -> Game -> Card -> Bool
-        placeCardStmt [] _ _ _ _ = True
-        placeCardStmt (x:xs) fi fs g c@(Card s r v)
-            | null (pile g) = True
+        getComparatorInt :: [CDSLExpr] -> (Int -> Int -> Bool)
+        getComparatorInt [] = (==)
+        getComparatorInt (x:_) = case x of
+            CLe -> (>)
+            CGr -> (<)
+            CLEq -> (>=)
+            CGRq -> (<=)
+            _ -> (==)
+
+        getComparatorString :: [CDSLExpr] -> (String -> String -> Bool)
+        getComparatorString [] = (==)
+        getComparatorString (x:_) = case x of
+            CLe -> (>)
+            CGr -> (<)
+            CLEq -> (>=)
+            CGRq -> (<=)
+            _ -> (==)
+
+        placeCardStmt :: [CDSLExpr] -> (Int -> Int -> Bool) -> (String -> String -> Bool) -> (Either (Int -> Int -> Bool) (String -> String -> Bool), CDSLExpr) -> Game -> Card -> Bool
+        placeCardStmt [] _ _ _ _ _ = True
+        placeCardStmt (x:xs) fi fs ex gm c@(Card s r v)
+            | null (pile gm) = True
             | c `cardElem` cardFromCDSL (lookupOrDefault IgnoreConstraints [] rls) = True
+            | uncurry isException ex = True
             | otherwise = do
-                    let (Card s' r' v') = fst $ head (pile g)
+                    let (Card s' r' v') = fst $ head (pile gm)
+                    -- Checks :)
                     case x of
                         CardValue -> if v' == 0
-                            then
-                                placeCardStmt xs fi fs g c
-                            else
-                                v `fi` v' && placeCardStmt xs fi fs g c
+                        then
+                            placeCardStmt xs fi fs ex gm c
+                        else
+                            v `fi` v' && placeCardStmt xs fi fs ex gm c
                         CardRank -> if r' == ""
                             then
-                                placeCardStmt xs fi fs g c
+                                placeCardStmt xs fi fs ex gm c
                             else
-                                r `fs` r' && placeCardStmt xs fi fs g c
+                                r `fs` r' && placeCardStmt xs fi fs ex gm c
                         CardSuit -> if s' == ""
                             then
-                                placeCardStmt xs fi fs g c
+                                placeCardStmt xs fi fs ex gm c
                             else
-                                s `fs` s' && placeCardStmt xs fi fs g c
-                        _ -> placeCardStmt xs fi fs g c
-
+                                s `fs` s' && placeCardStmt xs fi fs ex gm c
+                        _ -> placeCardStmt xs fi fs ex gm c
+            where
+                isException :: Either (Int -> Int -> Bool) (String -> String -> Bool) -> CDSLExpr -> Bool
+                isException (Left f') CardValue = v `f'` cScore (fst $ head (pile gm))
+                isException (Right f') CardSuit = s `f'` suit (fst $ head (pile gm))
+                isException (Right f') CardRank = r `f'` rank (fst $ head (pile gm))
+                isException _ _ = False
 
 
 createEndCon :: [CDSLExpr] -> Game -> Bool

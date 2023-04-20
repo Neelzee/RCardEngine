@@ -92,6 +92,16 @@ data CDSLExpr =
     | PMoves
     -- A string
     | Text String
+    -- Lesser
+    | CLe
+    -- Greater
+    | CGr
+    -- Equal
+    | CEq
+    -- Lesser Or Equal
+    | CLEq
+    -- Greater or Equal
+    | CGRq
     -- Null value, is not used in normal expressions, and just in error messages
     | Null
     deriving (Show, Eq)

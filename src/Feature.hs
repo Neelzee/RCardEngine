@@ -22,6 +22,7 @@ data Feature = WinCon
     | Saved
     | CardConstraints
     | IgnoreConstraints
+    | ExceptionConstraints
     | CardFeatures
     | PlayerFeatures
     | Actions
@@ -33,6 +34,7 @@ data Feature = WinCon
     | CEGiveCard
     | CEPassNext
     | CEDrawCard
+    | CardCompare
     deriving (Eq)
 
 
@@ -65,6 +67,8 @@ instance Show Feature where
         CEPassNext -> "pass_next"
         CEDrawCard -> "draw_card"
         IgnoreConstraints -> "IGNORE_CONSTRAINTS"
+        CardCompare -> "CARD_COMPARE"
+        ExceptionConstraints -> "EXCEPTION_CONSTRAINTS"
 
 
 -- Checks if the given feature is valid
@@ -96,6 +100,8 @@ fromStringToFeature x = case x of
     "turn_start" -> Just TurnStartTime
     "turn_end" -> Just TurnEndTime
     "ignore_constraints" -> Just IgnoreConstraints
+    "card_compare" -> Just CardCompare
+    "exception_constraints" -> Just ExceptionConstraints
     _ -> Nothing
 
 
@@ -128,6 +134,8 @@ validateKeyWords x = case x of
     "turn_start" -> Just "turn_start"
     "turn_end" -> Just "turn_end"
     "ignore_constraints" -> Just "ignore_constraints"
+    "card_compare" -> Just "card_compare"
+    "exception_constraints" -> Just "exception_constraints"
     _ -> Nothing
 
 
@@ -144,8 +152,10 @@ isAFeatureOf CardConstraints CardFeatures = True
 isAFeatureOf CardSuits CardFeatures = True
 isAFeatureOf CardRanks CardFeatures = True
 isAFeatureOf IgnoreConstraints CardFeatures = True
-
+isAFeatureOf CardCompare CardFeatures = True
 isAFeatureOf CardValues CardFeatures = True
+isAFeatureOf ExceptionConstraints CardFeatures = True
+
 isAFeatureOf PlayerHand PlayerFeatures = True
 isAFeatureOf PlayerMoves PlayerFeatures = True
 

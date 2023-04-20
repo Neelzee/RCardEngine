@@ -35,6 +35,7 @@ data Game = Game {
     , actions :: [(GameState, [(Game -> IO Game, Bool)])]
     , rounds :: Int
     , canPlaceCard :: [Game -> Card -> Bool]
+    , cpcException :: [CDSLExpr]
 }
 
 
@@ -48,6 +49,7 @@ dealCards game n = do
 createEmptyGame :: Game
 createEmptyGame = Game {
                     gameName = "Default Game"
+                    , cpcException = []
                     , playerMoves = []
                     , cardGen = []
                     , cardSuits = []
