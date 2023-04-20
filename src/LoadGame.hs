@@ -4,16 +4,16 @@ import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
 import CardGame.Card (Card (Card))
 import Data.List.Extra (splitOn, trim, sortBy)
-import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects, TurnStartTime, TurnEndTime))
+import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects, TurnStartTime, TurnEndTime, IgnoreConstraints))
 import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe, mapMaybe)
 import CardGame.Player (standardMoves, resetMoves, parsePlayerMovesExpr, Player (pScore, hand))
 import CDSL.CDSLExpr (CDSLExpr(Numeric, If, Greatest, Players, Score, IsEqual, All, IsEmpty, Hand, CardValue, CardRank, CardSuit, Text))
-import CDSL.ExecCDSLExpr (execCDSLGame, execCDSLBool, execCDSLGameBool)
+import CDSL.ExecCDSLExpr (execCDSLGame, execCDSLBool, execCDSLGameBool, cardFromCDSL)
 import Data.CircularList (toList, fromList)
 import Functions (lookupAll, lookupOrDefault)
 import CDSL.ParseCardDSL (toNumeric)
-import CardGame.CardFunctions (defaultCardSuits, defaultCardRanks, defaultCardValues, makeDeck)
+import CardGame.CardFunctions (defaultCardSuits, defaultCardRanks, defaultCardValues, makeDeck, cardElem)
 
 loadGame :: Game -> Int -> IO Game
 loadGame g n = do
@@ -85,6 +85,8 @@ loadGame' rls g = do
 
     return g {
         deck = cards'
+        , cardSuits = cs
+        , cardRanks = cr
         , cardEffects = ce
         , gameName = gm
         , cardGen = cg
@@ -103,16 +105,31 @@ loadGame' rls g = do
         , rules = [(PlayerHand, hc),(PileCount, pl)]
         , canPlaceCard = [pc]
     }
-
-placeCardStmt :: [CDSLExpr] -> (Int -> Int -> Bool) -> (String -> String -> Bool) -> Game -> Card -> Bool
-placeCardStmt [] _ _ _ _ = True
-placeCardStmt (x:xs) fi fs g c@(Card s r v) = null (pile g) || (do
-            let (Card s' r' v') = fst $ head (pile g)
-            case x of
-                CardValue -> v `fi` v' && placeCardStmt xs fi fs g c
-                CardRank -> r `fs` r' && placeCardStmt xs fi fs g c
-                CardSuit -> s `fs` s' && placeCardStmt xs fi fs g c
-                _ -> placeCardStmt xs fi fs g c)
+    where
+        placeCardStmt :: [CDSLExpr] -> (Int -> Int -> Bool) -> (String -> String -> Bool) -> Game -> Card -> Bool
+        placeCardStmt [] _ _ _ _ = True
+        placeCardStmt (x:xs) fi fs g c@(Card s r v)
+            | null (pile g) = True
+            | c `cardElem` cardFromCDSL (lookupOrDefault IgnoreConstraints [] rls) = True
+            | otherwise = do
+                    let (Card s' r' v') = fst $ head (pile g)
+                    case x of
+                        CardValue -> if v' == 0
+                            then
+                                placeCardStmt xs fi fs g c
+                            else
+                                v `fi` v' && placeCardStmt xs fi fs g c
+                        CardRank -> if r' == ""
+                            then
+                                placeCardStmt xs fi fs g c
+                            else
+                                r `fs` r' && placeCardStmt xs fi fs g c
+                        CardSuit -> if s' == ""
+                            then
+                                placeCardStmt xs fi fs g c
+                            else
+                                s `fs` s' && placeCardStmt xs fi fs g c
+                        _ -> placeCardStmt xs fi fs g c
 
 
 

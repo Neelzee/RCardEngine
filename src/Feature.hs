@@ -21,6 +21,7 @@ data Feature = WinCon
     | GameName
     | Saved
     | CardConstraints
+    | IgnoreConstraints
     | CardFeatures
     | PlayerFeatures
     | Actions
@@ -46,8 +47,8 @@ instance Show Feature where
         StartTime -> "start_time"
         TurnEndTime -> "turn_end"
         TurnStartTime -> "turn_start"
-        PlayerHand -> "PLAYER_HAND"
-        PlayerMoves -> "PLAYER_MOVES"
+        PlayerHand -> "player_hand"
+        PlayerMoves -> "player_moves"
         PileCount -> "PILE_COUNT"
         GameName -> "GAME_NAME"
         Saved -> "SAVED"
@@ -63,23 +64,24 @@ instance Show Feature where
         CEGiveCard -> "give_card"
         CEPassNext -> "pass_next"
         CEDrawCard -> "draw_card"
+        IgnoreConstraints -> "IGNORE_CONSTRAINTS"
 
 
 -- Checks if the given feature is valid
 fromStringToFeature :: String -> Maybe Feature
 fromStringToFeature x = case x of
     "win_con" -> Just WinCon
-    "CARD_SUITS" -> Just CardSuits
-    "CARD_VALUES" -> Just CardValues
-    "CARD_RANKS" -> Just CardRanks
+    "card_suits" -> Just CardSuits
+    "card_values" -> Just CardValues
+    "card_ranks" -> Just CardRanks
     "end_con" -> Just EndCon
     "any_time" -> Just AnyTime
-    "PLAYER_HAND" -> Just PlayerHand
-    "PLAYER_MOVES" -> Just PlayerMoves
+    "player_hand" -> Just PlayerHand
+    "player_moves" -> Just PlayerMoves
     "PILE_COUNT" -> Just PileCount
     "GAME_NAME" -> Just GameName
     "start_time" -> Just StartTime
-    "CARD_CONSTRAINTS" -> Just CardConstraints
+    "card_constraints" -> Just CardConstraints
     "CARD" -> Just CardFeatures
     "PLAYER" -> Just PlayerFeatures
     "ACTIONS" -> Just Actions
@@ -93,6 +95,7 @@ fromStringToFeature x = case x of
     "draw_card" -> Just CEDrawCard
     "turn_start" -> Just TurnStartTime
     "turn_end" -> Just TurnEndTime
+    "ignore_constraints" -> Just IgnoreConstraints
     _ -> Nothing
 
 
@@ -100,17 +103,17 @@ fromStringToFeature x = case x of
 validateKeyWords :: String -> Maybe String
 validateKeyWords x = case x of
     "win_con" -> Just "win_con"
-    "CARD_SUITS" -> Just "CARD_SUITS"
-    "CARD_VALUES" -> Just "CARD_VALUES"
-    "CARD_RANKS" -> Just "CARD_RANKS"
+    "card_suits" -> Just "card_suits"
+    "card_values" -> Just "card_values"
+    "card_ranks" -> Just "card_ranks"
     "end_con" -> Just "end_con"
     "any_time" -> Just "any_time"
     "PILE_COUNT" -> Just "PILE_COUNT"
-    "PLAYER_HAND" -> Just "PLAYER_HAND"
-    "PLAYER_MOVES" -> Just "PLAYER_MOVES"
+    "player_hand" -> Just "player_hand"
+    "player_moves" -> Just "player_moves"
     "GAME_NAME" -> Just "GAME_NAME"
     "start_time" -> Just "start_time"
-    "CARD_CONSTRAINTS" -> Just "CARD_CONSTRAINTS"
+    "card_constraints" -> Just "card_constraints"
     "CARD" -> Just "CARD"
     "PLAYER" -> Just "PLAYER"
     "ACTIONS" -> Just "ACTIONS"
@@ -124,6 +127,7 @@ validateKeyWords x = case x of
     "draw_card" -> Just "draw_card"
     "turn_start" -> Just "turn_start"
     "turn_end" -> Just "turn_end"
+    "ignore_constraints" -> Just "ignore_constraints"
     _ -> Nothing
 
 
@@ -139,6 +143,7 @@ isAFeatureOf CardEffects CardEffects = True
 isAFeatureOf CardConstraints CardFeatures = True
 isAFeatureOf CardSuits CardFeatures = True
 isAFeatureOf CardRanks CardFeatures = True
+isAFeatureOf IgnoreConstraints CardFeatures = True
 
 isAFeatureOf CardValues CardFeatures = True
 isAFeatureOf PlayerHand PlayerFeatures = True

@@ -4,11 +4,27 @@ module CDSL.CDSLExpr (
     , CDSLParseErrorCode (..)
     , CDSLExecError (..)
     , CDSLExecErrorCode (..)
+    , CardEffect (..)
 ) where
 
 import Feature (Feature)
 import CardGame.PlayerMove (Move)
-import CardGame.Card (CardEffect, Card)
+import CardGame.Card (Card)
+
+data CardEffect =
+    -- Choose a new card to change to, i.e. standard "Vri-Åttern"
+    ChangeCard [CDSLExpr]
+    -- Swap hand with another Player
+    | SwapHand
+    -- Takes a Card from an Player's Hand
+    | TakeFromHand
+    -- Gives a Card too another Player
+    | GiveCard
+    -- Passes the next Player's round
+    | PassNext
+    -- Makes the Player draw the given amount of cards, and skip their turn
+    | DrawCards Int
+    deriving (Show, Eq)
 
 -- Card Domain Specific Language
 data CDSLExpr =
@@ -70,6 +86,8 @@ data CDSLExpr =
     | CurrentPlayer CDSLExpr
     -- Resets a player ability
     | Reset CDSLExpr
+    -- List of cards
+    | Cards [Card]
     -- Moves
     | PMoves
     -- A string
@@ -98,6 +116,7 @@ data CDSLParseErrorCode =
     | NotAFeatureError
     | MissMatchFeatureError
     | InvalidFeatureArgumentError
+    | NotACardFieldError
     deriving (Show, Eq)
 
 

@@ -6,17 +6,19 @@ module CDSL.ExecCDSLExpr (
     , execCDSLGameBool
     , execCDSLInt
     , execCardEffect
-    , fromCDSLToCard) where
+    , fromCDSLToCard
+    , fromCDSLToString
+    , cardFromCDSL) where
 
-import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves), GameState (TurnEnd))
+import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves, cardSuits, cardRanks), GameState (TurnEnd))
 import Data.CircularList (toList, size, update, fromList, rotNR, rotNL, focus, rotR, isEmpty)
 import CardGame.Player (Player(hand, pScore, name, moves))
 import Data.Either (partitionEithers)
-import CardGame.Card (shuffle, Card (suit, rank, cScore), CardEffect (..))
+import CardGame.Card (shuffle, Card (..))
 import CDSL.CDSLExpr
 import Data.List (elemIndex, intercalate)
-import Functions (takeUntilDuplicate, deleteAt, removeFirst, updateAt)
-import Text.Read (readMaybe)
+import Functions (takeUntilDuplicate, deleteAt, removeFirst, updateAt, lookupOrDefault)
+import Text.Read (readMaybe, Lexeme (String))
 import CardGame.CardFunctions (prettyPrintCards)
 import Extra (sleep)
 
@@ -156,7 +158,10 @@ fromCDSLToCard x = case x of
 
 execCardEffect :: CardEffect -> Game -> Player -> IO Game
 execCardEffect ce g plr = case ce of
-    ChangeCard -> return g
+    ChangeCard xs -> do
+        c <- createCard xs g
+        let pc = fst $ head (pile g) 
+        return (g { pile = (pc, Just c) : drop 1 (pile g) })
 
     GiveCard -> do
         (p, i) <- choosePlayer g plr
@@ -204,3 +209,88 @@ chooseCard p = do
         Nothing -> do
             putStrLn "Invalid choice"
             chooseCard p
+
+fromCDSLToString :: CDSLExpr -> String
+fromCDSLToString (All e) = "all " ++ fromCDSLToString e
+fromCDSLToString (Any e) = "any " ++ fromCDSLToString e
+fromCDSLToString (Greatest e) = "greatest " ++ fromCDSLToString e
+fromCDSLToString (Players e) = "players " ++ fromCDSLToString e
+fromCDSLToString Score = "score"
+fromCDSLToString Hand = "hand"
+fromCDSLToString (IsEqual l r) = "isEqual " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString (Numeric i) = show i
+fromCDSLToString (IsEmpty e) = "isEmpty " ++ fromCDSLToString e
+fromCDSLToString (If cond stmt) = intercalate ", " (map fromCDSLToString cond) ++ " : " ++ intercalate ", " (map fromCDSLToString stmt)
+fromCDSLToString (Swap l r) = "swap " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString (Shuffle e) = "shuffle " ++ fromCDSLToString e
+fromCDSLToString Deck = "deck"
+fromCDSLToString Pile = "pile"
+fromCDSLToString (Take c f t) = "take " ++ fromCDSLToString c ++ " " ++ fromCDSLToString f ++ " " ++ fromCDSLToString t
+fromCDSLToString Always = "always"
+fromCDSLToString Never = "never"
+fromCDSLToString (Not e) = "!" ++ fromCDSLToString e
+fromCDSLToString (And l r) = "&& " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString (Or l r) = "|| " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString TurnOrder = "turnOrder"
+fromCDSLToString CardRank = "rank"
+fromCDSLToString CardSuit = "suit"
+fromCDSLToString CardValue = "value"
+fromCDSLToString (Text s) = s
+fromCDSLToString (PlayerAction a b) = show a ++ " " ++ if b then "TRUE" else "FALSE"
+fromCDSLToString (AffectPlayer ce) = "affect_player " ++ show ce
+fromCDSLToString (CEffect ce cs) = "card_effect " ++ show ce ++ " " ++ show cs
+fromCDSLToString (Reset ce) = "reset " ++ fromCDSLToString ce
+fromCDSLToString (CurrentPlayer ce) = "player " ++ fromCDSLToString ce
+fromCDSLToString PMoves = "moves"
+fromCDSLToString (Cards ce) = show ce
+fromCDSLToString _ = "(NOT ADDED)"
+
+createCard :: [CDSLExpr] -> Game -> IO Card
+createCard = cc []
+    where
+        cc :: [(CDSLExpr, String)] -> [CDSLExpr] -> Game -> IO Card
+        cc xs [] _ = case (lookupOrDefault CardSuit "" xs, lookupOrDefault CardRank "" xs, lookupOrDefault CardValue "0" xs) of
+            (cs, cr, cv) -> case readMaybe cv :: Maybe Int of
+                Just i -> return (Card cs cr i)
+                Nothing -> return (Card cs cr 0)
+        cc xs (y:ys) g = case y of
+            CardSuit -> do
+                putStrLn (intercalate "," (map fromCDSLToString (cardSuits g)))
+                putStrLn ("Choose Card Suits (1/" ++ show (length (cardSuits g)) ++ ")")
+                c <- getLine
+                case readMaybe c :: Maybe Int of
+                    Just i -> if i >= 1 && i <= length (cardSuits g)
+                        then
+                            do
+                                putStrLn ("Choose: " ++ show (cardSuits g !! (i - 1)))
+                                cc ((CardSuit, fromCDSLToString (cardSuits g !! (i - 1))):xs) ys g
+                        else
+                            do
+                                putStrLn ("Expected a number between 1 and " ++ show (length (cardSuits g)))
+                                cc xs (y:ys) g
+                    Nothing -> do
+                        putStrLn ("Expected a number between 1 and " ++ show (length (cardSuits g)))
+                        cc xs (y:ys) g
+            CardRank -> do
+                putStrLn (intercalate "," (map fromCDSLToString (cardRanks g)))
+                putStrLn ("Choose Card Ranks (1/" ++ show (length (cardRanks g)) ++ ")")
+                c <- getLine
+                case readMaybe c :: Maybe Int of
+                    Just i -> if i >= 1 && i <= length (cardRanks g)
+                        then
+                            do
+                                putStrLn ("Choose: " ++ show (cardRanks g !! (i - 1)))
+                                cc ((CardRank, fromCDSLToString (cardRanks g !! (i - 1))):xs) ys g
+                        else
+                            do
+                                putStrLn ("Expected a number between 1 and " ++ show (length (cardRanks g)))
+                                cc xs (y:ys) g
+                    Nothing -> do
+                        putStrLn ("Expected a number between 1 and " ++ show (length (cardRanks g)))
+                        cc xs (y:ys) g
+            _ -> undefined
+
+cardFromCDSL :: [CDSLExpr] -> [Card]
+cardFromCDSL [] = []
+cardFromCDSL ((Cards cs):xs) = cs ++ cardFromCDSL xs
+cardFromCDSL (_:xs) = cardFromCDSL xs

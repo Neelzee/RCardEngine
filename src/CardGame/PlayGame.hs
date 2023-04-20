@@ -10,7 +10,7 @@ import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore), pret
 import Text.Read (readMaybe)
 import Data.List (find, intercalate)
 import Feature ( Feature(PileCount, PlayerHand, CardEffects) )
-import CDSL.CDSLExpr (CDSLExpr(Numeric, CEffect))
+import CDSL.CDSLExpr (CDSLExpr(Numeric, CEffect), CardEffect)
 import LoadGame (loadGame)
 import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique, removeLookup, removeLookupAll)
 import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
@@ -18,7 +18,7 @@ import System.IO ( hFlush, stdout )
 import CardGame.PlayCommands (validatePLCommand, PLCommand (plc), UserActions (Play, Draw, PassTurn, HelpUA, Moves, HandUA, ScoreUA, QuitUA), printUACommands)
 import System.Console.ANSI (clearScreen)
 import CardGame.Game (Game (players, state, Game, pile, deck, actions, rules, winCon, canPlaceCard, gameName, endCon, playerMoves, cardEffects), GameState (Start, TurnEnd, TurnStart), dealCards, gameActions, createEmptyGame)
-import CardGame.Card (Card, CardEffect)
+import CardGame.Card (Card)
 import CDSL.ExecCDSLExpr (execCardEffect)
 import CardGame.CardFunctions (prettyPrintCards, cardElem)
 
@@ -63,7 +63,9 @@ doPlayerTurn g = do
             putStr "\nPile: "
             case pile game of
                 [] -> putStrLn "no cards on deck"
-                p -> prettyPrintCards [fst (head p)]
+                p -> case snd $ head $ pile game of
+                    Just c -> prettyPrintCards [c]
+                    Nothing -> prettyPrintCards [fst (head p)]
             action <- getLine
             case validatePLCommand action of
                 Left cm -> case plc cm of
@@ -80,16 +82,16 @@ doPlayerTurn g = do
                                                 putStrLn ("Plays " ++ show card)
                                                 let plr' = plr { hand = removeFirst (hand plr) card, moves = removeFirst (moves plr) (PlayCard, b) }
                                                 -- Check card effect
-                                                game <- checkCardEffect card g
+                                                game <- checkCardEffect card (g { pile = (card, Nothing):pile game })
                                                 -- If player can play card again, 
                                                 if b
                                                     then
-                                                        doPlayerTurn game { pile = (card, Nothing):pile game, players = update plr' (players game)}
+                                                        doPlayerTurn game { players = update plr' (players game) }
                                                     else
                                                         do
                                                             putStrLn "Hit Enter to go to next turn."
                                                             getLine
-                                                            return game { state = TurnEnd, pile = (card, Nothing):pile game, players = update plr' (players game)}
+                                                            return game { state = TurnEnd, players = update plr' (players game)}
                                         else
                                             do
                                                 putStrLn ("Cannot place " ++ show card)

@@ -7,7 +7,7 @@ import Constants (gameFolder, gameExtension)
 import Data.List (elemIndex, intercalate)
 import CDSL.CDSLExpr (CDSLExpr(..))
 import System.IO (withFile, IOMode (WriteMode), hPrint, hPutStrLn)
-import CDSL.ParseCardDSL (fromCDSLToString)
+import CDSL.ExecCDSLExpr (fromCDSLToString)
 import GameData.LoadGD (loadGameData)
 import Terminal.GameCommands
 

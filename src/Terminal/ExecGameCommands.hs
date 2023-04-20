@@ -9,7 +9,7 @@ module Terminal.ExecGameCommands (
     ) where
 
 import Data.List.Extra (trim, intercalate)
-import CDSL.ParseCardDSL (fromCDSLToString)
+import CDSL.ExecCDSLExpr (fromCDSLToString)
 import GameData.GD (GameData)
 import CDSL.CDSLExpr
 import GameData.SaveGD (saveGameData)

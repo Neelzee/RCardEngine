@@ -4,7 +4,6 @@ module CDSL.ParseCardDSL (
     , parseCDSLPlayerAction
     , parseStringList
     , parseCDSLFromString
-    , fromCDSLToString
     , readCDSL
     , getCards
     , validateFeature
@@ -205,41 +204,6 @@ parseCDSLFromString (x:xs) = case x of
         _ -> Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = x})
 
 
-fromCDSLToString :: CDSLExpr -> String
-fromCDSLToString (All e) = "all " ++ fromCDSLToString e
-fromCDSLToString (Any e) = "any " ++ fromCDSLToString e
-fromCDSLToString (Greatest e) = "greatest " ++ fromCDSLToString e
-fromCDSLToString (Players e) = "players " ++ fromCDSLToString e
-fromCDSLToString Score = "score"
-fromCDSLToString Hand = "hand"
-fromCDSLToString (IsEqual l r) = "isEqual " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
-fromCDSLToString (Numeric i) = show i
-fromCDSLToString (IsEmpty e) = "isEmpty " ++ fromCDSLToString e
-fromCDSLToString (If cond stmt) = intercalate ", " (map fromCDSLToString cond) ++ " : " ++ intercalate ", " (map fromCDSLToString stmt)
-fromCDSLToString (Swap l r) = "swap " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
-fromCDSLToString (Shuffle e) = "shuffle " ++ fromCDSLToString e
-fromCDSLToString Deck = "deck"
-fromCDSLToString Pile = "pile"
-fromCDSLToString (Take c f t) = "take " ++ fromCDSLToString c ++ " " ++ fromCDSLToString f ++ " " ++ fromCDSLToString t
-fromCDSLToString Always = "always"
-fromCDSLToString Never = "never"
-fromCDSLToString (Not e) = "!" ++ fromCDSLToString e
-fromCDSLToString (And l r) = "&& " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
-fromCDSLToString (Or l r) = "|| " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
-fromCDSLToString TurnOrder = "turnOrder"
-fromCDSLToString CardRank = "rank"
-fromCDSLToString CardSuit = "suit"
-fromCDSLToString CardValue = "value"
-fromCDSLToString (Text s) = s
-fromCDSLToString (PlayerAction a b) = show a ++ " " ++ if b then "TRUE" else "FALSE"
-fromCDSLToString (AffectPlayer ce) = "affect_player " ++ show ce
-fromCDSLToString (CEffect ce cs) = "card_effect " ++ show ce ++ " " ++ show cs
-fromCDSLToString (Reset ce) = "reset " ++ fromCDSLToString ce
-fromCDSLToString (CurrentPlayer ce) = "player " ++ fromCDSLToString ce
-fromCDSLToString PMoves = "moves"
-fromCDSLToString _ = "(NOT ADDED)"
-
-
 
 parseIFCDSLFromString :: String -> Either CDSLExpr CDSLParseError
 parseIFCDSLFromString xs = if ':' `elem` xs
@@ -275,6 +239,23 @@ toNumeric x = case x of
     n@(Numeric _) -> Just n
     _ -> Nothing
 
+
+getCardFields :: [String] -> Either [CDSLExpr] [CDSLParseError]
+getCardFields [] = Left []
+getCardFields (x:xs) = case x of
+    "rank" -> case getCardFields xs of
+        Left ex -> Left (CardRank:ex)
+        e -> e
+    "suits" -> case getCardFields xs of
+        Left ex -> Left (CardSuit:ex)
+        e -> e
+    "value" -> case getCardFields xs of
+        Left ex -> Left (CardValue:ex)
+        e -> e
+    _ -> case getCardFields xs of
+        Right err -> Right (CDSLParseError { pErr = NotACardFieldError, pExpr = Null, rawExpr = x }:err)
+        _ -> Right [CDSLParseError { pErr = NotACardFieldError, pExpr = Null, rawExpr = x }]
+
 readCDSL :: String -> Either (Feature, [CDSLExpr]) (Maybe Feature, [CDSLParseError])
 readCDSL xs = do
     let (y, ys) = (takeWhile (/='=') xs, removeFirst (dropWhile (/='=') xs) '=')
@@ -284,12 +265,14 @@ readCDSL xs = do
             Just i -> Left (CardEffects, [CEffect (DrawCards i) (getCards (stringToList ys))])
             Nothing -> Right (Just CardEffects, [CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = show (drop 1 (words y)) }])
         Left CESwapHand -> Left (CardEffects, [CEffect SwapHand (getCards (stringToList ys))])
-        Left CEChangeCard -> Left (CardEffects, [CEffect ChangeCard (getCards (stringToList ys))])
+        Left CEChangeCard -> case getCardFields (drop 1 (words y)) of
+            Left ex -> Left (CardEffects, [CEffect (ChangeCard ex) (getCards (stringToList ys))])
+            Right err -> Right (Just CEChangeCard, err)
         Left CETakeFromHand -> Left (CardEffects, [CEffect TakeFromHand (getCards (stringToList ys))])
         Left CEPassNext -> Left (CardEffects, [CEffect PassNext (getCards (stringToList ys))])
         Left CEGiveCard -> Left (CardEffects, [CEffect GiveCard (getCards (stringToList ys))])
-
         Left PlayerMoves -> Left (PlayerMoves, map (uncurry PlayerAction) (mapMaybe parsePlayerMove (stringToList ys)))
+        Left IgnoreConstraints -> Left (IgnoreConstraints, [Cards (getCards (stringToList ys))])
         Left f -> case parseExpr (stringToList ys) of
             Left exprs -> Left (f, exprs)
             Right err -> Right (Just f, err)
@@ -413,7 +396,9 @@ validateFeature :: String -> Either Feature CDSLParseError
 validateFeature x = case words x of
     -- Card Effects
     ["CARD_EFFECTS"] -> Left CardEffects
-    ["change_card"] -> Left CEChangeCard
+    ("change_card":xs) -> case getCardFields xs of
+        Left _ -> Left CEChangeCard
+        Right e -> Right (head e)
     ["swap_hand"] -> Left CESwapHand
     ["take_from_hand"] -> Left CETakeFromHand
     ["give_card"] -> Left CEGiveCard
@@ -432,6 +417,7 @@ validateFeature x = case words x of
     ["card_values"] -> Left CardValues
     ["card_ranks"] -> Left CardRanks
     ["card_constraints"] -> Left CardConstraints
+    ["ignore_constraints"] -> Left IgnoreConstraints
     -- Player
     ["player_hand"] -> Left PlayerHand
     ["player_moves"] -> Left PlayerMoves

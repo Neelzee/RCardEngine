@@ -22,6 +22,8 @@ data Game = Game {
     gameName :: String
     , playerMoves :: [(Move, Bool)]
     , cardGen :: [Card]
+    , cardSuits :: [CDSLExpr]
+    , cardRanks :: [CDSLExpr]
     , cardEffects :: [CDSLExpr]
     , deck :: [Card]
     , pile :: [(Card, Maybe Card)]
@@ -48,6 +50,8 @@ createEmptyGame = Game {
                     gameName = "Default Game"
                     , playerMoves = []
                     , cardGen = []
+                    , cardSuits = []
+                    , cardRanks = [] 
                     , cardEffects = []
                     , deck = []
                     , pile = []

@@ -1,27 +1,11 @@
 module CardGame.Card (
-    CardEffect (..)
-    , Card (..)
+    Card (..)
     , shuffle
     ) where
 
-import System.Random
+import System.Random ( mkStdGen, Random(randomR), RandomGen )
 import Functions (removeNth)
 
-
-data CardEffect =
-    -- Choose a new card to change to, i.e. standard "Vri-Åttern"
-    ChangeCard
-    -- Swap hand with another Player
-    | SwapHand
-    -- Takes a Card from an Player's Hand
-    | TakeFromHand
-    -- Gives a Card too another Player
-    | GiveCard
-    -- Passes the next Player's round
-    | PassNext
-    -- Makes the Player draw the given amount of cards, and skip their turn
-    | DrawCards Int
-    deriving (Show, Eq)
 
 
 data Card = Card {
@@ -46,3 +30,11 @@ shuffle' xs gen = y : shuffle' ys gen'
   where
     (index, gen') = randomR (0, length xs - 1) gen
     (y, ys) = removeNth index xs
+
+
+d20 = randomNum (mkStdGen 420)
+
+randomNum :: RandomGen mkStdGen => mkStdGen -> Int
+randomNum gen = do
+    let (index, _) = randomR (0, 20) gen
+    index

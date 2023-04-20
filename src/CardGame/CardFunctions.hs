@@ -12,6 +12,9 @@ module CardGame.CardFunctions (
 import CDSL.CDSLExpr
 import CardGame.Card
 import Data.List (intercalate)
+import Feature (Feature(CardEffects))
+
+
 
 
 defaultCardSuits :: [CDSLExpr]
