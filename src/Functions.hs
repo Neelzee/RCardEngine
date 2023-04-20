@@ -279,3 +279,12 @@ removeLookupAll k v (x@(ok, _):xs)
   | k == ok && null v = removeLookupAll k v xs
   | k == ok = map (\val -> (k, val)) v ++ removeLookupAll k [] xs
   | otherwise = x : removeLookupAll k v xs
+
+
+
+subString :: String -> String -> Bool
+subString "" _ = True
+subString _ "" = False
+subString (s:ss) (x:xs)
+  | s == x = subString ss xs
+  | otherwise = False

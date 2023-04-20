@@ -109,17 +109,15 @@ execCDSLBool :: CDSLExpr -> Either Bool CDSLExecError
 execCDSLBool Always = Left True
 execCDSLBool Never = Left False
 execCDSLBool (IsEqual (Numeric a) (Numeric b)) = Left (a == b)
-execCDSLBool (Not ex) = case execCDSLBool ex of
-    Left b -> Left (not b)
-    e -> e
-execCDSLBool (Or l r) = case (execCDSLBool l, execCDSLBool r) of
-    (Left lt, Left rt) -> Left (lt || rt)
-    (Right e, _) -> Right e
-    (_, Right e) -> Right e
-execCDSLBool (And l r) = case (execCDSLBool l, execCDSLBool r) of
-    (Left lt, Left rt) -> Left (lt && rt)
-    (Right e, _) -> Right e
-    (_, Right e) -> Right e
+execCDSLBool (Not ex) = case partitionEithers $ map execCDSLBool ex of
+    (b, []) -> Left (not $ and b)
+    (_, e) -> Right $ head e
+execCDSLBool (Or l r) = case (partitionEithers $ map execCDSLBool l, partitionEithers $ map execCDSLBool r) of
+    ((lt, []), (rt, [])) -> Left (or lt || or rt)
+    ((_, e), _) -> Right $ head e
+execCDSLBool (And l r) = case (partitionEithers $ map execCDSLBool l, partitionEithers $ map execCDSLBool r) of
+    ((lt, []), (rt, [])) -> Left (and lt && and rt)
+    ((_, e), _) -> Right $ head e
 execCDSLBool e = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
 
@@ -160,7 +158,7 @@ execCardEffect :: CardEffect -> Game -> Player -> IO Game
 execCardEffect ce g plr = case ce of
     ChangeCard xs -> do
         c <- createCard xs g
-        let pc = fst $ head (pile g) 
+        let pc = fst $ head (pile g)
         return (g { pile = (pc, Just c) : drop 1 (pile g) })
 
     GiveCard -> do
@@ -228,9 +226,9 @@ fromCDSLToString Pile = "pile"
 fromCDSLToString (Take c f t) = "take " ++ fromCDSLToString c ++ " " ++ fromCDSLToString f ++ " " ++ fromCDSLToString t
 fromCDSLToString Always = "always"
 fromCDSLToString Never = "never"
-fromCDSLToString (Not e) = "!" ++ fromCDSLToString e
-fromCDSLToString (And l r) = "&& " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
-fromCDSLToString (Or l r) = "|| " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString (Not e) = "!" ++ intercalate ", " (map fromCDSLToString e)
+fromCDSLToString (And l r) = "&& " ++ intercalate ", " (map fromCDSLToString l) ++ " " ++ intercalate ", " (map fromCDSLToString r)
+fromCDSLToString (Or l r) = "|| " ++ intercalate ", " (map fromCDSLToString l) ++ " " ++ intercalate ", " (map fromCDSLToString r)
 fromCDSLToString TurnOrder = "turnOrder"
 fromCDSLToString CardRank = "rank"
 fromCDSLToString CardSuit = "suit"

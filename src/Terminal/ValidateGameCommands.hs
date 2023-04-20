@@ -1,6 +1,6 @@
 module Terminal.ValidateGameCommands (
     validateGameCommand
-    , validateGCFlags 
+    , validateGCFlags
     ) where
 
 import Terminal.GameCommands (GCError (GCError, errType, UnknownFlagsError, input, UnknownCommandError, InvalidCommandArgumentError, CDSLError), GameCommand (Help, Create, Save, cmd, Edit, Add, Update, Test, Remove, Copy, Rename, Status, Close, Clear, Quit, List, Play), Flag, commands)
@@ -9,7 +9,7 @@ import CDSL.CDSLExpr (CDSLExpr(Text, Numeric))
 import Text.Read (readMaybe)
 import Feature (fromStringToFeature)
 import Data.Either (partitionEithers)
-import CDSL.ParseCardDSL (parseCDSLFromString)
+import CDSL.ParseCardDSL (parseExpr)
 
 
 validateGameCommand :: String -> Either GameCommand GCError
@@ -33,9 +33,9 @@ validateGameCommand xs = case map trim (words xs) of
             let (exprStr, flagStrs) = partition (\s -> head s /= '-') (words input)
             let exs = map unwords $ groupBy (\_ b -> head b /= '-') exprStr
             let flg = map tail flagStrs
-            case partitionEithers (map (parseCDSLFromString . words) exs) of
-                (exps, []) -> Left (Add f exps flg)
-                (_, errs) -> Right (GCError { errType = CDSLError (Right errs), input = xs })
+            case partitionEithers (map (parseExpr . words) exs) of
+                (exps, []) -> Left (Add f (concat exps) flg)
+                (_, errs) -> Right (GCError { errType = CDSLError (Right (concat errs)), input = xs })
         Nothing -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a Feature, but got '" ++ feature ++ "' instead."), input = xs })
 
     ("update":feature:ys) -> case fromStringToFeature feature of
@@ -44,9 +44,9 @@ validateGameCommand xs = case map trim (words xs) of
             let (exprStr, flagStrs) = partition (\s -> head s /= '-') (words input)
             let exs = map unwords $ groupBy (\_ b -> head b /= '-') exprStr
             let flg = map tail flagStrs
-            case partitionEithers (map (parseCDSLFromString . words) exs) of
-                (exps, []) -> Left (Update f exps flg)
-                (_, errs) -> Right (GCError { errType = CDSLError (Right errs), input = xs })
+            case partitionEithers (map (parseExpr . words) exs) of
+                (exps, []) -> Left (Update f (concat exps) flg)
+                (_, errs) -> Right (GCError { errType = CDSLError (Right (concat errs)), input = xs })
         Nothing -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a Feature, but got '" ++ feature ++ "' instead."), input = xs })
 
     ("test":feature:ys) -> case fromStringToFeature feature of
@@ -55,9 +55,9 @@ validateGameCommand xs = case map trim (words xs) of
             let (exprStr, flagStrs) = partition (\s -> head s /= '-') (words input)
             let exs = map unwords $ groupBy (\_ b -> head b /= '-') exprStr
             let flg = map tail flagStrs
-            case partitionEithers (map (parseCDSLFromString . words) exs) of
-                (exps, []) -> Left (Test f exps flg)
-                (_, errs) -> Right (GCError { errType = CDSLError (Right errs), input = xs })
+            case partitionEithers (map (parseExpr . words) exs) of
+                (exps, []) -> Left (Test f (concat exps) flg)
+                (_, errs) -> Right (GCError { errType = CDSLError (Right (concat errs)), input = xs })
         Nothing -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a Feature, but got '" ++ feature ++ "' instead."), input = xs })
 
     ("remove":ys) -> case (mapM fromStringToFeature (words (takeWhile (/= '-') (unwords ys))), validateGCFlags (words (dropWhile (/= '-') (unwords ys)))) of

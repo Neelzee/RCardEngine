@@ -6,7 +6,7 @@ import Data.Maybe (mapMaybe)
 import Data.Bifunctor (first)
 import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords, isAFeatureOf)
 import CDSL.CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord, MissMatchFeatureError))
-import CDSL.ParseCardDSL (parseCDSLFromString, parseIFCDSLFromString, parseCDSLFromStringList, processIfString, parseStringList, parseCDSLPlayerAction, readCDSL, validateFeature)
+import CDSL.ParseCardDSL (processIfString, parseStringList, parseCDSLPlayerAction, readCDSL, validateFeature)
 import GameData.GD (GameData)
 import Functions (mergeList, removeMaybe, allGames)
 

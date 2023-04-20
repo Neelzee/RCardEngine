@@ -63,11 +63,11 @@ data CDSLExpr =
     -- Evals to false
     | Never
     -- Negates an boolean
-    | Not CDSLExpr
+    | Not [CDSLExpr]
     -- Evals too true if both conditions are true
-    | And CDSLExpr CDSLExpr
+    | And [CDSLExpr] [CDSLExpr]
     -- Evals too true if any condition is true
-    | Or CDSLExpr CDSLExpr
+    | Or [CDSLExpr] [CDSLExpr]
     -- The following expression affects the next player
     | AffectPlayer CardEffect
     -- References the turn order
