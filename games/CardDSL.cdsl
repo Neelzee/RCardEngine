@@ -1,3 +1,5 @@
+# Used to test new features
+
 GAME
 win_con = greatest players score
 end_con = [any players isEmpty hand, any players isEqual score 10]

@@ -1,3 +1,5 @@
+# Possible implementation of the game Crazy Eights
+
 GAME
 win_con = any players isEmpty hand
 end_con = [any players isEmpty hand, any players isEqual score 10]

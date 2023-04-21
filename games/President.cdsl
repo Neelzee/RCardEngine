@@ -1,3 +1,5 @@
+# Possible implementation of the game President
+
 GAME
 win_con = greatest players score
 END
