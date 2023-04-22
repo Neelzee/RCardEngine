@@ -132,6 +132,7 @@ data CDSLParseErrorCode =
     | MissingTerminationStatement Int
     | UnknownKeyWord Int
     | OnLoad Feature CDSLParseErrorCode
+    | OnValidate Feature [CDSLExecError]
     | NotAFeatureError
     | MissMatchFeatureError
     | InvalidFeatureArgumentError
