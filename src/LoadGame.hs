@@ -29,66 +29,66 @@ loadGame g n = do
 
 
 loadGame' :: GameData -> Game -> IO Game
-loadGame' rls g = do
+loadGame' gd g = do
     -- gamename
-    gm <- case lookup GameName rls of
+    gm <- case lookup GameName gd of
         Just [Text nm] -> return nm
         _ -> return "game"
-    cs <- case lookup CardSuits rls of
+    cs <- case lookup CardSuits gd of
         Just suits -> return suits
         _ -> return defaultCardSuits
-    cr <- case lookup CardRanks rls of
+    cr <- case lookup CardRanks gd of
         Just ranks -> return ranks
         _ -> return defaultCardRanks
-    cv <- case lookup CardValues rls of
+    cv <- case lookup CardValues gd of
         Just values -> return (mapMaybe toNumeric values)
         _ -> return defaultCardValues
-    let ccI = getComparatorInt (lookupOrDefault CardCompare [] rls)
-    let ccS = getComparatorString (lookupOrDefault CardCompare [] rls)
+    let ccI = getComparatorInt (lookupOrDefault CardCompare [] gd)
+    let ccS = getComparatorString (lookupOrDefault CardCompare [] gd)
     let cards' = makeDeck cs cr cv
 
 
-    let ce = concat (lookupAll CardEffects rls)
+    let ce = concat (lookupAll CardEffects gd)
 
-    let to = lookupAll TurnOrder rls
+    let to = lookupAll TurnOrder gd
 
     let cg = cycle cards'
     -- Player
-    mv <- case lookup PlayerMoves rls of
+    mv <- case lookup PlayerMoves gd of
         Just mvs -> return (parsePlayerMovesExpr mvs)
         Nothing -> return standardMoves
     -- Pile
-    let pl = case lookup PileCount rls of
+    let pl = case lookup PileCount gd of
             Just e -> e
             _ -> [Numeric 1]
 
     -- Card Count
-    let hc = lookupOrDefault PlayerHand [Numeric 3] rls
+    let hc = lookupOrDefault PlayerHand [Numeric 3] gd
 
     -- End con
-    let ec = map createEndCon (lookupAll EndCon rls)
+    let ec = map createEndCon (lookupAll EndCon gd)
 
     -- Win con
-    let wc = map createWinCon (lookupAll WinCon rls)
+    let wc = map createWinCon (lookupAll WinCon gd)
 
-    cex <- case lookupOrDefault ExceptionConstraints [] rls of
+    cex <- case lookupOrDefault ExceptionConstraints [] gd of
         [cc, CardSuit] -> return (Right (getComparatorString [cc]), CardSuit)
         [cc, CardRank] -> return (Right (getComparatorString [cc]), CardRank)
         [cc, CardValue] -> return (Left (getComparatorInt [cc]), CardValue)
         _ -> return (Left (\_ _ -> False), Null)
 
     -- Can place cards
-    let pc = placeCardStmt (concat (lookupAll CardConstraints rls)) ccI ccS cex
+    let pc = placeCardStmt (concat (lookupAll CardConstraints gd)) ccI ccS cex
     -- Rules that should be checked at specific times
     -- Anytime
-    let at = map execCDSLGame (lookupAll AnyTime rls)
+    let at = map execCDSLGame (lookupAll AnyTime gd)
 
     -- Start
-    let st = map execCDSLGame (lookupAll StartTime rls)
+    let st = map execCDSLGame (lookupAll StartTime gd)
 
     -- TurnStart
-    let ts = map execCDSLGame (lookupAll TurnStartTime rls)
-    let te = map execCDSLGame (lookupAll TurnEndTime rls)
+    let ts = map execCDSLGame (lookupAll TurnStartTime gd)
+    let te = map execCDSLGame (lookupAll TurnEndTime gd)
 
 
 
@@ -138,7 +138,7 @@ loadGame' rls g = do
         placeCardStmt [] _ _ _ _ _ = True
         placeCardStmt (x:xs) fi fs ex gm c@(Card s r v)
             | null (pile gm) = True
-            | c `cardElem` cardFromCDSL (lookupOrDefault IgnoreConstraints [] rls) = True
+            | c `cardElem` cardFromCDSL (lookupOrDefault IgnoreConstraints [] gd) = True
             | uncurry isException ex = True
             | otherwise = do
                     let (Card s' r' v') = fst $ head (pile gm)
