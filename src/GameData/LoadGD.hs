@@ -95,6 +95,10 @@ parseFileHelper' (x:xs) n = case validateKeyWords x of
 removeComments :: [String] -> [String]
 removeComments [] = []
 removeComments (('#':_):xs) = removeComments xs
-removeComments (y:ys) = y : removeComments ys
-
-
+removeComments (y:ys) = rmc y : removeComments ys
+    where
+        rmc :: String -> String
+        rmc "" = ""
+        rmc (z:zs)
+            | z == '#' = ""
+            | otherwise = z : rmc zs
