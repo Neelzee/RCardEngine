@@ -56,6 +56,8 @@ data CDSLExpr =
     | Deck
     -- References the Game Pile
     | Pile
+    -- Discard pile
+    | Discard
     -- Takes a given number from one list, and appends it to the other
     | Take CDSLExpr CDSLExpr CDSLExpr
     -- Evals to true
@@ -91,6 +93,12 @@ data CDSLExpr =
     | Cards [Card]
     -- Moves
     | PMoves
+    -- checks if the given list has the is same
+    | IsSame CDSLExpr CDSLExpr
+    -- Takes the given amount of elements out of alist
+    | Look CDSLExpr CDSLExpr
+    -- Puts the elements in the list, into the other list
+    | Put CDSLExpr CDSLExpr
     -- A string
     | Text String
     -- Lesser

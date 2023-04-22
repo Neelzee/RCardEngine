@@ -10,7 +10,7 @@ module CDSL.ExecCDSLExpr (
     , fromCDSLToString
     , cardFromCDSL) where
 
-import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves, cardSuits, cardRanks, turnOrder), GameState (TurnEnd))
+import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves, cardSuits, cardRanks, turnOrder, discard), GameState (TurnEnd))
 import Data.CircularList (toList, size, update, fromList, rotR, rotL, focus, isEmpty, rotL, rotNL, rotNR, CList)
 import CardGame.Player (Player(hand, pScore, name, moves))
 import Data.Either (partitionEithers)
@@ -103,6 +103,20 @@ execCDSLGame (AffectPlayer ce:xs) g = case ce of
     _ -> execCDSLGame xs g
 execCDSLGame (TOLeft:xs) g = execCDSLGame xs (g { players = rotL (players g) })
 execCDSLGame (TORight:xs) g = execCDSLGame xs (g { players = rotR (players g) })
+execCDSLGame (Put l r:xs) g = do
+    putStrLn "SOMETHIGN "
+    sleep 1
+    case (l, r) of
+        -- Pile
+        (Pile, Deck) -> execCDSLGame xs (g { deck = map fst (pile g) ++ deck g, pile = [] })
+        (Pile, Discard) -> execCDSLGame xs (g { discard = map fst (pile g) ++ discard g, pile = [] })
+        -- Deck
+        (Deck, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (deck g) ++ pile g, deck = [] })
+        (Deck, Discard) -> execCDSLGame xs (g { discard = deck g ++ discard g, deck = [] })
+        -- Discard
+        (Discard, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (discard g) ++ pile g, discard = [] })
+        (Discard, Deck) -> execCDSLGame xs (g { deck = discard g ++ deck g, discard = [] })
+        _ -> execCDSLGame xs g
 execCDSLGame (_:xs) g = execCDSLGame xs g
 
 
@@ -142,8 +156,23 @@ execCDSLGameBool e@(Any (Players (IsEqual a b))) g = case ((a == Score, b == Sco
     _ -> Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 execCDSLGameBool Always _ = Left True
 execCDSLGameBool Never _ = Left False
+execCDSLGameBool (IsSame cf (Look (Numeric n) Pile)) g = if length (pile g) < n
+    then
+        Left False
+    else
+        Left (hasSameField (take n (map fst $ pile g)) [cf])
 execCDSLGameBool e _ = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
+
+
+hasSameField :: [Card] -> [CDSLExpr] -> Bool
+hasSameField [] _ = True
+hasSameField _ [] = True
+hasSameField cs@(c:_) (x:xs) = case x of
+    CardSuit -> all (\c' -> suit c' == suit c) cs
+    CardRank -> all (\c' -> rank c' == rank c) cs
+    CardValue -> all (\c' -> cScore c' == cScore c) cs
+    _ -> hasSameField cs xs
 
 
 execCDSLInt :: CDSLExpr -> Either Int CDSLExecError
@@ -261,6 +290,9 @@ fromCDSLToString CLEq = "lte"
 fromCDSLToString CEq = "eq"
 fromCDSLToString TOLeft = "left"
 fromCDSLToString TORight = "right"
+fromCDSLToString (IsSame l r) = "isSame " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString (Look l r) = "look " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString (Put l r) = "put " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
 fromCDSLToString _ = "(NOT ADDED)"
 
 createCard :: [CDSLExpr] -> Game -> IO Card

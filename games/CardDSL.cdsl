@@ -11,7 +11,7 @@ CARD
 card_suits = [Hearts, Diamonds, Clubs, Spades]
 card_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 card_ranks = [Ace, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King]
-card_constraints = suit
+card_constraints = rank
 exception_constraints equal = rank
 ignore_constraints = [Hearts.Ace]
 card_compare = gte
@@ -30,7 +30,7 @@ any_time = [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isE
 start_time = [always : shuffle deck, isEmpty pile : take 1 deck pile]
 # Not sure if needed
 turn_start = [always : reset player moves]
-turn_end = [always : reset player moves] # Not sure if needed
+turn_end = [always : reset player moves, isSame rank look 4 pile : put pile discard] # Not sure if needed
 END
 
 

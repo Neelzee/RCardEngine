@@ -241,6 +241,21 @@ parseOneCDSL (x:xs) n = case x of
     "lte" -> Left (CLEq, xs)
     "gte" -> Left (CGRq, xs)
     "eq" -> Left (CEq, xs)
+    "isSame" -> case parseOneCDSL xs (n + 1) of
+        Left (l, ys) -> case parseOneCDSL ys (n + 1) of
+            Left (r, zs) -> Left (IsSame l r, zs)
+            e -> e
+        e -> e
+    "look" -> case parseOneCDSL xs (n + 1) of
+        Left (l, ys) -> case parseOneCDSL ys (n + 1) of
+            Left (r, zs) -> Left (Look l r, zs)
+            e -> e
+        e -> e
+    "put" -> case parseOneCDSL xs (n + 1) of
+        Left (l, ys) -> case parseOneCDSL ys (n + 1) of
+            Left (r, zs) -> Left (Put l r, zs)
+            e -> e
+        e -> e
     _ -> case readMaybe x :: Maybe Int of
         Just i -> Left (Numeric i, xs)
         _ -> Left (Text x, xs)
