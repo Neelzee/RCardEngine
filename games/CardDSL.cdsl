@@ -3,6 +3,7 @@
 GAME
 win_con = greatest players score
 end_con = [any players isEmpty hand, any players isEqual score 10]
+turn_order = right
 END
 
 

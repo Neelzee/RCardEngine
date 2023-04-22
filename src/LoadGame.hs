@@ -4,7 +4,7 @@ import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
 import CardGame.Card (Card (Card, cScore, suit), rank)
 import Data.List.Extra (splitOn, trim, sortBy)
-import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects, TurnStartTime, TurnEndTime, IgnoreConstraints, CardCompare, ExceptionConstraints))
+import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects, TurnStartTime, TurnEndTime, IgnoreConstraints, CardCompare, ExceptionConstraints, TurnOrder))
 import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe, mapMaybe)
 import CardGame.Player (standardMoves, resetMoves, parsePlayerMovesExpr, Player (pScore, hand))
@@ -50,6 +50,7 @@ loadGame' rls g = do
 
     let ce = concat (lookupAll CardEffects rls)
 
+    let to = lookupAll TurnOrder rls
 
     let cg = cycle cards'
     -- Player
@@ -95,6 +96,7 @@ loadGame' rls g = do
         deck = cards'
         , cardSuits = cs
         , cardRanks = cr
+        , turnOrder = concat to
         , cardEffects = ce
         , gameName = gm
         , cardGen = cg

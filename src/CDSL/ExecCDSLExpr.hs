@@ -10,8 +10,8 @@ module CDSL.ExecCDSLExpr (
     , fromCDSLToString
     , cardFromCDSL) where
 
-import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves, cardSuits, cardRanks), GameState (TurnEnd))
-import Data.CircularList (toList, size, update, fromList, rotNR, rotNL, focus, rotR, isEmpty)
+import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves, cardSuits, cardRanks, turnOrder), GameState (TurnEnd))
+import Data.CircularList (toList, size, update, fromList, rotR, rotL, focus, isEmpty, rotL, rotNL, rotNR, CList)
 import CardGame.Player (Player(hand, pScore, name, moves))
 import Data.Either (partitionEithers)
 import CardGame.Card (shuffle, Card (..))
@@ -88,7 +88,7 @@ execCDSLGame (AffectPlayer ce:xs) g = case ce of
     PassNext -> do
         putStrLn "Your turn was passed."
         sleep 1
-        execCDSLGame xs (g { players = rotR (players g) })
+        execCDSLGame (turnOrder g ++ xs) g
     (DrawCards n) -> case focus (players g) of
         Just p -> do
             putStrLn ("You must draw " ++ show n ++ " cards")
@@ -99,8 +99,10 @@ execCDSLGame (AffectPlayer ce:xs) g = case ce of
             then
                 return g
             else
-                 execCDSLGame (AffectPlayer ce:xs) (g { players = rotR (players g) })
+                 execCDSLGame (turnOrder g ++ [AffectPlayer ce] ++ xs) g
     _ -> execCDSLGame xs g
+execCDSLGame (TOLeft:xs) g = execCDSLGame xs (g { players = rotL (players g) })
+execCDSLGame (TORight:xs) g = execCDSLGame xs (g { players = rotR (players g) })
 execCDSLGame (_:xs) g = execCDSLGame xs g
 
 
@@ -143,6 +145,7 @@ execCDSLGameBool Never _ = Left False
 execCDSLGameBool e _ = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
 
+
 execCDSLInt :: CDSLExpr -> Either Int CDSLExecError
 execCDSLInt (Numeric n) = Left n
 execCDSLInt e = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
@@ -164,19 +167,19 @@ execCardEffect ce g plr = case ce of
     GiveCard -> do
         (p, i) <- choosePlayer g plr
         (p', c) <- chooseCard plr
-        let plrs = rotNR i (update (p { hand = c:hand p }) (players g)  )
-        return (g { players = rotNL i (update p' plrs) })
+        let plrs = rotatePlr g i (update (p { hand = c:hand p }) (players g)  )
+        return (g { players = rotatePlrBack g i (update p' plrs) })
 
     SwapHand -> do
         (p, i) <- choosePlayer g plr
-        let plrs = rotNR i (update (plr { hand = hand p }) (players g))
-        return (g { players = rotNL i (update (p { hand = hand plr }) plrs) })
+        let plrs = rotatePlr g i (update (plr { hand = hand p }) (players g))
+        return (g { players = rotatePlrBack g i (update (p { hand = hand plr }) plrs) })
 
     TakeFromHand -> do
         (p, i) <- choosePlayer g plr
         (p', c) <- chooseCard p
-        let plrs = rotNR i (update (p { hand = c:hand p }) (players g)  )
-        return (g { players = rotNL i (update p' plrs) })
+        let plrs = rotatePlr g i (update (p { hand = c:hand p }) (players g)  )
+        return (g { players = rotatePlrBack g i (update p' plrs) })
 
     PassNext -> return (g { actions = (TurnEnd, [(execCDSLGame [AffectPlayer PassNext], False)]) : actions g})
 
@@ -185,6 +188,17 @@ execCardEffect ce g plr = case ce of
     _ -> return g
 
 
+rotatePlr :: Game -> Int -> CList Player -> CList Player
+rotatePlr g i plr = case turnOrder g of
+    [TOLeft] -> rotNL i plr
+    [TORight] -> rotNR i plr
+    _ -> plr
+
+rotatePlrBack :: Game -> Int -> CList Player -> CList Player
+rotatePlrBack g i plr = case turnOrder g of
+    [TOLeft] -> rotNR i plr
+    [TORight] -> rotNL i plr
+    _ -> plr
 
 choosePlayer :: Game -> Player -> IO (Player, Int)
 choosePlayer g p = do
@@ -229,7 +243,6 @@ fromCDSLToString Never = "never"
 fromCDSLToString (Not e) = "!" ++ intercalate ", " (map fromCDSLToString e)
 fromCDSLToString (And l r) = "&& " ++ intercalate ", " (map fromCDSLToString l) ++ " " ++ intercalate ", " (map fromCDSLToString r)
 fromCDSLToString (Or l r) = "|| " ++ intercalate ", " (map fromCDSLToString l) ++ " " ++ intercalate ", " (map fromCDSLToString r)
-fromCDSLToString TurnOrder = "turnOrder"
 fromCDSLToString CardRank = "rank"
 fromCDSLToString CardSuit = "suit"
 fromCDSLToString CardValue = "value"
@@ -246,6 +259,8 @@ fromCDSLToString CGr = "ge"
 fromCDSLToString CGRq = "gte"
 fromCDSLToString CLEq = "lte"
 fromCDSLToString CEq = "eq"
+fromCDSLToString TOLeft = "left"
+fromCDSLToString TORight = "right"
 fromCDSLToString _ = "(NOT ADDED)"
 
 createCard :: [CDSLExpr] -> Game -> IO Card

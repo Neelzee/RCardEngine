@@ -22,6 +22,7 @@ data Game = Game {
     gameName :: String
     , playerMoves :: [(Move, Bool)]
     , cardGen :: [Card]
+    , turnOrder :: [CDSLExpr]
     , cardSuits :: [CDSLExpr]
     , cardRanks :: [CDSLExpr]
     , cardEffects :: [CDSLExpr]
@@ -49,6 +50,7 @@ dealCards game n = do
 createEmptyGame :: Game
 createEmptyGame = Game {
                     gameName = "Default Game"
+                    , turnOrder = []
                     , cpcException = []
                     , playerMoves = []
                     , cardGen = []

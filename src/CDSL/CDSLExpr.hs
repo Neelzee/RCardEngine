@@ -71,7 +71,8 @@ data CDSLExpr =
     -- The following expression affects the next player
     | AffectPlayer CardEffect
     -- References the turn order
-    | TurnOrder
+    | TOLeft
+    | TORight
     -- References Card Rank
     | CardRank
     -- References Card Suit

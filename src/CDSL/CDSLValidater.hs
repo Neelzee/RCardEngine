@@ -39,7 +39,7 @@ validateCDSLExpression e@(Greatest (Players a)) = if a == Score || a == Hand
         Right [(CDSLExecError { err = InvalidSyntaxError, expr = e })]
 
 -- Cards
-validateCDSLExpression e@(Shuffle a) = if a == Deck || a == Pile || a == Players TurnOrder
+validateCDSLExpression e@(Shuffle a) = if a == Deck || a == Pile
     then
         Left e
     else

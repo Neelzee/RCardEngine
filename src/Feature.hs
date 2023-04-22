@@ -35,6 +35,7 @@ data Feature = WinCon
     | CEPassNext
     | CEDrawCard
     | CardCompare
+    | TurnOrder
     deriving (Eq)
 
 
@@ -69,6 +70,7 @@ instance Show Feature where
         IgnoreConstraints -> "IGNORE_CONSTRAINTS"
         CardCompare -> "CARD_COMPARE"
         ExceptionConstraints -> "EXCEPTION_CONSTRAINTS"
+        TurnOrder -> "TURN_ORDER"
 
 
 -- Checks if the given feature is valid
@@ -102,6 +104,7 @@ fromStringToFeature x = case x of
     "ignore_constraints" -> Just IgnoreConstraints
     "card_compare" -> Just CardCompare
     "exception_constraints" -> Just ExceptionConstraints
+    "turn_order" -> Just TurnOrder
     _ -> Nothing
 
 
@@ -136,6 +139,7 @@ validateKeyWords x = case x of
     "ignore_constraints" -> Just "ignore_constraints"
     "card_compare" -> Just "card_compare"
     "exception_constraints" -> Just "exception_constraints"
+    "turn_order" -> Just "turn_order"
     _ -> Nothing
 
 
@@ -166,5 +170,6 @@ isAFeatureOf TurnEndTime Actions = True
 
 isAFeatureOf WinCon GameFeatures = True
 isAFeatureOf EndCon GameFeatures = True
+isAFeatureOf TurnOrder GameFeatures = True
 
 isAFeatureOf _ _ = False

@@ -3,7 +3,7 @@ module CardGame.PlayGame (
     ) where
 
 import Data.CircularList
-    ( focus, fromList, rotR, update, toList, removeR )
+    ( focus, fromList, update, toList, removeR )
 import System.Time.Extra ( sleep )
 
 import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore), prettyPrintMoves )
@@ -17,15 +17,16 @@ import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
 import System.IO ( hFlush, stdout )
 import CardGame.PlayCommands (validatePLCommand, PLCommand (plc), UserActions (Play, Draw, PassTurn, HelpUA, Moves, HandUA, ScoreUA, QuitUA), printUACommands)
 import System.Console.ANSI (clearScreen)
-import CardGame.Game (Game (players, state, Game, pile, deck, actions, rules, winCon, canPlaceCard, gameName, endCon, playerMoves, cardEffects), GameState (Start, TurnEnd, TurnStart), dealCards, gameActions, createEmptyGame)
+import CardGame.Game (Game (players, state, Game, pile, deck, actions, rules, winCon, canPlaceCard, gameName, endCon, playerMoves, cardEffects, turnOrder), GameState (Start, TurnEnd, TurnStart), dealCards, gameActions, createEmptyGame)
 import CardGame.Card (Card)
-import CDSL.ExecCDSLExpr (execCardEffect)
+import CDSL.ExecCDSLExpr (execCardEffect, execCDSLGame)
 import CardGame.CardFunctions (prettyPrintCards, cardElem)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
     clearScreen
 
+    -- Incase every player leaves the game
     if null (players g)
         then
             do
@@ -40,10 +41,15 @@ gameLoop g = do
                 else
                     do
                         g' <- doPlayerTurn g
-                        -- new player turn
-                        let game = g' { state = TurnEnd, players = rotR (players g') }
+                        -- new player turn, and changes to the new players turn
+                        game <- execCDSLGame (turnOrder g') (g' { state = TurnEnd})
+
+                        -- Actions that should happen on this state
                         let acts = map (map fst) (lookupAll (state game) (actions game))
+                        -- Applies the actions, on the same game, and returns the updated game
                         game' <- gameActions acts game
+                        -- Filters the actions on the snd parameter in the tuple, which would be a boolean
+                        -- , on if this actions should be removed or not
                         let acts' = map (filter snd) (lookupAll (state game) (actions game))
                         gameLoop (game' { actions = removeLookupAll TurnEnd acts' (actions game) })
 
@@ -138,7 +144,9 @@ doPlayerTurn g = do
                                         doPlayerTurn game { players = update p' (players game) }
                                     else
                                         do
-                                            nm <- case focus (rotR (players game)) of
+                                            -- Find the name of the next player
+                                            tG <- execCDSLGame (turnOrder game) game
+                                            nm <- case focus (players tG) of
                                                 Just p -> return ("Hit Enter to go to " ++ name p ++ "'s turn.")
                                                 Nothing -> return "Hit Enter to go to next turn."
                                             putStrLn nm

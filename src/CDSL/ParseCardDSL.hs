@@ -227,7 +227,8 @@ parseOneCDSL (x:xs) n = case x of
     "rank" -> Left (CardRank, xs)
     "suit" -> Left (CardSuit, xs)
     "value" -> Left (CardValue, xs)
-    "turnOrder" -> Left (TurnOrder, xs)
+    "left" -> Left (TOLeft, xs)
+    "right" -> Left (TORight, xs)
     "reset" -> case parseOneCDSL xs (n + 1) of
         Left (ex, ys) -> Left (Reset ex, ys)
         Right (e, i) -> Right (e { pExpr = Reset (pExpr e) }, i)
