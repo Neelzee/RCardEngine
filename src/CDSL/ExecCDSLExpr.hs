@@ -103,20 +103,17 @@ execCDSLGame (AffectPlayer ce:xs) g = case ce of
     _ -> execCDSLGame xs g
 execCDSLGame (TOLeft:xs) g = execCDSLGame xs (g { players = rotL (players g) })
 execCDSLGame (TORight:xs) g = execCDSLGame xs (g { players = rotR (players g) })
-execCDSLGame (Put l r:xs) g = do
-    putStrLn "SOMETHIGN "
-    sleep 1
-    case (l, r) of
-        -- Pile
-        (Pile, Deck) -> execCDSLGame xs (g { deck = map fst (pile g) ++ deck g, pile = [] })
-        (Pile, Discard) -> execCDSLGame xs (g { discard = map fst (pile g) ++ discard g, pile = [] })
-        -- Deck
-        (Deck, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (deck g) ++ pile g, deck = [] })
-        (Deck, Discard) -> execCDSLGame xs (g { discard = deck g ++ discard g, deck = [] })
-        -- Discard
-        (Discard, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (discard g) ++ pile g, discard = [] })
-        (Discard, Deck) -> execCDSLGame xs (g { deck = discard g ++ deck g, discard = [] })
-        _ -> execCDSLGame xs g
+execCDSLGame (Put l r:xs) g =case (l, r) of
+    -- Pile
+    (Pile, Deck) -> execCDSLGame xs (g { deck = map fst (pile g) ++ deck g, pile = [] })
+    (Pile, Discard) -> execCDSLGame xs (g { discard = map fst (pile g) ++ discard g, pile = [] })
+    -- Deck
+    (Deck, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (deck g) ++ pile g, deck = [] })
+    (Deck, Discard) -> execCDSLGame xs (g { discard = deck g ++ discard g, deck = [] })
+    -- Discard
+    (Discard, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (discard g) ++ pile g, discard = [] })
+    (Discard, Deck) -> execCDSLGame xs (g { deck = discard g ++ deck g, discard = [] })
+    _ -> execCDSLGame xs g
 execCDSLGame (_:xs) g = execCDSLGame xs g
 
 
@@ -164,7 +161,7 @@ execCDSLGameBool (IsSame cf (Look (Numeric n) Pile)) g = if length (pile g) < n
 execCDSLGameBool e _ = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
 
-
+-- Checks if the givens all have equal card fields
 hasSameField :: [Card] -> [CDSLExpr] -> Bool
 hasSameField [] _ = True
 hasSameField _ [] = True
