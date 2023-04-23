@@ -290,6 +290,7 @@ fromCDSLToString CLEq = "lte"
 fromCDSLToString CEq = "eq"
 fromCDSLToString TOLeft = "left"
 fromCDSLToString TORight = "right"
+fromCDSLToString Discard = "discard"
 fromCDSLToString (IsSame l r) = "isSame " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
 fromCDSLToString (Look l r) = "look " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
 fromCDSLToString (Put l r) = "put " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r

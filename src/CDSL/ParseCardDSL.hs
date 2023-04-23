@@ -25,6 +25,7 @@ import Functions (subString, stringToList, removeFirst)
 
 isCDSLExprNumeric :: CDSLExpr -> Bool
 isCDSLExprNumeric (Numeric _) = True
+isCDSLExprNumeric Score = True
 isCDSLExprNumeric _ = False
 
 
