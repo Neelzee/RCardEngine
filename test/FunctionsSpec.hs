@@ -3,7 +3,6 @@ module FunctionsSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
 import Functions
-import GameData.LoadGD (removeComments)
 
 moduleName :: String -> String
 moduleName s = "Functions." ++ s

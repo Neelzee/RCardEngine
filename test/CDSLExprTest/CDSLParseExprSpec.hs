@@ -6,8 +6,8 @@ import CDSL.CDSLExpr
 import CDSL.CDSLExpr (CDSLExpr (CurrentPlayer, PMoves, Always))
 import Feature
 import CardGame.PlayerMove
-import CardGame.Card (CardEffect(DrawCards), Card (Card))
 import Feature (Feature(TurnStartTime, TurnEndTime))
+import CardGame.Card
 
 
 moduleName :: String -> String
@@ -64,6 +64,13 @@ test = hspec $ do
     testReadCDSLValid
         "turn_end = [always : reset player moves]"
             (TurnEndTime, [If [Always] [Reset (CurrentPlayer PMoves)]])
+
+    
+    testReadCDSLValid
+        "turn_end = [always : reset player moves, isSame rank look 4 pile : put pile discard, player isMove pPass : put pile player hand]"
+            (TurnEndTime, [If [Always] [Reset (CurrentPlayer PMoves)], If [IsSame CardRank (Look (Numeric 4) Pile)] [Put Pile Discard], If [CurrentPlayer (IsMove PAPass)] [Put Pile (CurrentPlayer Hand)]])
+
+            
 
 
 testReadCDSLValid :: String -> (Feature, [CDSLExpr]) -> Spec

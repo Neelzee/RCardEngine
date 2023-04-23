@@ -27,10 +27,8 @@ END
 # Define the game actions
 ACTIONS
 any_time = [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]
-start_time = [always : shuffle deck, isEmpty pile : take 1 deck pile]
-# Not sure if needed
-turn_start = [always : reset player moves]
-turn_end = [always : reset player moves, isSame rank look 4 pile : put pile discard] # Not sure if needed
+start_time = [always : shuffle deck, isEmpty pile : take 1 deck pile, always : reset player moves]
+turn_end = [always : reset player moves, prevPlayer isMove pPass : [goBack turn, put pile player hand, goForward turn]]
 END
 
 

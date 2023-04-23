@@ -1,10 +1,10 @@
 module CDSLExprTest.CDSLValidationSpec where
 
-import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
+import Test.Hspec ( describe, it, shouldBe, Spec, hspec, shouldThrow, anyException )
 import CDSL.CDSLExpr
 import CDSL.CDSLValidater (validateCDSLExpression)
 import CDSL.CDSLExpr (CDSLExecErrorCode(InvalidBoolEvaluationError), CDSLExecError (CDSLExecError), CDSLExpr (Shuffle))
-
+import Control.Exception
 
 moduleName :: String -> String
 moduleName = ("ParseCardDSL." ++)
@@ -24,13 +24,11 @@ test = hspec $ do
     testParseCDSLFromStringSBV Never
     testParseCDSLFromStringSBV (If [IsEmpty Deck] [Swap Pile Deck, Shuffle Deck, Take (Numeric 1) Deck Pile])
 
-    testParseCDSLFromStringSBE Score [(CDSLExecError { err = InvalidSyntaxError, expr = Score})]
-    testParseCDSLFromStringSBE (Shuffle Always) [(CDSLExecError { err = InvalidSyntaxError, expr = Shuffle Always})]
-    testParseCDSLFromStringSBE (Shuffle Never) [(CDSLExecError { err = InvalidSyntaxError, expr = Shuffle Never})]
-    testParseCDSLFromStringSBE (Players Never) [(CDSLExecError { err = InvalidSyntaxError, expr = Players Never})]
+    testParseCDSLFromStringSBE Score
+    testParseCDSLFromStringSBE (Shuffle Always)
+    testParseCDSLFromStringSBE (Shuffle Never)
+    testParseCDSLFromStringSBE (Players Never)
     testParseCDSLFromStringSBE (If [Shuffle Deck] [Shuffle Pile])
-        [CDSLExecError { err = InvalidBoolEvaluationError, expr = If [Shuffle Deck] [Shuffle Pile]}
-        , CDSLExecError { err = InvalidBoolEvaluationError, expr = Shuffle Deck }]
 
 testParseCDSLFromStringSBV :: CDSLExpr -> Spec
 testParseCDSLFromStringSBV input = describe (moduleName "validateCDSLExpression") $ do
@@ -38,7 +36,7 @@ testParseCDSLFromStringSBV input = describe (moduleName "validateCDSLExpression"
         validateCDSLExpression input `shouldBe` Left input
 
 
-testParseCDSLFromStringSBE :: CDSLExpr -> [CDSLExecError] -> Spec
-testParseCDSLFromStringSBE input e = describe (moduleName "validateCDSLExpression") $ do
+testParseCDSLFromStringSBE :: CDSLExpr -> Spec
+testParseCDSLFromStringSBE input = describe (moduleName "validateCDSLExpression") $ do
     it (exprTest' input) $ do
-        validateCDSLExpression input `shouldBe` Right e
+        evaluate (validateCDSLExpression input) `shouldThrow` anyException

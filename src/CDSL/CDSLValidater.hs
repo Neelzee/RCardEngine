@@ -82,6 +82,7 @@ validateCDSLExpression p@(Put a b) = if all isList [a, b]
     else
         Right [CDSLExecError { err = InvalidSyntaxError, expr = Put Null Null }]
 validateCDSLExpression e@(GoBack Turn) = Left e
+validateCDSLExpression e@(GoForward Turn) = Left e
 validateCDSLExpression e = error ("The expression: '" ++ show e ++ "' is not a valid expression")
 
 
@@ -92,6 +93,7 @@ isList Pile = True
 isList Deck = True
 isList Discard = True
 isList (Players ex) = isList ex
+isList (CurrentPlayer ex) = isList ex
 isList Hand = True
 isList Score = True
 isList _ = False
@@ -143,6 +145,8 @@ validateCDSLBool is@(IsSame cf lst) = if isList lst && isCardField cf
 validateCDSLBool exs@(Players ex) = case validateCDSLBool ex of
     Left _ -> Left exs
     Right e -> Right (e { expr = exs })
+validateCDSLBool exs@(CurrentPlayer (IsMove PAPass)) = Left exs
+validateCDSLBool exs@(PreviousPlayer (IsMove PAPass)) = Left exs
 validateCDSLBool e = Right (CDSLExecError { err = InvalidBoolEvaluationError, expr = e })
 
 

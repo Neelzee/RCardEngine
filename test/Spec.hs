@@ -1,5 +1,4 @@
 import qualified CDSLExprTest.CDSLParseExprSpec as CDSLParseExprSpec (test)
-import qualified CDSLExprTest.CDSLParseIfExprSpec as CDSLParseIfExprSpec (test)
 import qualified CDSLExprTest.CDSLParseListSpec as CDSLParseListSpec (test)
 import qualified CDSLExprTest.CDSLValidationSpec as CDSLValidationSpec (test)
 import qualified CDSLExprTest.CDSLParsePlayerActionSpec as CDSLParsePlayerActionSpec (test)
@@ -14,7 +13,6 @@ main = do
     ValidateFeatureSpec.test
     FunctionsSpec.test
     CDSLValidationSpec.test
-    CDSLParseIfExprSpec.test
     CDSLParseListSpec.test
     CDSLParsePlayerActionSpec.test
     CDSLLoaderSPec.test

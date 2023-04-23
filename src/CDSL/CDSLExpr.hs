@@ -83,19 +83,27 @@ data CDSLExpr =
     | CardValue
     -- References Player Action
     | PlayerAction Move Bool
+    | PAPass
+    | PADraw
+    | PAPlay
     -- CardEffect
     | CEffect CardEffect [Card]
     -- Current Player
     | CurrentPlayer CDSLExpr
+    -- Previous Player
+    | PreviousPlayer CDSLExpr
     -- Resets a player ability
     | Reset CDSLExpr
     -- List of cards
     | Cards [Card]
     -- References the turnsystem
     | Turn
-    -- References
+    -- Makes the turn go back :)
     | GoBack CDSLExpr
-    -- Moves
+    | GoForward CDSLExpr
+    -- Evals too true, if the Current Players last move was the given move
+    | IsMove CDSLExpr
+    -- Moves to the player
     | PMoves
     -- checks if the given list has the is same
     | IsSame CDSLExpr CDSLExpr

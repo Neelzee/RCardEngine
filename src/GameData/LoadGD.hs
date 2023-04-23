@@ -1,4 +1,4 @@
-module GameData.LoadGD (loadGameData) where
+module GameData.LoadGD (loadGameData, loadGameData') where
 
 import System.Directory (listDirectory)
 import Constants (gameFolder)

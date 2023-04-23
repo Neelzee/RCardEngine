@@ -90,8 +90,6 @@ loadGame' gd g = do
     let ts = map execCDSLGame (lookupAll TurnStartTime gd)
     let te = map execCDSLGame (lookupAll TurnEndTime gd)
 
-
-
     return g {
         deck = cards'
         , cardSuits = cs

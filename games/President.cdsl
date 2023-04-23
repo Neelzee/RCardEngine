@@ -9,6 +9,7 @@ CARD
 card_suits = [Hearts, Diamonds, Clubs, Spades]
 card_ranks = [Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace, Two]
 card_constraints = rank
+card_compare = gte
 END
 
 # Player stats
@@ -21,9 +22,7 @@ END
 # Define the game actions
 ACTIONS
 any_time = [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]
-start_time = [always : shuffle deck, isEmpty pile : take 1 deck pile]
-# Not sure if needed
-turn_start = [always : reset player moves]
+start_time = [always : shuffle deck, isEmpty pile : take 1 deck pile, always : reset player moves]
 turn_end = [always : reset player moves, isSame rank look 4 pile : [put pile discard, goBack turn]] # Not sure if needed
 END
 

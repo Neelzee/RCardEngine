@@ -12,7 +12,7 @@ module CDSL.ExecCDSLExpr (
 
 import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves, cardSuits, cardRanks, turnOrder, discard), GameState (TurnEnd))
 import Data.CircularList (toList, size, update, fromList, rotR, rotL, focus, isEmpty, rotL, rotNL, rotNR, CList)
-import CardGame.Player (Player(hand, pScore, name, moves))
+import CardGame.Player (Player(hand, pScore, name, moves, movesHistory))
 import Data.Either (partitionEithers)
 import CardGame.Card (shuffle, Card (..))
 import CDSL.CDSLExpr
@@ -21,6 +21,7 @@ import Functions (takeUntilDuplicate, deleteAt, removeFirst, updateAt, lookupOrD
 import Text.Read (readMaybe, Lexeme (String))
 import CardGame.CardFunctions (prettyPrintCards)
 import Extra (sleep)
+import CardGame.PlayerMove (Move(Pass))
 
 
 placeCardStmt :: [CDSLExpr] -> (Game -> Card -> Bool)
@@ -50,15 +51,16 @@ compareCards (x:xs) g c = do
 
 execCDSLGame :: [CDSLExpr] -> Game -> IO Game
 execCDSLGame [] g = return g
-execCDSLGame ((If l r):xs) g = case partitionEithers (map (`execCDSLGameBool` g) l) of
-    (res, []) -> if and res
-        then
-            do
-                g' <- execCDSLGame r g
-                execCDSLGame xs g'
-        else
-            return g
-    _ -> return g
+execCDSLGame (e@(If l r):xs) g = do
+    case partitionEithers (map (`execCDSLGameBool` g) l) of
+        (res, []) -> if and res
+            then
+                do
+                    g' <- execCDSLGame r g
+                    execCDSLGame xs g'
+            else
+                return g
+        _ -> return g
 execCDSLGame ((Swap a b):xs) g = if (a == Deck || a == Pile) && (b == Deck || b == Pile)
     then
         case (a, b) of
@@ -103,20 +105,37 @@ execCDSLGame (AffectPlayer ce:xs) g = case ce of
     _ -> execCDSLGame xs g
 execCDSLGame (TOLeft:xs) g = execCDSLGame xs (g { players = rotL (players g) })
 execCDSLGame (TORight:xs) g = execCDSLGame xs (g { players = rotR (players g) })
-execCDSLGame (Put l r:xs) g =case (l, r) of
-    -- Pile
-    (Pile, Deck) -> execCDSLGame xs (g { deck = map fst (pile g) ++ deck g, pile = [] })
-    (Pile, Discard) -> execCDSLGame xs (g { discard = map fst (pile g) ++ discard g, pile = [] })
-    -- Deck
-    (Deck, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (deck g) ++ pile g, deck = [] })
-    (Deck, Discard) -> execCDSLGame xs (g { discard = deck g ++ discard g, deck = [] })
-    -- Discard
-    (Discard, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (discard g) ++ pile g, discard = [] })
-    (Discard, Deck) -> execCDSLGame xs (g { deck = discard g ++ deck g, discard = [] })
-    _ -> execCDSLGame xs g
+execCDSLGame (Put l r:xs) g =
+    case (l, r) of
+        -- Pile
+        (Pile, Deck) -> execCDSLGame xs (g { deck = map fst (pile g) ++ deck g, pile = [] })
+        (Pile, Discard) -> execCDSLGame xs (g { discard = map fst (pile g) ++ discard g, pile = [] })
+        (Pile, CurrentPlayer Hand) -> case focus (players g) of
+            Just p -> execCDSLGame xs (g { pile = [], players = update (p { hand = map fst (pile g) ++ hand p }) (players g) } )
+            Nothing -> execCDSLGame xs g
+
+        -- Deck
+        (Deck, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (deck g) ++ pile g, deck = [] })
+        (Deck, Discard) -> execCDSLGame xs (g { discard = deck g ++ discard g, deck = [] })
+        (Deck, CurrentPlayer Hand) -> case focus (players g) of
+            Just p -> execCDSLGame xs (g { deck = [], players = update (p { hand = deck g ++ hand p }) (players g) } )
+            Nothing -> execCDSLGame xs g
+        -- Discard
+        (Discard, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (discard g) ++ pile g, discard = [] })
+        (Discard, Deck) -> execCDSLGame xs (g { deck = discard g ++ deck g, discard = [] })
+        (Discard, PreviousPlayer Hand) -> do
+            g' <- execCDSLGame (turnOrder g) g
+            case focus (players g') of
+                Just p -> execCDSLGame (GoForward Turn:xs) (g' { discard = [], players = update (p { hand = discard g' ++ hand p }) (players g') } )
+                Nothing -> execCDSLGame xs g
+        _ -> execCDSLGame xs g
 execCDSLGame (GoBack Turn:xs) g = case turnOrder g of
     [TOLeft] -> execCDSLGame (TORight:xs) g
     [TORight] -> execCDSLGame (TOLeft:xs) g
+    _ -> execCDSLGame xs g
+execCDSLGame (GoForward Turn:xs) g = case turnOrder g of
+    [TOLeft] -> execCDSLGame (TOLeft:xs) g
+    [TORight] -> execCDSLGame (TORight:xs) g
     _ -> execCDSLGame xs g
 execCDSLGame (_:xs) g = execCDSLGame xs g
 
@@ -162,6 +181,35 @@ execCDSLGameBool (IsSame cf (Look (Numeric n) Pile)) g = if length (pile g) < n
         Left False
     else
         Left (hasSameField (take n (map fst $ pile g)) [cf])
+execCDSLGameBool (CurrentPlayer (IsMove PAPass)) g = case focus (players g) of
+    Just p -> if null (movesHistory p)
+        then
+            Left False
+        else
+            case head (movesHistory p) of
+                (Pass, _) -> Left True
+                _ -> Left False
+    Nothing -> Left False
+execCDSLGameBool e@(PreviousPlayer (IsMove PAPass)) g = case turnOrder g of
+    [TOLeft] -> case focus (rotR (players g)) of
+        Just p -> if null (movesHistory p)
+            then
+                Left False
+            else
+                case head (movesHistory p) of
+                    (Pass, _) -> Left True
+                    _ -> Left False
+        Nothing -> Left False
+    [TORight] -> case focus (rotL (players g)) of
+        Just p -> if null (movesHistory p)
+            then
+                Left False
+            else
+                case head (movesHistory p) of
+                    (Pass, _) -> Left True
+                    _ -> Left False
+        Nothing -> Left False
+    _ -> Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 execCDSLGameBool e _ = Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
 
 
@@ -295,6 +343,10 @@ fromCDSLToString Discard = "discard"
 fromCDSLToString (IsSame l r) = "isSame " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
 fromCDSLToString (Look l r) = "look " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
 fromCDSLToString (Put l r) = "put " ++ fromCDSLToString l ++ " " ++ fromCDSLToString r
+fromCDSLToString (IsMove ex) = "isMove " ++ fromCDSLToString ex
+fromCDSLToString PAPass = "pPass"
+fromCDSLToString PADraw = "pDraw"
+fromCDSLToString PAPlay = "pPlay"
 fromCDSLToString _ = "(NOT ADDED)"
 
 createCard :: [CDSLExpr] -> Game -> IO Card

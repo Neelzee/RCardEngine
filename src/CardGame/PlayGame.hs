@@ -6,7 +6,7 @@ import Data.CircularList
     ( focus, fromList, update, toList, removeR )
 import System.Time.Extra ( sleep )
 
-import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore), prettyPrintMoves )
+import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore, movesHistory), prettyPrintMoves )
 import Text.Read (readMaybe)
 import Data.List (find, intercalate)
 import Feature ( Feature(PileCount, PlayerHand, CardEffects) )
@@ -24,7 +24,7 @@ import CardGame.CardFunctions (prettyPrintCards, cardElem)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
-    clearScreen
+    --clearScreen
 
     -- Incase every player leaves the game
     if null (players g)
@@ -86,7 +86,7 @@ doPlayerTurn g = do
                                         then
                                             do
                                                 putStrLn ("Plays " ++ show card)
-                                                let plr' = plr { hand = removeFirst (hand plr) card, moves = removeFirst (moves plr) (PlayCard, b) }
+                                                let plr' = plr { hand = removeFirst (hand plr) card, moves = removeFirst (moves plr) (PlayCard, b), movesHistory = (PlayCard, b) : movesHistory plr }
                                                 -- Check card effect
                                                 game <- checkCardEffect card (g { pile = (card, Nothing):pile game })
                                                 -- If player can play card again, 
@@ -120,13 +120,13 @@ doPlayerTurn g = do
                             (True, _) -> do
                                 let crds = take c (deck game)
                                 putStrLn ("Drew: " ++ intercalate ", " (map show crds))
-                                let p' = plr {hand = crds ++ hand plr, moves = dropFilteredCount (== (DrawCard, True)) c (moves plr)}
+                                let p' = plr {hand = crds ++ hand plr, moves = dropFilteredCount (== (DrawCard, True)) c (moves plr), movesHistory = replicate c (PlayCard, True) ++ movesHistory plr }
                                 doPlayerTurn (game { deck = drop c (deck game), players = update p' (players game) })
                             -- Cannot do action again
                             (False, True) -> do
                                 let crds = take c (deck game)
                                 putStrLn ("Drew: " ++ intercalate ", " (map show crds))
-                                let p' = plr {hand = crds ++ hand plr, moves = filter (\(m, _) -> m == DrawCard) (moves plr) }
+                                let p' = plr {hand = crds ++ hand plr, moves = filter (\(m, _) -> m == DrawCard) (moves plr), movesHistory = replicate c (PlayCard, True) ++ movesHistory plr }
                                 putStrLn "Hit Enter to go to next turn."
                                 getLine
                                 return (game { deck = drop c (deck game), players = update p' (players game) })
@@ -138,7 +138,7 @@ doPlayerTurn g = do
                     PassTurn -> case lookup Pass (moves plr) of
                         Just b ->
                             do
-                                let p' = plr { moves = removeFirst (moves plr) (Pass, b) }
+                                let p' = plr { moves = removeFirst (moves plr) (Pass, b), movesHistory = (Pass, b) : movesHistory plr }
                                 if b
                                     then
                                         doPlayerTurn game { players = update p' (players game) }
