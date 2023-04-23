@@ -2,6 +2,8 @@ module CDSL.CDSLValidater (validateCDSLExpression) where
 import CDSL.CDSLExpr
 import Data.Either (partitionEithers)
 import Data.List (partition)
+import CDSL.ExecCDSLExpr (fromCDSLToString)
+import CDSL.ParseCardDSL (isCDSLExprNumeric)
 
 
 
@@ -75,11 +77,37 @@ validateCDSLExpression ex@(Reset (CurrentPlayer e)) = if e == PMoves || e == Sco
 validateCDSLExpression e@(If conds exprs) = case (partitionEithers (map validateCDSLBool conds), partitionEithers (map validateCDSLExpression exprs)) of
     ((_, []), (_, [])) -> Left e
     ((_, cErrs), (_, eErrs)) -> Right (CDSLExecError { err = InvalidBoolEvaluationError, expr = e }:cErrs ++ concat eErrs)
-validateCDSLExpression e = Right [(CDSLExecError { err = InvalidSyntaxError, expr = e })]
+validateCDSLExpression t@(Text _) = Left t
+validateCDSLExpression n@(Numeric _) = Left n
+validateCDSLExpression CardSuit = Left CardSuit
+validateCDSLExpression CardRank = Left CardRank
+validateCDSLExpression CardValue = Left CardValue
+validateCDSLExpression pa@(PlayerAction _ _) = Left pa
+validateCDSLExpression ce@(CEffect _ _) = Left ce
+validateCDSLExpression TORight = Left TORight
+validateCDSLExpression TOLeft = Left TOLeft
+validateCDSLExpression CEq = Left CEq
+validateCDSLExpression CLe = Left CLe
+validateCDSLExpression CGr = Left CGr
+validateCDSLExpression CLEq = Left CLEq
+validateCDSLExpression CGRq = Left CGRq
+validateCDSLExpression c@(Cards _) = Left c
+validateCDSLExpression p@(Put a b) = if all isList [a, b]
+    then
+        Left p
+    else
+        Right [CDSLExecError { err = InvalidSyntaxError, expr = Put Null Null }]
+validateCDSLExpression e = error ("The expression: '" ++ show e ++ "' is not a valid expression")
 
 
-
-
+isList :: CDSLExpr -> Bool
+isList (Look n lst) = isCDSLExprNumeric n && isList lst
+isList (Take n a b) = isCDSLExprNumeric n && isList a && isList b
+isList Pile = True
+isList Deck = True
+isList Discard = True
+isList (Players Hand) = True
+isList _ = False
 
 
 validateCDSLBool :: CDSLExpr -> Either CDSLExpr CDSLExecError
@@ -102,4 +130,16 @@ validateCDSLBool e@(IsEmpty a) = if a == Deck || a == Pile
         Left e
     else
         Right (CDSLExecError { err = InvalidSyntaxError, expr = e })
+validateCDSLBool is@(IsSame cf lst) = if isList lst && isCardField cf
+    then
+        Left is
+    else
+        Right (CDSLExecError { err = InvalidBoolEvaluationError, expr = is })
 validateCDSLBool e = Right (CDSLExecError { err = InvalidBoolEvaluationError, expr = e })
+
+
+isCardField :: CDSLExpr -> Bool
+isCardField CardSuit = True
+isCardField CardRank = True
+isCardField CardValue = True
+isCardField _ = False

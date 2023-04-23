@@ -41,7 +41,7 @@ loadGameData' fs c = case parseFileHelper c 1 of
         let (valid, vErrs) = checkFx fx
         if null errs
             then
-                if null vErrs
+                if null vErrs || all (null . snd) vErrs
                     then
                         Left gd''
                     else
