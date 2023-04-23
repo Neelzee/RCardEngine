@@ -24,7 +24,7 @@ any_time = [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isE
 start_time = [always : shuffle deck, isEmpty pile : take 1 deck pile]
 # Not sure if needed
 turn_start = [always : reset player moves]
-turn_end = [always : reset player moves] # Not sure if needed
+turn_end = [always : reset player moves, isSame rank look 4 pile : [put pile discard, goBack turn]] # Not sure if needed
 END
 
 

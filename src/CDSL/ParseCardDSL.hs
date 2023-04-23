@@ -231,6 +231,10 @@ parseOneCDSL (x:xs) n = case x of
     "discard" -> Left (Discard, xs)
     "left" -> Left (TOLeft, xs)
     "right" -> Left (TORight, xs)
+    "turn" -> Left (Turn, xs)
+    "goBack" -> case parseOneCDSL xs (n + 1) of
+        Left (ex, ys) -> Left (GoBack ex, ys)
+        e -> e
     "reset" -> case parseOneCDSL xs (n + 1) of
         Left (ex, ys) -> Left (Reset ex, ys)
         Right (e, i) -> Right (e { pExpr = Reset (pExpr e) }, i)

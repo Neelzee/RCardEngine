@@ -114,6 +114,10 @@ execCDSLGame (Put l r:xs) g =case (l, r) of
     (Discard, Pile) -> execCDSLGame xs (g { pile = map (\c -> (c, Nothing)) (discard g) ++ pile g, discard = [] })
     (Discard, Deck) -> execCDSLGame xs (g { deck = discard g ++ deck g, discard = [] })
     _ -> execCDSLGame xs g
+execCDSLGame (GoBack Turn:xs) g = case turnOrder g of
+    [TOLeft] -> execCDSLGame (TORight:xs) g
+    [TORight] -> execCDSLGame (TOLeft:xs) g
+    _ -> execCDSLGame xs g
 execCDSLGame (_:xs) g = execCDSLGame xs g
 
 

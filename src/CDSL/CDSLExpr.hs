@@ -91,6 +91,10 @@ data CDSLExpr =
     | Reset CDSLExpr
     -- List of cards
     | Cards [Card]
+    -- References the turnsystem
+    | Turn
+    -- References
+    | GoBack CDSLExpr
     -- Moves
     | PMoves
     -- checks if the given list has the is same
