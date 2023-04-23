@@ -14,7 +14,7 @@ import Terminal.GameCommands
 
 saveGameData :: GameData -> IO GCEffect
 saveGameData gd = do
-    let (_, gd') = span ((/=Saved) . fst) (reverse gd)
+    let (_, gd') = span ((/=Saved) . fst) gd
     saveGameData' gd'
 
 saveGameData' :: GameData -> IO GCEffect
