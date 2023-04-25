@@ -3,6 +3,7 @@ module Feature (
     , fromStringToFeature
     , validateKeyWords
     , isAFeatureOf
+    , featureInfo
 ) where
 
 
@@ -173,3 +174,30 @@ isAFeatureOf EndCon GameFeatures = True
 isAFeatureOf TurnOrder GameFeatures = True
 
 isAFeatureOf _ _ = False
+
+
+featureInfo :: [(Feature, String)]
+featureInfo = [
+    (WinCon, "Win Condition")
+    , (CardSuits, "Card Suits")
+    , (CardRanks, "Card Ranks")
+    , (CardValues, "Card Values, defaults too 0 if not enough")
+    , (EndCon, "End Condition")
+    , (AnyTime, "Expressions that will be executed AnyTime, i.e, whenever its possible")
+    , (StartTime, "Expressions that are executed once, at Start Time, before a player makes their move")
+    , (TurnStartTime, "Expressions that will be executed at the start of a players turn")
+    , (TurnEndTime, "Expressions that will be executed at the en of a players turn")
+    , (PlayerHand, "Specifies how many cards a player starts with")
+    , (PlayerMoves, "Specifies the valid moves a player can make")
+    , (PileCount, "specifies how many cards should be places in the pile at start up")
+    , (CardConstraints, "Specifies what field will be used in the comparision")
+    , (IgnoreConstraints, "A list of cards that will ignore the normal constraints")
+    , (CEChangeCard, "Specifies that the given cards will trigger a change card effect")
+    , (CESwapHand, "Specifies that the given cards will trigger a swap hand effect")
+    , (CETakeFromHand, "Specifies that the given cards will trigger a take from hand effect")
+    , (CEGiveCard, "Specifies that the given cards will trigger a give card effect")
+    , (CEPassNext, "Specifies that the given cards will trigger a pass effect")
+    , (CEDrawCard, "Specifies that the given cards will trigger a draw card effect")
+    , (CardCompare, "What comparator will be used to compare cards")
+    , (TurnOrder, "Used to specify what ordering will be used")
+    ]

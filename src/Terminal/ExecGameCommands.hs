@@ -29,7 +29,9 @@ execGameCommands c = case c of
     (Help Nothing) -> do
         printCommands commands
         return ()
-
+    (Help (Just "flags")) -> putStrLn (intercalate "\n" (map (\(flg, inf) -> "Flag: " ++ unwords flg ++ ": " ++ inf) flags))
+    (Help (Just "feature")) -> putStrLn (intercalate "\n" (map (\(fet, inf) -> "Feature: " ++ show fet ++ ": " ++ inf) featureInfo))
+    (Help (Just "cdsl")) -> putStrLn (intercalate "\n" (map (\(ex, expl) -> "Expression: " ++ showF ex ++ ", " ++ expl) infoCDSL))
     (Help (Just xs)) -> case validateGCFlags (words xs) of
                 Left flg -> case lookup flg flags of -- Give information about that flag
                     Just inf -> putStrLn ("Flag: " ++ unwords flg ++ ": " ++ inf)
@@ -38,11 +40,15 @@ execGameCommands c = case c of
                     Left gc -> case lookup gc cmdInfo of -- Give information about that game command
                         Just (inf, exl) -> putStrLn ("Command: " ++ show gc ++ ": " ++ inf ++ ", example: " ++ exl)
                         Nothing -> putStrLn ("Found no information about the command: '" ++ xs ++ "'")
-                    Right _ -> case parseOneCDSL (xs : repeat " null") 0 of
-                        Left (ex, _) -> case lookup ex infoCDSL of -- Give information about that expression
-                            Just expl -> putStrLn ("Expression: " ++ showF ex ++ ", " ++ expl)
-                            Nothing -> putStrLn ("Found no information about the CDSL expression: '" ++ showF ex ++ "'")
-                        Right _ -> error ("INVALID HELP: '" ++ xs ++ "'") -- Should not happen, since this should be caught in the validateGameCommand function
+                    Right _ -> case fromStringToFeature xs of
+                        Just fet -> case lookup fet featureInfo of
+                            Just inf -> putStrLn ("Feature: " ++ show fet ++ ": " ++ inf)
+                            Nothing -> putStrLn ("Found no information about the feature: '" ++ xs ++ "'")
+                        Nothing -> case parseOneCDSL (xs : repeat " null") 0 of
+                            Left (ex, _) -> case lookup ex infoCDSL of -- Give information about that expression
+                                Just expl -> putStrLn ("Expression: " ++ showF ex ++ ", " ++ expl)
+                                Nothing -> putStrLn ("Found no information about the CDSL expression: '" ++ showF ex ++ "'")
+                            Right _ -> error ("INVALID HELP: '" ++ xs ++ "'") -- Should not happen, since this should be caught in the validateGameCommand function
 
     Clear -> do
         clearScreen

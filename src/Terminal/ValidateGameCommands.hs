@@ -99,17 +99,23 @@ validateGameCommand xs = case map trim (words xs) of
         Right e -> Right e
 
     ["help"] -> Left (Help Nothing)
+    ["help","commands"] -> Left (Help Nothing)
+    ["help","feature"] -> Left (Help (Just "feature"))
+    ["help","cdsl"] -> Left (Help (Just "cdsl"))
+    ["help","flags"] -> Left (Help (Just "flags"))
     ("help":ys) -> if length ys == 1
         then
             case validateGCFlags ys of
                 Left _ -> Left (Help (Just (unwords ys))) -- Give information about that flag
                 Right _ -> case validateGameCommand (unwords ys) of
                     Left _ -> Left (Help (Just (unwords ys))) -- Give information about that game command
-                    Right _ -> case parseOneCDSL (unwords ys : repeat " null") 0 of
-                        Right _ -> Right (GCError { errType = InvalidCommandArgumentError ("Could not find any information about " ++ unwords ys), input = xs })
-                        Left (Text _, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Could not find any information about " ++ unwords ys), input = xs })
-                        Left (Numeric _, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Could not find any information about " ++ unwords ys), input = xs })
-                        Left _ -> Left (Help (Just (unwords ys))) -- Give information about that expression
+                    Right _ -> case fromStringToFeature (unwords ys) of
+                        Just _ -> Left (Help (Just (unwords ys)))
+                        Nothing -> case parseOneCDSL (unwords ys : repeat " null") 0 of
+                            Right _ -> Right (GCError { errType = InvalidCommandArgumentError ("Could not find any information about " ++ unwords ys), input = xs })
+                            Left (Text _, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Could not find any information about " ++ unwords ys), input = xs })
+                            Left (Numeric _, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Could not find any information about " ++ unwords ys), input = xs })
+                            Left _ -> Left (Help (Just (unwords ys))) -- Give information about that expression
         else
             Right (GCError { errType = InvalidCommandArgumentError ("Can only give information about one thing at the time, '" ++ unwords ys ++ "'"), input = xs })
     ("play":ys) -> case readMaybe (unwords ys) :: Maybe Int of
