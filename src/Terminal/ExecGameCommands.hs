@@ -20,13 +20,29 @@ import GameData.LoadGD
 import Control.Monad (zipWithM, when)
 import Terminal.GameCommands
 import System.IO (hFlush, stdout)
+import Terminal.ValidateGameCommands (validateGCFlags, validateGameCommand)
+import CDSL.ParseCardDSL (parseOneCDSL)
 
 
 execGameCommands :: GameCommand -> IO ()
 execGameCommands c = case c of
-    Help -> do
+    (Help Nothing) -> do
         printCommands commands
         return ()
+
+    (Help (Just xs)) -> case validateGCFlags (words xs) of
+                Left flg -> case lookup flg flags of -- Give information about that flag
+                    Just inf -> putStrLn ("Flag: " ++ unwords flg ++ ": " ++ inf)
+                    Nothing -> putStrLn ("Found no information about the flag: '" ++ xs ++ "'")
+                Right _ -> case validateGameCommand xs of
+                    Left gc -> case lookup gc cmdInfo of -- Give information about that game command
+                        Just (inf, exl) -> putStrLn ("Command: " ++ show gc ++ ": " ++ inf ++ ", example: " ++ exl)
+                        Nothing -> putStrLn ("Found no information about the command: '" ++ xs ++ "'")
+                    Right _ -> case parseOneCDSL (xs : repeat " null") 0 of
+                        Left (ex, _) -> case lookup ex infoCDSL of -- Give information about that expression
+                            Just expl -> putStrLn ("Expression: " ++ showF ex ++ ", " ++ expl)
+                            Nothing -> putStrLn ("Found no information about the CDSL expression: '" ++ showF ex ++ "'")
+                        Right _ -> error ("INVALID HELP: '" ++ xs ++ "'") -- Should not happen, since this should be caught in the validateGameCommand function
 
     Clear -> do
         clearScreen

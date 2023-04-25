@@ -5,6 +5,8 @@ module CDSL.CDSLExpr (
     , CDSLExecError (..)
     , CDSLExecErrorCode (..)
     , CardEffect (..)
+    , infoCDSL
+    , showF
 ) where
 
 import Feature (Feature)
@@ -24,6 +26,8 @@ data CardEffect =
     | PassNext
     -- Makes the Player draw the given amount of cards, and skip their turn
     | DrawCards Int
+    -- Nothing happens
+    | Blank
     deriving (Show, Eq)
 
 -- Card Domain Specific Language
@@ -166,3 +170,101 @@ data CDSLExecErrorCode =
     | SyntaxErrorLeftOperand
     | InvalidBoolEvaluationError
     deriving (Show, Eq)
+
+
+
+infoCDSL :: [(CDSLExpr, String)]
+infoCDSL =
+    [ (Any Null, "Returns true, if any of the elements in a list evaluates to true")
+        , (All Null, "Returns a list of all the elements in a list that fullfills a predicate")
+        , (Greatest Null, "Returns a list thats sorted by greatest value first, where the comparator depends on context")
+        , (Players Null, "List of all the players in the game")
+        , (Score, "The score field of a player")
+        , (Hand, "The card a player has")
+        , (IsEqual Null Null, "Compares two expressions, and checks if they are equal, the comparator depends on context")
+        , (IsEmpty Null, "Checks if a given list is empty, and evaluates to true if it is")
+        , (If [] [], "An if-statement, checks if the expressions on the left side of ':', all evaluate to true, and if so, executes all the expressions on the left side, in the order they are specified")
+        , (Swap Null Null, "Swaps the elements between two lists")
+        , (Shuffle Null, "Shuffles the elements of a given list")
+        , (Deck, "The deck in a game, where the player draws cards from")
+        , (Pile, "The pile in a game, where the player plays their card too")
+        , (Discard, "The discard pile in a game, where the player can discard their cards too")
+        , (Take Null Null Null, "Takes the specified amount of elements, or all, from one list, and adds them to another")
+        , (Always, "Evaluates to true")
+        , (Never, "Evaluates to false")
+        , (Not [], "Negates the expressions")
+        , (And [] [], "Evaluates too true if both expressions evaluates to true")
+        , (Or [] [], "Evaluates too true if any expressions evaluates to true")
+        , (AffectPlayer Blank, "Specifies an action that will affect the current player")
+        , (TOLeft, "References the turn ordering, will start with the first player, then go to the last, second last, etc")
+        , (TORight, "References the turn ordering, will start with the first player, then second, then third, etc")
+        , (CardSuit, "References the suit of a card")
+        , (CardRank, "References the rank of a card")
+        , (CardValue, "References the value of a card")
+        , (CEffect Blank [], "Specifies what cards should have what card effects")
+        , (CurrentPlayer Null, "Is the current player, i.e. the one whos turn it is")
+        , (Reset Null, "Resets a players fields or values")
+        , (Cards [], "List of cards")
+        , (Turn, "A reference too the turn-system of the game")
+        , (GoBack Null, "Will change the current player, to be a reference the previous player, and therefore make it that players turn again")
+        , (GoForward Null, "Will change the current player, to be a reference the next player, and therefore make it that players turn")
+        , (IsMove Null, "Will evaluate too true, if the last move a player made, is the specified move")
+        , (PMoves, "The moves a player can make")
+        , (IsSame Null Null, "Evalutes to true, if the specified list of cards, all have the same specified card field")
+        , (Look Null Null, "Gets an immutable references to the specified amount of elements from a list")
+        , (Put Null Null, "Puts all the elements from one list, into the other")
+        , (CLe, "Lesser comparator")
+        , (CGr, "Greater comparator")
+        , (CEq, "Equal comparator")
+        , (CLEq, "Lesser and Equal comparator")
+        , (CGRq, "Greater and Equal comparator")
+    ]
+
+
+showF :: CDSLExpr -> String
+showF (All _) = "all"
+showF (Any _) = "any"
+showF (Greatest _) = "greatest"
+showF (Players _) = "players"
+showF Score = "score"
+showF Hand = "hand"
+showF (IsEqual _ _) = "isEqual"
+showF (Numeric _) = "numeric"
+showF (IsEmpty _) = "isEmpty"
+showF (If _ _) = ":"
+showF (Swap _ _) = "swap"
+showF (Shuffle _) = "shuffle"
+showF Deck = "deck"
+showF Pile = "pile"
+showF (Take {}) = "take"
+showF Always = "always"
+showF Never = "never"
+showF (Not _) = "not"
+showF (And _ _) = "and"
+showF (Or _ _) = "or"
+showF CardRank = "rank"
+showF CardSuit = "suit"
+showF CardValue = "value"
+showF (PlayerAction _ _) = "playerAction"
+showF (AffectPlayer _) = "affectPlayer"
+showF (CEffect _ _) = "cardEffect"
+showF (Reset _) = "reset"
+showF (CurrentPlayer _) = "currentPlayer"
+showF PMoves = "pMoves"
+showF (Cards _) = "cards"
+showF CLe = "cle"
+showF CGr = "cgr"
+showF CGRq = "cgrq"
+showF CLEq = "cleq"
+showF CEq = "ceq"
+showF TOLeft = "left"
+showF TORight = "right"
+showF Discard = "discard"
+showF (IsSame _ _) = "isSame"
+showF (Look _ _) = "look"
+showF (Put _ _) = "put"
+showF (IsMove _) = "isMove"
+showF PAPass = "pPass"
+showF PADraw = "pDraw"
+showF PAPlay = "pPlay"
+showF _ = "(NOT ADDED)"

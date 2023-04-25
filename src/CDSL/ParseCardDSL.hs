@@ -8,6 +8,7 @@ module CDSL.ParseCardDSL (
     , processIfString
     , toNumeric
     , parseExpr
+    , parseOneCDSL
 ) where
 
 import Text.Read (readMaybe)
@@ -274,6 +275,7 @@ parseOneCDSL (x:xs) n = case x of
             Left (r, zs) -> Left (Put l r, zs)
             e -> e
         e -> e
+    "null" -> Left (Null, xs)
     _ -> case readMaybe x :: Maybe Int of
         Just i -> Left (Numeric i, xs)
         _ -> Left (Text x, xs)
