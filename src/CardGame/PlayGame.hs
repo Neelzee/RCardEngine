@@ -12,10 +12,10 @@ import Data.List (find, intercalate)
 import Feature ( Feature(PileCount, PlayerHand, CardEffects) )
 import CDSL.CDSLExpr (CDSLExpr(Numeric, CEffect), CardEffect)
 import LoadGame (loadGame)
-import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique, removeLookup, removeLookupAll)
-import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
+import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique, removeLookup, removeLookupAll, remLst, elemLst)
+import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass, DiscardCard))
 import System.IO ( hFlush, stdout )
-import CardGame.PlayCommands (validatePLCommand, PLCommand (plc), UserActions (Play, Draw, PassTurn, HelpUA, Moves, HandUA, ScoreUA, QuitUA), printUACommands)
+import CardGame.PlayCommands (validatePLCommand, PLCommand (plc), UserActions (..), printUACommands)
 import System.Console.ANSI (clearScreen)
 import CardGame.Game (Game (players, state, Game, pile, deck, actions, rules, winCon, canPlaceCard, gameName, endCon, playerMoves, cardEffects, turnOrder), GameState (Start, TurnEnd, TurnStart), dealCards, gameActions, createEmptyGame)
 import CardGame.Card (Card)
@@ -184,6 +184,26 @@ doPlayerTurn g = do
                     HelpUA -> do
                         printUACommands
                         doPlayerTurn game
+                    -- Checking if its a valid move
+                    (DiscardUA is) -> case lookup DiscardCard (moves plr) of
+                        Just b -> if is `elemLst` [1..length (hand plr)]
+                            then
+                                do
+                                    putStrLn ("Discarding the cards: " ++ intercalate ", " (map show is))
+                                    let p = plr { hand = remLst (hand plr) (map (\c -> c - 1) is) }
+                                    if b
+                                        then
+                                            doPlayerTurn (game { players = update p (players game) })
+                                        else
+                                            return (game { players = update p (players game) })
+                            else
+                                do
+                                    putStrLn ("Invalid numbers, expected something in the range of 1 to " ++ show (length (hand plr)))
+                                    doPlayerTurn game
+
+                        Nothing -> do
+                            putStrLn "Cannot Discard this turn, type 'moves', to show available moves."
+                            doPlayerTurn game
 
                 _ -> do
                     putStrLn "Unknown command, type 'help' to list all commands."

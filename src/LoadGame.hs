@@ -99,7 +99,6 @@ loadGame' gd g = do
         , gameName = gm
         , cardGen = cg
         , playerMoves = mv
-        , players = fromList (map (`resetMoves` mv) (toList (players g)))
         , endCon = ec
         , winCon = wc
         , actions = [

@@ -288,3 +288,18 @@ subString _ "" = False
 subString (s:ss) (x:xs)
   | s == x = subString ss xs
   | otherwise = False
+
+
+elemLst :: Eq a => [a] -> [a] -> Bool
+elemLst [] _ = True
+elemLst (x:xs) ys = x `elem` ys && elemLst xs ys
+
+remLst :: [a] -> [Int] -> [a]
+remLst xs ys = go xs (quicksort ys) 0
+  where
+    go :: [a] -> [Int] -> Int -> [a]
+    go zs [] _ = zs
+    go [] _ _ = []
+    go (z:zs) (w:ws) n
+      | w == n = go zs ws (n + 1)
+      | otherwise = z : go zs (w:ws) (n + 1)

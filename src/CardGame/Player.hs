@@ -16,7 +16,7 @@ import Data.CircularList (CList, focus, size, rotR, update)
 import CDSL.CDSLExpr (CDSLExpr (Text, PlayerAction))
 import Data.Maybe (mapMaybe)
 import Functions (splitAndTrim, mapCLCount)
-import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass), prettyShow)
+import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass, DiscardCard), prettyShow)
 import Data.List (intercalate)
 
 data Player = Player {
@@ -132,8 +132,10 @@ parsePlayerMove x = case words x of
     ["PLAY_CARD", b] -> Just (PlayCard, b == "TRUE")
     ["DRAW_CARD", b] -> Just (DrawCard, b == "TRUE")
     ["PASS", b] -> Just (Pass, b == "TRUE")
+    ["DISCARD_CARD", b] -> Just (DiscardCard, b == "TRUE")
     _ -> Nothing
 
 
 prettyPrintMoves :: [(Move, Bool)] -> IO ()
 prettyPrintMoves mv = putStrLn (intercalate ", " (map (\(a, _) -> prettyShow a) mv))
+
