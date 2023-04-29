@@ -1,13 +1,13 @@
-module GameEditor where
+module GameEditor (editor) where
 
 import GHC.IO.Handle (hFlush)
 import System.IO (stdout)
 import Data.List (intercalate)
 import Feature (Feature (Saved, GameName))
 import GameData.GD (GameData)
-import CDSL.CDSLExpr (CDSLExpr(Text, Null))
+import CDSL.CDSLExpr (CDSLExpr(Text))
 import CDSL.ExecCDSLExpr (fromCDSLToString)
-import Terminal.GameCommands (GameCommand (Create, Add, Update, Remove, Status, Save, Test, Close), GCEffect (GCEffect, se, ve, gcErr), GCError (MissingFeatureError, GCError, errType, input, OpenGameDataError, NoGameDataError, CDSLError), showAll, Flag)
+import Terminal.GameCommands (GameCommand (Add, Update, Remove, Status, Save, Test, Close), GCEffect (GCEffect, se, ve, gcErr), GCError (MissingFeatureError, GCError, errType, input, NoGameDataError, CDSLError), showAll)
 import Terminal.ValidateGameCommands (validateGameCommand)
 import Terminal.ExecGameCommands (confirmCommand, printGCEffect)
 import qualified Terminal.ExecGameCommands as ExecGameCommands (execGameCommands)

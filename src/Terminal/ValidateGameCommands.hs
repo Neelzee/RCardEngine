@@ -4,11 +4,10 @@ module Terminal.ValidateGameCommands (
     ) where
 
 import Terminal.GameCommands (GCError (GCError, errType, UnknownFlagsError, input, UnknownCommandError, InvalidCommandArgumentError, CDSLError), GameCommand (Help, Create, Save, cmd, Edit, Add, Update, Test, Remove, Copy, Rename, Status, Close, Clear, Quit, List, Play), Flag, commands)
-import Data.List.Extra (trim, sort, sortOn, partition, groupBy)
+import Data.List.Extra (trim, sortOn, partition, groupBy)
 import CDSL.CDSLExpr (CDSLExpr(Text, Numeric))
 import Text.Read (readMaybe)
 import Feature (fromStringToFeature)
-import Data.Either (partitionEithers)
 import CDSL.ParseCardDSL (parseExpr, parseOneCDSL)
 
 

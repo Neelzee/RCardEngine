@@ -8,17 +8,26 @@ module Terminal.ExecGameCommands (
     , fromCDSLParseErrorOnLoad
     ) where
 
-import Data.List.Extra (trim, intercalate)
+import Data.List.Extra (intercalate)
 import CDSL.ExecCDSLExpr (fromCDSLToString)
 import GameData.GD (GameData)
 import CDSL.CDSLExpr
-import GameData.SaveGD (saveGameData)
+    ( infoCDSL, showF, CDSLExpr(Text), CDSLParseError )
 import System.Console.ANSI (clearScreen)
-import Functions (allGames, mergeList, lookupManyWithKey)
+import Functions (allGames)
 import Feature
-import GameData.LoadGD
+    ( featureInfo, fromStringToFeature, Feature(GameName, Saved) )
+import GameData.LoadGD ( loadGameData )
 import Control.Monad (zipWithM, when)
 import Terminal.GameCommands
+    ( cmdInfo,
+      commands,
+      flags,
+      showAll,
+      Flag,
+      GCEffect(..),
+      GCError(CDSLError, MissingOrCorruptDataError),
+      GameCommand(GameCommand, Help, Clear, List) )
 import System.IO (hFlush, stdout)
 import Terminal.ValidateGameCommands (validateGCFlags, validateGameCommand)
 import CDSL.ParseCardDSL (parseOneCDSL)
