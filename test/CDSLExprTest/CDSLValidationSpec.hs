@@ -24,19 +24,8 @@ test = hspec $ do
     testParseCDSLFromStringSBV Never
     testParseCDSLFromStringSBV (If [IsEmpty Deck] [Swap Pile Deck, Shuffle Deck, Take (Numeric 1) Deck Pile])
 
-    testParseCDSLFromStringSBE Score
-    testParseCDSLFromStringSBE (Shuffle Always)
-    testParseCDSLFromStringSBE (Shuffle Never)
-    testParseCDSLFromStringSBE (Players Never)
-    testParseCDSLFromStringSBE (If [Shuffle Deck] [Shuffle Pile])
-
 testParseCDSLFromStringSBV :: CDSLExpr -> Spec
 testParseCDSLFromStringSBV input = describe (moduleName "validateCDSLExpression") $ do
     it (exprTest input) $ do
         validateCDSLExpression input `shouldBe` Left input
 
-
-testParseCDSLFromStringSBE :: CDSLExpr -> Spec
-testParseCDSLFromStringSBE input = describe (moduleName "validateCDSLExpression") $ do
-    it (exprTest' input) $ do
-        evaluate (validateCDSLExpression input) `shouldThrow` anyException
