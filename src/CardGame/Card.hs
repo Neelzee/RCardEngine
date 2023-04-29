@@ -30,11 +30,3 @@ shuffle' xs gen = y : shuffle' ys gen'
   where
     (index, gen') = randomR (0, length xs - 1) gen
     (y, ys) = removeNth index xs
-
-
-d20 = randomNum (mkStdGen 420)
-
-randomNum :: RandomGen mkStdGen => mkStdGen -> Int
-randomNum gen = do
-    let (index, _) = randomR (0, 20) gen
-    index

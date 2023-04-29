@@ -1,13 +1,13 @@
-module GameEditor where
+module GameEditor (editor) where
 
 import GHC.IO.Handle (hFlush)
 import System.IO (stdout)
 import Data.List (intercalate)
 import Feature (Feature (Saved, GameName))
 import GameData.GD (GameData)
-import CDSL.CDSLExpr (CDSLExpr(Text, Null))
+import CDSL.CDSLExpr (CDSLExpr(Text))
 import CDSL.ExecCDSLExpr (fromCDSLToString)
-import Terminal.GameCommands (GameCommand (Create, Add, Update, Remove, Status, Save, Test, Close), GCEffect (GCEffect, se, ve, gcErr), GCError (MissingFeatureError, GCError, errType, input, OpenGameDataError, NoGameDataError, CDSLError), showAll, Flag)
+import Terminal.GameCommands (GameCommand (Add, Update, Remove, Status, Save, Test, Close), GCEffect (GCEffect, se, ve, gcErr), GCError (MissingFeatureError, GCError, errType, input, NoGameDataError, CDSLError), showAll)
 import Terminal.ValidateGameCommands (validateGameCommand)
 import Terminal.ExecGameCommands (confirmCommand, printGCEffect)
 import qualified Terminal.ExecGameCommands as ExecGameCommands (execGameCommands)
@@ -174,20 +174,20 @@ execGameCommand c gd = case c of
                 return gd
         else
             do
-                gce <- case lookup Saved gd of
+                (gce, gds) <- case lookup Saved gd of
                     Just _ -> do
                         let (_, diff) = span ((/=Saved) . fst) gd
                         let (_, ecc) = removeFeature gd [Saved]
                         let gc = GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length diff - 1) ++ " new features", gcErr = [] }
-                        return (gc:ecc)
-                    Nothing -> return [GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length gd - 1) ++ " features", gcErr = [] }]
+                        return (gc:ecc, gd)
+                    Nothing -> return ([GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length gd - 1) ++ " features", gcErr = [] }], (Saved, []):gd)
                 res <- confirmCommand c gce flg
                 if res
                     then
                         do
                             let (gd', _) = removeFeature gd [Saved]
-                            _ <- saveGameData gd
-                            return ((Saved, [Null]) : gd')
+                            _ <- saveGameData gds
+                            return ((Saved, []) : gd')
                     else
                         return gd
     _ -> do

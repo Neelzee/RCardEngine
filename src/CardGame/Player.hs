@@ -16,13 +16,14 @@ import Data.CircularList (CList, focus, size, rotR, update)
 import CDSL.CDSLExpr (CDSLExpr (Text, PlayerAction))
 import Data.Maybe (mapMaybe)
 import Functions (splitAndTrim, mapCLCount)
-import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass), prettyShow)
+import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass, DiscardCard), prettyShow)
 import Data.List (intercalate)
 
 data Player = Player {
     name :: String
     , hand :: [Card]
     , moves :: [(Move, Bool)]
+    , movesHistory :: [(Move, Bool)]
     , pScore :: Int
 }
     deriving (Show, Eq)
@@ -42,7 +43,7 @@ createPlayer :: IO Player
 createPlayer = do
     putStrLn "Enter name:"
     n <- getLine
-    return (Player n [] [] 0)
+    return (Player n [] [] [] 0)
 
 resetMoves :: Player -> [(Move, Bool)] -> Player
 resetMoves plr mv = plr {moves = mv }
@@ -65,7 +66,7 @@ giveCards plrs (x:xs) = case focus plrs of
 
 -- Deals the given card to the given player
 dealPlayer :: (Card, Player) -> Player
-dealPlayer (c, Player nm hnd mvs s) = Player nm (c:hnd) mvs s
+dealPlayer (c, p) = p { hand = c : hand p }
 
 -- Checks if player has the given move
 hasMove :: Player -> Move -> Bool
@@ -82,14 +83,15 @@ getMoveFromString _ = Nothing
 
 -- Gets the given move from the player, with the corresponding continuing bool
 getMoveFromPlayer :: Player -> Move -> Move
-getMoveFromPlayer (Player _ _ [] _) _ = Pass
-getMoveFromPlayer (Player _ _ ((x, _):xs) _) m = if m == x
-    then
-        x
-    else
-        getMoveFromPlayer (Player "" [] xs 0) m
-
-
+getMoveFromPlayer p m
+    | null (moves p) = Pass
+    | otherwise = do
+        let (x, _) = head (moves p)
+        if m == x
+            then
+                x
+            else
+                getMoveFromPlayer (p {moves = drop 1 (moves p)}) m
 -- Checks if the typed action is an action the player can do
 isValidMove :: String -> Player -> Bool
 isValidMove c plr = case getMoveFromString c of
@@ -106,7 +108,7 @@ standardMoves = [
 
 
 addScore :: Player -> Card -> Player
-addScore (Player nm hnd mvs scr) (Card _ _ s) = Player nm hnd mvs (scr + s)
+addScore p (Card _ _ s) = p { pScore = pScore p + s }
 
 
 toString :: (Move, Bool) -> String
@@ -130,8 +132,10 @@ parsePlayerMove x = case words x of
     ["PLAY_CARD", b] -> Just (PlayCard, b == "TRUE")
     ["DRAW_CARD", b] -> Just (DrawCard, b == "TRUE")
     ["PASS", b] -> Just (Pass, b == "TRUE")
+    ["DISCARD_CARD", b] -> Just (DiscardCard, b == "TRUE")
     _ -> Nothing
 
 
 prettyPrintMoves :: [(Move, Bool)] -> IO ()
 prettyPrintMoves mv = putStrLn (intercalate ", " (map (\(a, _) -> prettyShow a) mv))
+

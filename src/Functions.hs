@@ -1,14 +1,35 @@
-module Functions where
+module Functions (
+  lookupAll
+  , trim
+  , splitAndTrim
+  , removeNth
+  , mapCLCount
+  , takeUntilDuplicate
+  , deleteAt
+  , removeFirst
+  , updateAt
+  , lookupOrDefault
+  , subString
+  , stringToList
+  , mergeList
+  , removeMaybe
+  , allGames
+  , lookupManyWithKey
+  , count
+  , dropFilteredCount
+  , unique
+  , removeLookup
+  , removeLookupAll
+  , remLst
+  , elemLst
+  ) where
 
 import Data.List.Extra (splitOn)
-import Data.Char (isSpace, isAlpha)
-import Data.Maybe (fromMaybe, mapMaybe)
-import Data.Bifunctor (bimap)
-import Data.Either (partitionEithers)
-import Control.Monad ((>=>), join, forM)
+import Data.Char (isSpace)
+import Data.Maybe (fromMaybe)
 import System.Directory (listDirectory)
 import Constants (gameFolder)
-import Data.CircularList (CList, focus, rotR, update, isEmpty, rotNL)
+import Data.CircularList (CList, focus, update, isEmpty)
 
 
 
@@ -80,20 +101,8 @@ mergeList (x@(kX, _):xs) (y@(kY, _):ys)
   | otherwise = x : y : mergeList xs ys
 
 
-lookupMany :: Eq a => [a] -> [(a, b)] -> [b]
-lookupMany keys pairs = mapMaybe (`lookup` pairs) keys
-
 lookupManyWithKey :: Eq a => [a] -> [(a,b)] -> [(a,b)]
 lookupManyWithKey keys list = [(k, v) | (k, v) <- list, k `elem` keys]
-
-splitEithers :: [(a, [Either b c])] -> ([(a, [b])], [(a, [c])])
-splitEithers [] = ([], [])
-splitEithers ((a, x):xs) = bimap
-  ((a, fst (partitionEithers x)) :)
-  ((a, snd (partitionEithers x)) :) (splitEithers xs)
-
-applyF :: (a -> [b] -> Maybe (a, [c])) -> [(a, [b])] -> Maybe [(a, [c])]
-applyF f = traverse (\(a, bs) -> forM [bs] (f a)) >=> (pure . join)
 
 
 removeMaybe :: [(Maybe a, b)] -> [(a, b)]
@@ -122,21 +131,6 @@ dropFilteredCount f n (y:ys)
   | otherwise = y : dropFilteredCount f n ys
 
 
-
-mapCLWhile :: CList a -> (a -> Bool) -> (a -> a) -> CList a
-mapCLWhile cs prd f
-    | isEmpty cs = cs
-    | otherwise = case focus cs of
-    Just _ -> go cs 0
-    Nothing -> mapCLWhile (rotR cs) prd f
-    where
-        go clst n = case focus clst of
-            Just y -> if prd y
-                then
-                    go (rotR (update (f y) cs)) (n + 1)
-                else
-                    rotNL n cs
-            Nothing -> go (rotR cs) (n + 1)
 
 mapCLCount :: CList a -> Int -> (a -> a) -> CList a
 mapCLCount cs 0 _ = cs
@@ -194,68 +188,6 @@ stringToList' xs = do
             z -> apd ys n (z:w) wrds
 
 
-isList :: String -> Bool
-isList xs = '[' `elem` xs && ']' `elem` xs && '=' `notElem` xs
-
-
-mapIf :: (a -> Bool) -> (a -> b) -> [a] -> ([a], [b])
-mapIf _ _ [] = ([], [])
-mapIf prd f (x:xs)
-  | prd x = case mapIf prd f xs of
-    (as, bs) -> (as, f x:bs)
-  | otherwise = case mapIf prd f xs of
-    (as, bs) -> (x:as, bs)
-
-
-
-
-parseList :: String -> [String]
-parseList = go []
-  where
-    go :: [String] -> String -> [String]
-    go acc [] = acc
-    go acc (x:xs)
-        | x == '[' = let (ys, rest) = splitList xs in go (acc ++ parseList ys) rest
-        | x == ']' = go acc xs
-        | otherwise = let (ys, rest) = span (`notElem` ",]") xs in go (acc ++ [x:ys]) rest
-
-
-    splitList :: String -> (String, String)
-    splitList = go 0 ""
-      where
-        go :: Int -> String -> String -> (String, String)
-        go _ ys [] = error $ "Invalid list: " ++ ys
-        go 0 ys (']':xs) = (ys, xs)
-        go 0 ys ('[':xs) = (ys, xs)
-        go n ys (x:xs) = go n' (ys ++ [x]) xs
-          where n'
-                  | x == '[' = n + 1
-                  | x == ']' = n - 1
-                  | otherwise = n
-
-
-
-
-unlist :: String -> [String]
-unlist = unlistHelper ""
-
-
-unlistHelper :: String -> String -> [String]
-unlistHelper _ [] = []
-unlistHelper wrd (x:xs)
-    | x == '[' = case ulh xs of
-        (w, rems) -> wrd : w : unlistHelper "" rems
-    | x == ' ' = wrd : unlistHelper "" xs
-    | x == ',' = wrd : unlistHelper "" xs
-    | otherwise = unlistHelper (x:wrd) xs
-
-    where
-        ulh :: String -> (String, String)
-        ulh [] = ([], [])
-        ulh (y:ys)
-            | y == ']' = ([], ys)
-            | otherwise = case ulh ys of
-                (zs, ws) -> (y: zs, ws)
 
 
 deleteAt :: Int -> [a] -> [a]
@@ -288,3 +220,18 @@ subString _ "" = False
 subString (s:ss) (x:xs)
   | s == x = subString ss xs
   | otherwise = False
+
+
+elemLst :: Eq a => [a] -> [a] -> Bool
+elemLst [] _ = True
+elemLst (x:xs) ys = x `elem` ys && elemLst xs ys
+
+remLst :: [a] -> [Int] -> [a]
+remLst xs ys = go xs (quicksort ys) 0
+  where
+    go :: [a] -> [Int] -> Int -> [a]
+    go zs [] _ = zs
+    go [] _ _ = []
+    go (z:zs) (w:ws) n
+      | w == n = go zs ws (n + 1)
+      | otherwise = z : go zs (w:ws) (n + 1)

@@ -4,12 +4,11 @@ module Terminal.ValidateGameCommands (
     ) where
 
 import Terminal.GameCommands (GCError (GCError, errType, UnknownFlagsError, input, UnknownCommandError, InvalidCommandArgumentError, CDSLError), GameCommand (Help, Create, Save, cmd, Edit, Add, Update, Test, Remove, Copy, Rename, Status, Close, Clear, Quit, List, Play), Flag, commands)
-import Data.List.Extra (trim, sort, sortOn, partition, groupBy)
+import Data.List.Extra (trim, sortOn, partition, groupBy)
 import CDSL.CDSLExpr (CDSLExpr(Text, Numeric))
 import Text.Read (readMaybe)
 import Feature (fromStringToFeature)
-import Data.Either (partitionEithers)
-import CDSL.ParseCardDSL (parseExpr)
+import CDSL.ParseCardDSL (parseExpr, parseOneCDSL)
 
 
 validateGameCommand :: String -> Either GameCommand GCError
@@ -98,8 +97,26 @@ validateGameCommand xs = case map trim (words xs) of
         Left flgs -> Left (List flgs)
         Right e -> Right e
 
-    ["help"] -> Left Help
-
+    ["help"] -> Left (Help Nothing)
+    ["help","commands"] -> Left (Help Nothing)
+    ["help","feature"] -> Left (Help (Just "feature"))
+    ["help","cdsl"] -> Left (Help (Just "cdsl"))
+    ["help","flags"] -> Left (Help (Just "flags"))
+    ("help":ys) -> if length ys == 1
+        then
+            case validateGCFlags ys of
+                Left _ -> Left (Help (Just (unwords ys))) -- Give information about that flag
+                Right _ -> case validateGameCommand (unwords ys) of
+                    Left _ -> Left (Help (Just (unwords ys))) -- Give information about that game command
+                    Right _ -> case fromStringToFeature (unwords ys) of
+                        Just _ -> Left (Help (Just (unwords ys)))
+                        Nothing -> case parseOneCDSL (unwords ys : repeat " null") 0 of
+                            Right _ -> Right (GCError { errType = InvalidCommandArgumentError ("Could not find any information about " ++ unwords ys), input = xs })
+                            Left (Text _, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Could not find any information about " ++ unwords ys), input = xs })
+                            Left (Numeric _, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Could not find any information about " ++ unwords ys), input = xs })
+                            Left _ -> Left (Help (Just (unwords ys))) -- Give information about that expression
+        else
+            Right (GCError { errType = InvalidCommandArgumentError ("Can only give information about one thing at the time, '" ++ unwords ys ++ "'"), input = xs })
     ("play":ys) -> case readMaybe (unwords ys) :: Maybe Int of
         Just i -> Left (Play (Numeric i))
         Nothing -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a number, got '" ++ unwords ys ++ "' instead."), input = xs })

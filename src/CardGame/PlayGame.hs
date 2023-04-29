@@ -3,28 +3,27 @@ module CardGame.PlayGame (
     ) where
 
 import Data.CircularList
-    ( focus, fromList, update, toList, removeR )
+    ( focus, fromList, update, removeR )
 import System.Time.Extra ( sleep )
 
-import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore), prettyPrintMoves )
+import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore, movesHistory), prettyPrintMoves )
 import Text.Read (readMaybe)
 import Data.List (find, intercalate)
-import Feature ( Feature(PileCount, PlayerHand, CardEffects) )
+import Feature ( Feature(PlayerHand) )
 import CDSL.CDSLExpr (CDSLExpr(Numeric, CEffect), CardEffect)
 import LoadGame (loadGame)
-import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique, removeLookup, removeLookupAll)
-import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
+import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique, removeLookupAll, remLst, elemLst)
+import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass, DiscardCard))
 import System.IO ( hFlush, stdout )
-import CardGame.PlayCommands (validatePLCommand, PLCommand (plc), UserActions (Play, Draw, PassTurn, HelpUA, Moves, HandUA, ScoreUA, QuitUA), printUACommands)
-import System.Console.ANSI (clearScreen)
-import CardGame.Game (Game (players, state, Game, pile, deck, actions, rules, winCon, canPlaceCard, gameName, endCon, playerMoves, cardEffects, turnOrder), GameState (Start, TurnEnd, TurnStart), dealCards, gameActions, createEmptyGame)
+import CardGame.PlayCommands (validatePLCommand, PLCommand (plc), UserActions (..), printUACommands)
+import CardGame.Game (GameState (Start, TurnEnd, TurnStart), dealCards, gameActions, createEmptyGame, Game (..))
 import CardGame.Card (Card)
 import CDSL.ExecCDSLExpr (execCardEffect, execCDSLGame)
 import CardGame.CardFunctions (prettyPrintCards, cardElem)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
-    clearScreen
+    --clearScreen
 
     -- Incase every player leaves the game
     if null (players g)
@@ -86,18 +85,18 @@ doPlayerTurn g = do
                                         then
                                             do
                                                 putStrLn ("Plays " ++ show card)
-                                                let plr' = plr { hand = removeFirst (hand plr) card, moves = removeFirst (moves plr) (PlayCard, b) }
+                                                let plr' = plr { hand = removeFirst (hand plr) card, moves = removeFirst (moves plr) (PlayCard, b), movesHistory = (PlayCard, b) : movesHistory plr }
                                                 -- Check card effect
-                                                game <- checkCardEffect card (g { pile = (card, Nothing):pile game })
+                                                game' <- checkCardEffect card (g { pile = (card, Nothing):pile game })
                                                 -- If player can play card again, 
                                                 if b
                                                     then
-                                                        doPlayerTurn game { players = update plr' (players game) }
+                                                        doPlayerTurn game' { players = update plr' (players game') }
                                                     else
                                                         do
                                                             putStrLn "Hit Enter to go to next turn."
-                                                            getLine
-                                                            return game { state = TurnEnd, players = update plr' (players game)}
+                                                            _ <- getLine
+                                                            return game' { state = TurnEnd, players = update plr' (players game')}
                                         else
                                             do
                                                 putStrLn ("Cannot place " ++ show card)
@@ -120,15 +119,15 @@ doPlayerTurn g = do
                             (True, _) -> do
                                 let crds = take c (deck game)
                                 putStrLn ("Drew: " ++ intercalate ", " (map show crds))
-                                let p' = plr {hand = crds ++ hand plr, moves = dropFilteredCount (== (DrawCard, True)) c (moves plr)}
+                                let p' = plr {hand = crds ++ hand plr, moves = dropFilteredCount (== (DrawCard, True)) c (moves plr), movesHistory = replicate c (PlayCard, True) ++ movesHistory plr }
                                 doPlayerTurn (game { deck = drop c (deck game), players = update p' (players game) })
                             -- Cannot do action again
                             (False, True) -> do
                                 let crds = take c (deck game)
                                 putStrLn ("Drew: " ++ intercalate ", " (map show crds))
-                                let p' = plr {hand = crds ++ hand plr, moves = filter (\(m, _) -> m == DrawCard) (moves plr) }
+                                let p' = plr {hand = crds ++ hand plr, moves = filter (\(m, _) -> m == DrawCard) (moves plr), movesHistory = replicate c (PlayCard, True) ++ movesHistory plr }
                                 putStrLn "Hit Enter to go to next turn."
-                                getLine
+                                _ <- getLine
                                 return (game { deck = drop c (deck game), players = update p' (players game) })
                             -- Invalid
                             _ -> do
@@ -138,7 +137,7 @@ doPlayerTurn g = do
                     PassTurn -> case lookup Pass (moves plr) of
                         Just b ->
                             do
-                                let p' = plr { moves = removeFirst (moves plr) (Pass, b) }
+                                let p' = plr { moves = removeFirst (moves plr) (Pass, b), movesHistory = (Pass, b) : movesHistory plr }
                                 if b
                                     then
                                         doPlayerTurn game { players = update p' (players game) }
@@ -150,7 +149,7 @@ doPlayerTurn g = do
                                                 Just p -> return ("Hit Enter to go to " ++ name p ++ "'s turn.")
                                                 Nothing -> return "Hit Enter to go to next turn."
                                             putStrLn nm
-                                            getLine
+                                            _ <- getLine
                                             return game { players = update p' (players game) }
                         _ -> do
                             putStrLn "Cannot Pass this turn, type 'moves', to show available moves."
@@ -184,6 +183,31 @@ doPlayerTurn g = do
                     HelpUA -> do
                         printUACommands
                         doPlayerTurn game
+                    -- Checking if its a valid move
+                    (DiscardUA is) -> case lookup DiscardCard (moves plr) of
+                        Just b -> if is `elemLst` [1..length (hand plr)]
+                            then
+                                do
+                                    putStrLn ("Discarding the cards: " ++ intercalate ", " (map show is))
+                                    let p = plr { hand = remLst (hand plr) (map (\c -> c - 1) is) }
+                                    nm <- case focus (players g) of
+                                                Just p' -> return ("Hit Enter to go to " ++ name p' ++ "'s turn.")
+                                                Nothing -> return "Hit Enter to go to next turn."
+                                    putStrLn nm
+                                    _ <- getLine
+                                    if b
+                                        then
+                                            doPlayerTurn (game { players = update p (players game) })
+                                        else
+                                            return (game { players = update p (players game) })
+                            else
+                                do
+                                    putStrLn ("Invalid numbers, expected something in the range of 1 to " ++ show (length (hand plr)))
+                                    doPlayerTurn game
+
+                        Nothing -> do
+                            putStrLn "Cannot Discard this turn, type 'moves', to show available moves."
+                            doPlayerTurn game
 
                 _ -> do
                     putStrLn "Unknown command, type 'help' to list all commands."

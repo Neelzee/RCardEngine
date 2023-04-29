@@ -5,6 +5,8 @@ module Terminal.GameCommands (
     , showAll
     , commands
     , Flag
+    , flags
+    , cmdInfo
 ) where
 
 
@@ -60,8 +62,8 @@ data GameCommand =
     | Clear
     -- Lists all existing games
     | List Flag
-    -- Lits all commands
-    | Help
+    -- List all commands
+    | Help (Maybe String)
     -- Plays the given game
     | Play CDSLExpr
     deriving (Eq)
@@ -138,7 +140,7 @@ showAll c = case c of
     (Quit flg) -> "quit " ++ unwords flg
     (List flg) -> "list " ++ unwords flg
     Clear -> "clear"
-    Help -> "help"
+    (Help _) -> "help"
     _ -> error "no showAll for " ++ show c
 
 
@@ -156,5 +158,18 @@ commands =
     , GameCommand (Quit []) "Quits the program" "quit"
     , GameCommand (List []) "List the games already created" "list"
     , GameCommand Clear "Clears the terminal" "clear"
-    , GameCommand Help "Print the help message" "help"
+    , GameCommand (Help Nothing) "Print the help message, or information about the given command, feature, etc." "help"
+    ]
+
+
+cmdInfo :: [(GameCommand, (String, String))]
+cmdInfo = map (\gc -> (cmd gc, (info gc, example gc))) commands
+
+
+flags :: [(Flag, String)]
+flags =
+    [
+        (["-confirm"], "Prints the effects of the command, and the prompts the user to continue")
+        , (["-verbose"], "Gives a verbose output of the effects of the command")
+        , (["-quiet"], "Shows nothing on the effects of a command")
     ]

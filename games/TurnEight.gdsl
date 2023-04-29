@@ -1,34 +1,39 @@
 # Possible implementation of the game Crazy Eights
 
-GAME
-win_con = any players isEmpty hand
-end_con = [any players isEmpty hand, any players isEqual score 10]
-END
+GAME {
+    win_con = any players isEmpty hand;
+    end_con = [any players isEmpty hand, any players isEqual score 10];
+}
 
 
-CARD
-card_suits = [Hearts, Diamonds, Clubs, Spades]
-card_ranks = [Ace, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King]
-card_constraints = suit
-END
+CARD {
+    card_suits = [Hearts, Diamonds, Clubs, Spades];
+    card_ranks = [Ace, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King];
+    card_constraints = suit;
+}
 
 # Player stats
-PLAYER
-player_hand = 7
-player_moves = [PLAY_CARD FALSE, DRAW_CARD TRUE, DRAW_CARD TRUE, DRAW_CARD TRUE, PASS FALSE]
-END
+PLAYER {
+    player_hand = 7;
+    player_moves = [PLAY_CARD FALSE, DRAW_CARD TRUE, DRAW_CARD TRUE, DRAW_CARD TRUE, PASS FALSE];
+}
 
 
 # Define the game actions
-ACTIONS
-any_time = [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]
-start_time = [always : shuffle deck, isEmpty pile : take 1 deck pile]
-turn_start = [always : reset player moves] # Not sure if needed both
-turn_end = [always : reset player moves]
-END
+ACTIONS {
+    any_time = [
+        isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile]
+        , isEmpty pile : take 1 deck pile];
+    start_time = [
+        always : shuffle deck
+        , isEmpty pile : take 1 deck pile];
+         # Not sure if both needed
+    turn_start = [always : reset player moves];
+    turn_end = [always : reset player moves];
+}
 
 
 # Define some card effects
-CARD_EFFECTS
-change_card = [Hearts.Eight, Diamonds.Eight, Clubs.Eight, Spades.Eight]
-END
+CARD_EFFECTS {
+    change_card = [Hearts.Eight, Diamonds.Eight, Clubs.Eight, Spades.Eight]
+}
