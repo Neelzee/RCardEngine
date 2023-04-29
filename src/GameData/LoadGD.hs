@@ -4,16 +4,17 @@ import System.Directory (listDirectory)
 import Constants (gameFolder, gameExtension)
 import Data.Maybe (mapMaybe)
 import Data.Bifunctor (first, Bifunctor (second))
-import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords, isAFeatureOf, Attribute (None), validateAttribute)
+import Feature (Feature (GameName, Saved, CardSuits, CardRanks, CardValues, CardEffects), fromStringToFeature, validateKeyWords, isAFeatureOf, Attribute (None), validateAttribute)
 import CDSL.ParseCardDSL (processIfString, parseStringList, parseCDSLPlayerAction, readCDSL, validateFeature)
 import GameData.GD (GameData)
-import Functions (mergeList, removeMaybe, allGames, trim)
+import Functions (mergeList, removeMaybe, allGames, trim, lookupAll)
 import CDSL.CDSLValidater (validateCDSLExpression)
 import Data.Either (partitionEithers)
 import Data.List (stripPrefix)
 import Data.Char (isSpace)
 import Data.List.Extra (split, splitOn)
 import CDSL.CDSLExpr
+import CardGame.CardFunctions
 
 
 loadGameData :: GameData -> Int -> IO (Either GameData (CDSLParseError, Int))
@@ -35,12 +36,35 @@ loadGameData' :: GameData -> String -> Either GameData (CDSLParseError, Int)
 loadGameData' oldGD c = case parseFile c of
     Left nGd -> case validateFeatureAttributes nGd of
         Left gamedata -> case validateExpr gamedata of
-            Left gd -> Left (mergeList (concatMap snd gd) oldGD)
+            Left gd -> case validateGameData gamedata of
+                Nothing -> Left (mergeList (concatMap snd gd) oldGD)
+                Just (e, n) -> Right (e, n)
             Right e -> Right e
         Right e -> Right e
     Right e -> Right e
 
     where
+        validateGameData :: [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] -> Maybe (CDSLParseError, Int)
+        validateGameData gd = case (lookup CardSuits (concatMap (\(_, a, _, _) -> a) gd)
+            , lookup CardRanks (concatMap (\(_, a, _, _) -> a) gd)) of
+            (Just suits, Just ranks) -> parse (map (\(_, d, e, f) -> (concatMap snd d, e, f)) gd)
+                where
+                    parse :: [([CDSLExpr], Int, Int)] -> Maybe (CDSLParseError, Int)
+                    parse [] = Nothing
+                    parse ((ys, st, _):xs) = case mapMaybe validate ys of -- Not on exact line, but close enough
+                        [] -> parse xs
+                        e -> Just (head e, st)
+
+
+                    validate :: CDSLExpr -> Maybe CDSLParseError
+                    validate ce@(CEffect _ crds) = case filter (\crd -> not (cardElem crd (makeDeck suits ranks []))) crds of
+                        [] -> Nothing
+                        ex -> Just (CDSLParseError { pErr = MissMatchCardError ex (makeDeck suits ranks []), pExpr = ce, rawExpr = "" })
+                    validate _ = Nothing
+            e -> error (show e)
+
+
+
         validateExpr :: [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] ->
             Either [(Attribute, [(Feature, [CDSLExpr])])] (CDSLParseError, Int)
         validateExpr [] = Left []

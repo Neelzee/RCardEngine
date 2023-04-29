@@ -157,6 +157,7 @@ data CDSLParseErrorCode =
     | InvalidFeatureArgumentError
     | NotACardFieldError
     | ParseErrorOnLine CDSLParseErrorCode Int
+    | MissMatchCardError [Card] [Card]
     deriving (Show, Eq)
 
 
