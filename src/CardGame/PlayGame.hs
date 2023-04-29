@@ -191,6 +191,11 @@ doPlayerTurn g = do
                                 do
                                     putStrLn ("Discarding the cards: " ++ intercalate ", " (map show is))
                                     let p = plr { hand = remLst (hand plr) (map (\c -> c - 1) is) }
+                                    nm <- case focus (players g) of
+                                                Just p' -> return ("Hit Enter to go to " ++ name p' ++ "'s turn.")
+                                                Nothing -> return "Hit Enter to go to next turn."
+                                    putStrLn nm
+                                    getLine
                                     if b
                                         then
                                             doPlayerTurn (game { players = update p (players game) })

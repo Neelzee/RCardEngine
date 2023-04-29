@@ -5,7 +5,7 @@ import Feature (Feature(..))
 import System.Directory (listDirectory)
 import Constants (gameFolder, gameExtension)
 import Data.List (elemIndex, intercalate)
-import CDSL.CDSLExpr (CDSLExpr(..))
+import CDSL.CDSLExpr (CDSLExpr(..), CDSLParseErrorCode (ParseErrorOnLine), CDSLParseError (pErr))
 import System.IO (withFile, IOMode (WriteMode), hPrint, hPutStrLn)
 import CDSL.ExecCDSLExpr (fromCDSLToString)
 import GameData.LoadGD (loadGameData)
@@ -32,10 +32,10 @@ saveGameData' gd = do
                         saveGD gd gm
                         return (GCEffect { se = "Overwrote old instance of " ++ gm,
                         ve = "Overwrote " ++ show (length diff) ++ " features, added " ++ show (length new) ++ " features, " ++ show (length sim) ++ " features unchanged"})
-                    Right e -> do
+                    Right (e, i') -> do
                         let gc = (GCEffect { se = "Overwrote old instance of " ++ gm
                             , ve = "Overwrote old instance, cannot compare differences due to an error on load."
-                            , gcErr = [CDSLError (Right e)]})
+                            , gcErr = [CDSLError (Right [e {pErr = ParseErrorOnLine (pErr e) i'}])]})
                         saveGD gd gm
                         return gc
             Nothing -> do

@@ -9,7 +9,7 @@ module CDSL.CDSLExpr (
     , showF
 ) where
 
-import Feature (Feature)
+import Feature (Feature, Attribute)
 import CardGame.PlayerMove (Move)
 import CardGame.Card (Card)
 
@@ -148,11 +148,15 @@ data CDSLParseErrorCode =
     | MissingTerminationStatement Int
     | UnknownKeyWord Int
     | OnLoad Feature CDSLParseErrorCode
-    | OnValidate Feature [CDSLExecError]
+    | OnValidateFeature Feature [CDSLExecError]
+    | OnValidateExpressions (Maybe Feature) [CDSLParseError]
     | NotAFeatureError
+    | NotAnAttributeError
     | MissMatchFeatureError
+    | NotAFeatureOfAttribute Attribute Feature
     | InvalidFeatureArgumentError
     | NotACardFieldError
+    | ParseErrorOnLine CDSLParseErrorCode Int
     deriving (Show, Eq)
 
 
@@ -169,6 +173,7 @@ data CDSLExecErrorCode =
     | SyntaxErrorRightOperand
     | SyntaxErrorLeftOperand
     | InvalidBoolEvaluationError
+    | UnknownExpressionError
     deriving (Show, Eq)
 
 

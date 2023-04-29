@@ -347,6 +347,10 @@ fromCDSLToString (IsMove ex) = "isMove " ++ fromCDSLToString ex
 fromCDSLToString PAPass = "pPass"
 fromCDSLToString PADraw = "pDraw"
 fromCDSLToString PAPlay = "pPlay"
+fromCDSLToString (PreviousPlayer ex) = "prevPlayer " ++ fromCDSLToString ex
+fromCDSLToString (GoBack ex) = "goBack " ++ fromCDSLToString ex
+fromCDSLToString (GoForward ex) = "goForward " ++ fromCDSLToString ex
+fromCDSLToString Turn = "turn"
 fromCDSLToString _ = "(NOT ADDED)"
 
 createCard :: [CDSLExpr] -> Game -> IO Card

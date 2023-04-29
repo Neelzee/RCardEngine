@@ -81,7 +81,7 @@ mainLoop = do
                                         else
                                             mainLoop
                                 Right err -> do
-                                    printGCEffect (map fromCDSLParseErrorOnLoad err) flg
+                                    printGCEffect [(fromCDSLParseErrorOnLoad err)] flg
                                     mainLoop
                     else
                         do

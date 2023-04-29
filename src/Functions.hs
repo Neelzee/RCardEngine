@@ -221,13 +221,13 @@ parseList = go []
 
 
     splitList :: String -> (String, String)
-    splitList = go 0 ""
+    splitList = g 0 ""
       where
-        go :: Int -> String -> String -> (String, String)
-        go _ ys [] = error $ "Invalid list: " ++ ys
-        go 0 ys (']':xs) = (ys, xs)
-        go 0 ys ('[':xs) = (ys, xs)
-        go n ys (x:xs) = go n' (ys ++ [x]) xs
+        g :: Int -> String -> String -> (String, String)
+        g _ ys [] = error $ "Invalid list: " ++ ys
+        g 0 ys (']':xs) = (ys, xs)
+        g 0 ys ('[':xs) = (ys, xs)
+        g n ys (x:xs) = g n' (ys ++ [x]) xs
           where n'
                   | x == '[' = n + 1
                   | x == ']' = n - 1

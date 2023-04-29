@@ -1,33 +1,60 @@
 # Possible implementation of the game President
 
-GAME
-win_con = greatest players score
-END
+GAME {
+    win_con = greatest players score
+}
 
 
-CARD
-card_suits = [Hearts, Diamonds, Clubs, Spades]
-card_ranks = [Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace, Two]
-card_constraints = rank
-card_compare = gte
-END
+CARD {
+    card_suits = [Hearts, Diamonds, Clubs, Spades];
+    card_ranks = [Three
+        , Four
+        , Five
+        , Six
+        , Seven
+        , Eight
+        , Nine
+        , Ten
+        , Jack
+        , Queen
+        , King
+        , Ace
+        , Two];
+    card_constraints = rank;
+    card_compare = gte;
+}
 
 # Player stats
-PLAYER
-player_hand = 4
-player_moves = [PLAY_CARD FALSE, DRAW_CARD TRUE, DRAW_CARD TRUE, DRAW_CARD TRUE, PASS FALSE]
-END
+PLAYER {
+    player_hand = 4
+    player_moves = [PLAY_CARD FALSE, DRAW_CARD TRUE, DRAW_CARD TRUE, DRAW_CARD TRUE, PASS FALSE]
+}
 
 
 # Define the game actions
-ACTIONS
-any_time = [isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile], isEmpty pile : take 1 deck pile]
-start_time = [always : shuffle deck, isEmpty pile : take 1 deck pile, always : reset player moves]
-turn_end = [always : reset player moves, isSame rank look 4 pile : [put pile discard, goBack turn]] # Not sure if needed
-END
+ACTIONS {
+    any_time = [
+        isEmpty deck : [swap pile deck, shuffle deck, take 1 deck pile],
+        isEmpty pile : take 1 deck pile
+        ];
+    start_time = [
+        always : shuffle deck
+        , isEmpty pile : take 1 deck pile
+        , always : reset player moves];
+    turn_end
+        =
+            [
+                always : reset player moves,
+                # Not sure if needed
+                isSame rank look 4 pile : [
+                        put pile discard
+                        , goBack turn]
+                
+            ]; 
+}
 
 
 # Define some card effects
-CARD_EFFECTS
-change_card = [Hearts.Six, Diamonds.Six, Spades.Six, Clubs.Six]
-END
+CARD_EFFECTS  {
+    change_card = [Hearts.Six, Diamonds.Six, Spades.Six, Clubs.Six]
+}

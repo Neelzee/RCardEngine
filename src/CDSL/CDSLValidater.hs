@@ -83,7 +83,7 @@ validateCDSLExpression p@(Put a b) = if all isList [a, b]
         Right [CDSLExecError { err = InvalidSyntaxError, expr = Put Null Null }]
 validateCDSLExpression e@(GoBack Turn) = Left e
 validateCDSLExpression e@(GoForward Turn) = Left e
-validateCDSLExpression e = error ("The expression: '" ++ show e ++ "' is not a valid expression")
+validateCDSLExpression e = Right [CDSLExecError { err = UnknownExpressionError, expr = e }]
 
 
 -- Checks if the given expression is a list

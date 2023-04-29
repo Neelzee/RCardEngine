@@ -1,11 +1,20 @@
 module Feature (
     Feature (..)
+    , Attribute (..)
     , fromStringToFeature
     , validateKeyWords
     , isAFeatureOf
     , featureInfo
+    , validateAttribute
 ) where
 
+data Attribute =
+    GameAttributes
+    | CardAttributes
+    | PlayerAttributes
+    | Actions
+    | None
+    deriving (Show, Eq)
 
 data Feature = WinCon
     | CardSuits
@@ -26,7 +35,6 @@ data Feature = WinCon
     | ExceptionConstraints
     | CardFeatures
     | PlayerFeatures
-    | Actions
     | GameFeatures
     | CardEffects
     | CEChangeCard
@@ -59,7 +67,6 @@ instance Show Feature where
         CardConstraints -> "CARD_CONSTRAINTS"
         CardFeatures -> "CARD"
         PlayerFeatures -> "PLAYER"
-        Actions -> "ACTIONS"
         GameFeatures -> "GAME"
         CardEffects -> "CARD_EFFECTS"
         CEChangeCard -> "change_card"
@@ -91,7 +98,6 @@ fromStringToFeature x = case x of
     "card_constraints" -> Just CardConstraints
     "CARD" -> Just CardFeatures
     "PLAYER" -> Just PlayerFeatures
-    "ACTIONS" -> Just Actions
     "GAME" -> Just GameFeatures
     "CARD_EFFECTS" -> Just CardEffects
     "change_card" -> Just CEChangeCard
@@ -144,34 +150,34 @@ validateKeyWords x = case x of
     _ -> Nothing
 
 
-isAFeatureOf :: Feature -> Feature -> Bool
-isAFeatureOf CEChangeCard CardEffects = True
-isAFeatureOf CEDrawCard CardEffects = True
-isAFeatureOf CEGiveCard CardEffects = True
-isAFeatureOf CEPassNext CardEffects = True
-isAFeatureOf CETakeFromHand CardEffects = True
-isAFeatureOf CESwapHand CardEffects = True
-isAFeatureOf CardEffects CardEffects = True
+isAFeatureOf :: Feature -> Attribute -> Bool
+isAFeatureOf CEChangeCard CardAttributes = True
+isAFeatureOf CEDrawCard CardAttributes = True
+isAFeatureOf CEGiveCard CardAttributes = True
+isAFeatureOf CEPassNext CardAttributes = True
+isAFeatureOf CETakeFromHand CardAttributes = True
+isAFeatureOf CESwapHand CardAttributes = True
+isAFeatureOf CardEffects CardAttributes = True
 
-isAFeatureOf CardConstraints CardFeatures = True
-isAFeatureOf CardSuits CardFeatures = True
-isAFeatureOf CardRanks CardFeatures = True
-isAFeatureOf IgnoreConstraints CardFeatures = True
-isAFeatureOf CardCompare CardFeatures = True
-isAFeatureOf CardValues CardFeatures = True
-isAFeatureOf ExceptionConstraints CardFeatures = True
+isAFeatureOf CardConstraints CardAttributes = True
+isAFeatureOf CardSuits CardAttributes = True
+isAFeatureOf CardRanks CardAttributes = True
+isAFeatureOf IgnoreConstraints CardAttributes = True
+isAFeatureOf CardCompare CardAttributes = True
+isAFeatureOf CardValues CardAttributes = True
+isAFeatureOf ExceptionConstraints CardAttributes = True
 
-isAFeatureOf PlayerHand PlayerFeatures = True
-isAFeatureOf PlayerMoves PlayerFeatures = True
+isAFeatureOf PlayerHand PlayerAttributes = True
+isAFeatureOf PlayerMoves PlayerAttributes = True
 
 isAFeatureOf AnyTime Actions = True
 isAFeatureOf StartTime Actions = True
 isAFeatureOf TurnStartTime Actions = True
 isAFeatureOf TurnEndTime Actions = True
 
-isAFeatureOf WinCon GameFeatures = True
-isAFeatureOf EndCon GameFeatures = True
-isAFeatureOf TurnOrder GameFeatures = True
+isAFeatureOf WinCon GameAttributes = True
+isAFeatureOf EndCon GameAttributes = True
+isAFeatureOf TurnOrder GameAttributes = True
 
 isAFeatureOf _ _ = False
 
@@ -201,3 +207,14 @@ featureInfo = [
     , (CardCompare, "What comparator will be used to compare cards")
     , (TurnOrder, "Used to specify what ordering will be used")
     ]
+
+
+
+validateAttribute :: String -> Maybe Attribute
+validateAttribute x = case x of
+    "GAME" -> Just GameAttributes
+    "CARD" -> Just CardAttributes
+    "PLAYER" -> Just PlayerAttributes
+    "ACTIONS" -> Just Actions
+    "CARD_EFFECTS" -> Just CardAttributes
+    _ -> Nothing

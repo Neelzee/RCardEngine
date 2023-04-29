@@ -1,39 +1,82 @@
 module GameData.LoadGD (loadGameData, loadGameData') where
 
 import System.Directory (listDirectory)
-import Constants (gameFolder)
+import Constants (gameFolder, gameExtension)
 import Data.Maybe (mapMaybe)
 import Data.Bifunctor (first, Bifunctor (second))
-import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords, isAFeatureOf)
-import CDSL.CDSLExpr (CDSLExpr (Text, Null), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr), CDSLParseErrorCode (SyntaxError, OnLoad, MissingTerminationStatement, UnknownKeyWord, MissMatchFeatureError, OnValidate), CDSLExecError (CDSLExecError, err), CDSLExecErrorCode (InvalidSyntaxError))
+import Feature (Feature (GameName, Saved), fromStringToFeature, validateKeyWords, isAFeatureOf, Attribute (None), validateAttribute)
 import CDSL.ParseCardDSL (processIfString, parseStringList, parseCDSLPlayerAction, readCDSL, validateFeature)
 import GameData.GD (GameData)
-import Functions (mergeList, removeMaybe, allGames)
+import Functions (mergeList, removeMaybe, allGames, trim)
 import CDSL.CDSLValidater (validateCDSLExpression)
 import Data.Either (partitionEithers)
+import Data.List (stripPrefix)
+import Data.Char (isSpace)
+import Data.List.Extra (split, splitOn)
+import CDSL.CDSLExpr
 
 
-
-loadGameData :: GameData -> Int -> IO (Either GameData [CDSLParseError])
+loadGameData :: GameData -> Int -> IO (Either GameData (CDSLParseError, Int))
 loadGameData gd n = do
     g <- allGames
-    let (_, gm) = break (=='.') (reverse (g !! n))
-    let gm' = reverse (drop 1 gm)
+    let gm = reverse $ takeWhile (/= '.') (reverse (g !! n))
     if n < 0 || n >= length g
     then -- Shouldnt happen
-        return (Right [CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show n }])
+        return (Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show n }, 0))
     else
         do
             content <- readFile (gameFolder ++ "/" ++ (g !! n))
-            case loadGameData' gd (lines content) of
-                Left gd' -> return (Left ((GameName, [Text gm']) : gd' ++ [(Saved, [Null])]))
+            case loadGameData' gd content of
+                Left gamedata -> return (Left ((GameName, [Text (g !! n)]):gamedata))
                 e -> return e
 
 
-loadGameData' :: GameData -> [String] -> Either GameData [CDSLParseError]
-loadGameData' fs c = case parseFileHelper c 1 of
-    Left nGd -> do
+loadGameData' :: GameData -> String -> Either GameData (CDSLParseError, Int)
+loadGameData' oldGD c = case parseFile c of
+    Left nGd -> case validateFeatureAttributes nGd of
+        Left gamedata -> case validateExpr gamedata of
+            Left gd -> Left (mergeList (concatMap snd gd) oldGD)
+            Right e -> Right e
+        Right e -> Right e
+    Right e -> Right e
+
+    where
+        validateExpr :: [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] ->
+            Either [(Attribute, [(Feature, [CDSLExpr])])] (CDSLParseError, Int)
+        validateExpr [] = Left []
+        validateExpr (x@(att, fets, st, _):xs) = case parse fets st of
+            Just e -> Right e
+            Nothing -> case validateExpr xs of
+                Left f -> Left ((att, fets):f)
+                e -> e
+            where
+                parse :: [(Feature, [CDSLExpr])] -> Int -> Maybe (CDSLParseError, Int)
+                parse [] _ = Nothing
+                parse ((_, []):fs) n = parse fs n
+                parse ((f, y:ys):fs) n = case validateCDSLExpression y of
+                    Left _ -> parse ((f, ys):fs) (n + 1)
+                    Right e -> Just (CDSLParseError { pErr = OnValidateFeature f e, pExpr = Null, rawExpr = "" }, n)
+
+        validateFeatureAttributes :: [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] ->
+            Either [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] (CDSLParseError, Int)
+        validateFeatureAttributes [] = Left []
+        validateFeatureAttributes (x@(a, fets, st, _):xs) = case parse a fets st of
+            Just e -> Right e
+            Nothing -> case validateFeatureAttributes xs of
+                Left f -> Left (x:f)
+                e -> e
+            where
+                parse :: Attribute -> [(Feature, [CDSLExpr])] -> Int -> Maybe (CDSLParseError, Int)
+                parse _ [] _ = Nothing
+                parse att ((f, _):fes) n = if f `isAFeatureOf` att
+                    then
+                        parse att fes (n + 1)
+                    else
+                        Just (CDSLParseError { pErr = NotAFeatureOfAttribute att f, pExpr = Null, rawExpr = "" }, n)
+
+
         -- TODO: Change in such a way that an error is shown on invalid feature
+        {-
         let gd = removeMaybe (map (first fromStringToFeature) nGd)
         let (gd', errs) = readGD gd
         let gd'' = mergeList fs gd'
@@ -59,20 +102,24 @@ loadGameData' fs c = case parseFileHelper c 1 of
         fixExcErrs :: [(Feature, [CDSLExecError])] -> [CDSLParseError]
         fixExcErrs [] = []
         fixExcErrs ((_, []):xs) = fixExcErrs xs
-        fixExcErrs ((f, errs):xs) = (CDSLParseError { pErr = OnValidate f errs, pExpr = Null, rawExpr = "" }) : fixExcErrs xs
+        fixExcErrs ((f, errs):xs) = (CDSLParseError {
+            pErr = OnValidateFeature f errs
+            , pExpr = Null, rawExpr = "" }) : fixExcErrs xs
 
-        checkFx :: [(Feature, [Either CDSLExpr [CDSLExecError]])] -> ([(Feature, [CDSLExpr])], [(Feature, [CDSLExecError])])
+        checkFx :: [(Feature, [Either CDSLExpr [CDSLExecError]])] ->
+            ([(Feature, [CDSLExpr])], [(Feature, [CDSLExecError])])
         checkFx [] = ([], [])
         checkFx ((f, x):xs) = case partitionEithers x of
             (l, r) -> case checkFx xs of
                 (vl, il) -> ((f, l):vl, (f, concat r):il)
+        -}
 
 
 readGD :: [(Feature, [String])] -> ([(Feature, [CDSLExpr])], [(Feature, [CDSLParseError])])
 readGD [] = ([], [])
 readGD ((_, []):ys) = readGD ys
 readGD ((f, x:xs):ys) = case readCDSL x of
-    Left (f', ex) -> if f' `isAFeatureOf` f
+    Left (f', ex) -> if True
         then
             case readGD ((f, xs):ys) of
                 (fex, ferr) -> ((f', ex):fex, ferr)
@@ -86,36 +133,9 @@ readGD ((f, x:xs):ys) = case readCDSL x of
 
 
 
-parseFileHelper :: [String] -> Int -> Either [(String, [String])] CDSLParseError
-parseFileHelper xs = parseFileHelper' (removeComments xs)
-
-
-parseFileHelper' :: [String] -> Int -> Either [(String, [String])] CDSLParseError
-parseFileHelper' [] _ = Left []
-parseFileHelper' (('#':_):xs) n = parseFileHelper' xs (n + 1) -- Ignores comments
-parseFileHelper' ("":xs) n = parseFileHelper' xs (n + 1) -- Ignores empty lines
-parseFileHelper' (x:xs) n = case validateKeyWords x of
-    Just rule -> do
-        let (stmt, rest) = break isEnd xs
-        if onlyNothing (map validateKeyWords stmt)
-            then -- Adding two, since we're skiping both the feature, and the end
-                case parseFileHelper' (drop 1 rest) (n + 2 + length stmt) of
-                    Left rs -> Left ((rule, stmt):rs)
-                    e -> e
-            else
-                Right (CDSLParseError { pErr = MissingTerminationStatement n, pExpr = Null, rawExpr = x })
-    _ -> Right (CDSLParseError { pErr = UnknownKeyWord n, pExpr = Null, rawExpr = x })
-    where
-        isEnd y = take 3 y == "END"
-        onlyNothing [] = True
-        onlyNothing (y:ys) = case y of
-            Just _ -> False
-            Nothing -> onlyNothing ys
-
-
 removeComments :: [String] -> [String]
 removeComments [] = []
-removeComments (('#':_):xs) = removeComments xs
+removeComments (('#':_):xs) = "" : removeComments xs
 removeComments (y:ys) = rmc y : removeComments ys
     where
         rmc :: String -> String
@@ -123,3 +143,60 @@ removeComments (y:ys) = rmc y : removeComments ys
         rmc (z:zs)
             | z == '#' = ""
             | otherwise = z : rmc zs
+
+
+parseFile :: String -> Either [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] (CDSLParseError, Int)
+parseFile xs = case parseAttributes (removeComments $ lines xs) 1 of
+    Left ys -> parse ys
+    Right e -> Right e
+    where
+        parse :: [(Attribute, [String], Int, Int)] ->
+            Either [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] (CDSLParseError, Int)
+        parse [] = Left []
+        parse ((at, ys, st, ed):zs) = case parseFeatures (concatFeatures (unlines ys)) st of
+            Left fet -> case parse zs of
+                Left as -> Left ((at, fet, st, ed):as)
+                Right e -> Right e
+            Right e -> Right e
+
+
+
+
+parseAttributes :: [String] -> Int ->
+    Either [(Attribute, [String], Int, Int)] (CDSLParseError, Int)
+parseAttributes [] _ = Left []
+parseAttributes ("":xs) n = parseAttributes xs (n + 1)
+parseAttributes (x:xs) n = case validateAttribute (trim $ takeWhile (/= '{') x) of
+    Just att -> case get xs (n + 1) of
+        (c, rm, n') -> case parseAttributes rm n' of
+            Left ys -> Left ((att, c, n, n'):ys)
+            e -> e
+    Nothing -> Right (CDSLParseError {
+        pErr = NotAnAttributeError
+        , pExpr = Text (trim $ takeWhile (/= '{') x)
+        , rawExpr = "'" ++ x ++ "'" }, n)
+    where
+        get :: [String] -> Int -> ([String], [String], Int)
+        get [] i = ([], [], i)
+        get (y:ys) i
+            | '}' `elem` y = ([takeWhile (/= '}') y], ys, i + 1)
+            | otherwise = case get ys (i + 1) of
+                (c, rm, i') -> (y:c, rm, i')
+
+
+concatFeatures :: String -> [String]
+concatFeatures xs = splitOn ";" (unwords (map trim (words xs)))
+
+parseFeatures :: [String] -> Int -> Either [(Feature, [CDSLExpr])] (CDSLParseError, Int)
+parseFeatures [] _ = Left []
+parseFeatures ("":xs) n = parseFeatures xs n
+parseFeatures (x:xs) n = case readCDSL x of
+    Left fe -> case parseFeatures xs (n + 1) of
+        Left fs -> Left (fe:fs)
+        e -> e
+    Right (f, er) -> Right (CDSLParseError {pErr=OnValidateExpressions f er, pExpr=Null, rawExpr=x}, n)
+
+
+
+test :: String -> IO ()
+test str = print (parseFile str)
