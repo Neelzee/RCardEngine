@@ -221,13 +221,13 @@ parseList = go []
 
 
     splitList :: String -> (String, String)
-    splitList = go 0 ""
+    splitList = g 0 ""
       where
-        go :: Int -> String -> String -> (String, String)
-        go _ ys [] = error $ "Invalid list: " ++ ys
-        go 0 ys (']':xs) = (ys, xs)
-        go 0 ys ('[':xs) = (ys, xs)
-        go n ys (x:xs) = go n' (ys ++ [x]) xs
+        g :: Int -> String -> String -> (String, String)
+        g _ ys [] = error $ "Invalid list: " ++ ys
+        g 0 ys (']':xs) = (ys, xs)
+        g 0 ys ('[':xs) = (ys, xs)
+        g n ys (x:xs) = g n' (ys ++ [x]) xs
           where n'
                   | x == '[' = n + 1
                   | x == ']' = n - 1
@@ -288,3 +288,18 @@ subString _ "" = False
 subString (s:ss) (x:xs)
   | s == x = subString ss xs
   | otherwise = False
+
+
+elemLst :: Eq a => [a] -> [a] -> Bool
+elemLst [] _ = True
+elemLst (x:xs) ys = x `elem` ys && elemLst xs ys
+
+remLst :: [a] -> [Int] -> [a]
+remLst xs ys = go xs (quicksort ys) 0
+  where
+    go :: [a] -> [Int] -> Int -> [a]
+    go zs [] _ = zs
+    go [] _ _ = []
+    go (z:zs) (w:ws) n
+      | w == n = go zs ws (n + 1)
+      | otherwise = z : go zs (w:ws) (n + 1)

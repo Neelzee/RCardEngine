@@ -12,6 +12,7 @@ import Terminal.GameCommands (GCError (GCError, InvalidCommandArgumentError, err
 import Data.List.Extra (trim)
 import Text.Read (readMaybe)
 import Terminal.ExecGameCommands (printTable)
+import Data.Maybe
 
 
 data PLCommand =
@@ -30,6 +31,7 @@ data UserActions =
     | ScoreUA
     | QuitUA
     | HelpUA
+    | DiscardUA [Int]
     deriving (Eq)
 
 instance Show UserActions where
@@ -42,6 +44,7 @@ instance Show UserActions where
         ScoreUA -> "score"
         QuitUA -> "quit"
         HelpUA -> "help"
+        (DiscardUA _) -> "discard"
 
 
 validatePLCommand :: String -> Either PLCommand GCError
@@ -62,6 +65,8 @@ validatePLCommand xs = case map trim (words xs) of
     ["quit"] -> Left (PLCommand QuitUA)
     ["moves"] -> Left (PLCommand Moves)
     ["help"] -> Left (PLCommand HelpUA)
+    ("discard":ys) -> case mapMaybe (\c -> readMaybe c :: Maybe Int) ys of
+        nm -> Left (PLCommand (DiscardUA nm))
 
 
     _ -> Right (GCError { 
@@ -99,9 +104,11 @@ info x = case x of
     ScoreUA -> "Shows your score."
     QuitUA -> "Quits the game for you."
     HelpUA -> "Shows this screen."
+    (DiscardUA _) -> "Discards the given cards"
 
 example :: UserActions -> String
 example x = case x of
     (Play _) -> "play 1"
     (Draw _) -> "draw 2"
+    (DiscardUA _) -> "discard 1 3 2"
     _ -> show x

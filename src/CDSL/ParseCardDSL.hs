@@ -8,6 +8,7 @@ module CDSL.ParseCardDSL (
     , processIfString
     , toNumeric
     , parseExpr
+    , parseOneCDSL
 ) where
 
 import Text.Read (readMaybe)
@@ -25,6 +26,7 @@ import Functions (subString, stringToList, removeFirst)
 
 isCDSLExprNumeric :: CDSLExpr -> Bool
 isCDSLExprNumeric (Numeric _) = True
+isCDSLExprNumeric Score = True
 isCDSLExprNumeric _ = False
 
 
@@ -215,6 +217,9 @@ parseOneCDSL (x:xs) n = case x of
     "shuffle" -> case parseOneCDSL xs (n + 1) of
         Left (exr, ys) -> Left (Shuffle exr, ys)
         Right (e, i) -> Right (e { pExpr = Shuffle (pExpr e), rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e }, i)
+    "prevPlayer" -> case parseOneCDSL xs (n + 1) of
+        Left (exr, ys) -> Left (PreviousPlayer exr, ys)
+        Right (e, i) -> Right (e { pExpr = Shuffle (pExpr e), rawExpr = if null (rawExpr e) then x else x ++ " " ++ rawExpr e }, i)
     "deck" -> Left (Deck, xs)
     "pile" -> Left (Pile, xs)
     "take" -> case (parseOneCDSL [head xs] 0, parseOneCDSL [xs !! 1] 0, parseOneCDSL [xs !! 2] 0) of
@@ -227,8 +232,16 @@ parseOneCDSL (x:xs) n = case x of
     "rank" -> Left (CardRank, xs)
     "suit" -> Left (CardSuit, xs)
     "value" -> Left (CardValue, xs)
+    "discard" -> Left (Discard, xs)
     "left" -> Left (TOLeft, xs)
     "right" -> Left (TORight, xs)
+    "turn" -> Left (Turn, xs)
+    "goBack" -> case parseOneCDSL xs (n + 1) of
+        Left (ex, ys) -> Left (GoBack ex, ys)
+        e -> e
+    "goForward" -> case parseOneCDSL xs (n + 1) of
+        Left (ex, ys) -> Left (GoForward ex, ys)
+        e -> e
     "reset" -> case parseOneCDSL xs (n + 1) of
         Left (ex, ys) -> Left (Reset ex, ys)
         Right (e, i) -> Right (e { pExpr = Reset (pExpr e) }, i)
@@ -241,6 +254,12 @@ parseOneCDSL (x:xs) n = case x of
     "lte" -> Left (CLEq, xs)
     "gte" -> Left (CGRq, xs)
     "eq" -> Left (CEq, xs)
+    "isMove" -> case parseOneCDSL xs (n + 1) of
+        Left (ex, ys) -> Left (IsMove ex, ys)
+        Right (e, i) -> Right (e { pExpr = IsMove (pExpr e) }, i)
+    "pPass" -> Left (PAPass, xs)
+    "pDraw" -> Left (PADraw, xs)
+    "pPlay" -> Left (PAPlay, xs)
     "isSame" -> case parseOneCDSL xs (n + 1) of
         Left (l, ys) -> case parseOneCDSL ys (n + 1) of
             Left (r, zs) -> Left (IsSame l r, zs)
@@ -256,6 +275,7 @@ parseOneCDSL (x:xs) n = case x of
             Left (r, zs) -> Left (Put l r, zs)
             e -> e
         e -> e
+    "null" -> Left (Null, xs)
     _ -> case readMaybe x :: Maybe Int of
         Just i -> Left (Numeric i, xs)
         _ -> Left (Text x, xs)

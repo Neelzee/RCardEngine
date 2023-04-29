@@ -174,20 +174,20 @@ execGameCommand c gd = case c of
                 return gd
         else
             do
-                gce <- case lookup Saved gd of
+                (gce, gds) <- case lookup Saved gd of
                     Just _ -> do
                         let (_, diff) = span ((/=Saved) . fst) gd
                         let (_, ecc) = removeFeature gd [Saved]
                         let gc = GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length diff - 1) ++ " new features", gcErr = [] }
-                        return (gc:ecc)
-                    Nothing -> return [GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length gd - 1) ++ " features", gcErr = [] }]
+                        return (gc:ecc, gd)
+                    Nothing -> return ([GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length gd - 1) ++ " features", gcErr = [] }], (Saved, []):gd)
                 res <- confirmCommand c gce flg
                 if res
                     then
                         do
                             let (gd', _) = removeFeature gd [Saved]
-                            _ <- saveGameData gd
-                            return ((Saved, [Null]) : gd')
+                            _ <- saveGameData gds
+                            return ((Saved, []) : gd')
                     else
                         return gd
     _ -> do

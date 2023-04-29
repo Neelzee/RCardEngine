@@ -20,13 +20,35 @@ import GameData.LoadGD
 import Control.Monad (zipWithM, when)
 import Terminal.GameCommands
 import System.IO (hFlush, stdout)
+import Terminal.ValidateGameCommands (validateGCFlags, validateGameCommand)
+import CDSL.ParseCardDSL (parseOneCDSL)
 
 
 execGameCommands :: GameCommand -> IO ()
 execGameCommands c = case c of
-    Help -> do
+    (Help Nothing) -> do
         printCommands commands
         return ()
+    (Help (Just "flags")) -> putStrLn (intercalate "\n" (map (\(flg, inf) -> "Flag: " ++ unwords flg ++ ": " ++ inf) flags))
+    (Help (Just "feature")) -> putStrLn (intercalate "\n" (map (\(fet, inf) -> "Feature: " ++ show fet ++ ": " ++ inf) featureInfo))
+    (Help (Just "cdsl")) -> putStrLn (intercalate "\n" (map (\(ex, expl) -> "Expression: " ++ showF ex ++ ", " ++ expl) infoCDSL))
+    (Help (Just xs)) -> case validateGCFlags (words xs) of
+                Left flg -> case lookup flg flags of -- Give information about that flag
+                    Just inf -> putStrLn ("Flag: " ++ unwords flg ++ ": " ++ inf)
+                    Nothing -> putStrLn ("Found no information about the flag: '" ++ xs ++ "'")
+                Right _ -> case validateGameCommand xs of
+                    Left gc -> case lookup gc cmdInfo of -- Give information about that game command
+                        Just (inf, exl) -> putStrLn ("Command: " ++ show gc ++ ": " ++ inf ++ ", example: " ++ exl)
+                        Nothing -> putStrLn ("Found no information about the command: '" ++ xs ++ "'")
+                    Right _ -> case fromStringToFeature xs of
+                        Just fet -> case lookup fet featureInfo of
+                            Just inf -> putStrLn ("Feature: " ++ show fet ++ ": " ++ inf)
+                            Nothing -> putStrLn ("Found no information about the feature: '" ++ xs ++ "'")
+                        Nothing -> case parseOneCDSL (xs : repeat " null") 0 of
+                            Left (ex, _) -> case lookup ex infoCDSL of -- Give information about that expression
+                                Just expl -> putStrLn ("Expression: " ++ showF ex ++ ", " ++ expl)
+                                Nothing -> putStrLn ("Found no information about the CDSL expression: '" ++ showF ex ++ "'")
+                            Right _ -> error ("INVALID HELP: '" ++ xs ++ "'") -- Should not happen, since this should be caught in the validateGameCommand function
 
     Clear -> do
         clearScreen
@@ -98,13 +120,13 @@ listGameData = do
     agd <- zipWithM (\ _x i -> loadGameData [] i) games [0..]
     return (listGameData' agd 0)
     where
-        listGameData' :: [Either GameData [CDSLParseError]] -> Int -> [GCEffect]
+        listGameData' :: [Either GameData (CDSLParseError, Int)] -> Int -> [GCEffect]
         listGameData' [] _ = []
         listGameData' (x:xs) n = case x of
             Left gd -> case lookup GameName gd of
                 Just (Text gm:_) -> GCEffect { se = show n ++ " " ++ gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1)
                 _ -> GCEffect { se = "Failed listing game: " ++ show n ++ ", found no name", ve = "Failed loading game: " ++ show n ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ show n)]} : listGameData' xs (n + 1)
-            Right e -> GCEffect { se = "Failed listing game: " ++ show n, ve = "Failed loading game: " ++ show n ++ ", error: " ++ show e, gcErr = [CDSLError (Right e)] } : listGameData' xs (n + 1)
+            Right (e, i) -> GCEffect { se = "Failed listing game: " ++ show n, ve = "Failed loading game: " ++ show n ++ ", error at: " ++ show e ++ ", at line: " ++ show i, gcErr = [CDSLError (Right [e])] } : listGameData' xs (n + 1)
 
 
 printCommands :: [GameCommand] -> IO ()
@@ -116,8 +138,8 @@ printCommands xs = printTable (pc xs)
 
 
 
-fromCDSLParseErrorOnLoad :: CDSLParseError -> GCEffect
-fromCDSLParseErrorOnLoad e = GCEffect { se = "Failed loading game", ve = "Failed loading game, error: " ++ show e, gcErr = [CDSLError (Right [e])] }
+fromCDSLParseErrorOnLoad :: (CDSLParseError, Int) -> GCEffect
+fromCDSLParseErrorOnLoad (e, i) = GCEffect { se = "Failed loading game", ve = "Failed loading game, error: " ++ show e ++ " on line: " ++ show i, gcErr = [CDSLError (Right [e])] }
 
 gameDataStatus :: GameData -> [GCEffect]
 gameDataStatus [] = []
