@@ -99,62 +99,6 @@ loadGameData' oldGD c = case parseFile c of
                         Just (CDSLParseError { pErr = NotAFeatureOfAttribute att f, pExpr = Null, rawExpr = "" }, n)
 
 
-        -- TODO: Change in such a way that an error is shown on invalid feature
-        {-
-        let gd = removeMaybe (map (first fromStringToFeature) nGd)
-        let (gd', errs) = readGD gd
-        let gd'' = mergeList fs gd'
-        let fx = map (second (map validateCDSLExpression)) gd''
-        let (valid, vErrs) = checkFx fx
-        if null errs
-            then
-                if null vErrs || all (null . snd) vErrs
-                    then
-                        Left gd''
-                    else
-                        Right (fixExcErrs vErrs)
-
-            else
-                Right (fixErrs errs)
-    Right e -> Right [e]
-    where
-        fixErrs :: [(Feature, [CDSLParseError])] -> [CDSLParseError]
-        fixErrs [] = []
-        fixErrs ((_, []):xs) = fixErrs xs
-        fixErrs ((f, e:ers):xs) = (e { pErr = OnLoad f (pErr e) }) : fixErrs ((f, ers):xs)
-
-        fixExcErrs :: [(Feature, [CDSLExecError])] -> [CDSLParseError]
-        fixExcErrs [] = []
-        fixExcErrs ((_, []):xs) = fixExcErrs xs
-        fixExcErrs ((f, errs):xs) = (CDSLParseError {
-            pErr = OnValidateFeature f errs
-            , pExpr = Null, rawExpr = "" }) : fixExcErrs xs
-
-        checkFx :: [(Feature, [Either CDSLExpr [CDSLExecError]])] ->
-            ([(Feature, [CDSLExpr])], [(Feature, [CDSLExecError])])
-        checkFx [] = ([], [])
-        checkFx ((f, x):xs) = case partitionEithers x of
-            (l, r) -> case checkFx xs of
-                (vl, il) -> ((f, l):vl, (f, concat r):il)
-        -}
-
-
-readGD :: [(Feature, [String])] -> ([(Feature, [CDSLExpr])], [(Feature, [CDSLParseError])])
-readGD [] = ([], [])
-readGD ((_, []):ys) = readGD ys
-readGD ((f, x:xs):ys) = case readCDSL x of
-    Left (f', ex) -> if True
-        then
-            case readGD ((f, xs):ys) of
-                (fex, ferr) -> ((f', ex):fex, ferr)
-        else
-            case readGD ((f, xs):ys) of
-                (fex, ferr) -> (fex, (f, [CDSLParseError {rawExpr=x, pExpr=Null, pErr=MissMatchFeatureError}]):ferr)
-    Right (_, err) -> case readGD ((f, xs):ys) of
-                (fex, ferr) -> (fex, (f, err):ferr)
-
-
-
 
 
 removeComments :: [String] -> [String]

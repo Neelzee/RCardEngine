@@ -24,11 +24,11 @@ module Functions (
   , elemLst
   ) where
 
-import Data.List.Extra (splitOn)
+import Data.List.Extra (splitOn, split)
 import Data.Char (isSpace)
 import Data.Maybe (fromMaybe)
 import System.Directory (listDirectory)
-import Constants (gameFolder)
+import Constants (gameFolder, gameExtension)
 import Data.CircularList (CList, focus, update, isEmpty)
 
 
@@ -113,7 +113,9 @@ removeMaybe ((x, y):xs) = case x of
 
 
 allGames :: IO [String]
-allGames = listDirectory gameFolder
+allGames = do
+  files <- listDirectory gameFolder
+  return (map (uncurry (++)) $ filter (\(_, b) -> b == gameExtension) (map (span (/='.')) files))
 
 
 count :: Eq a => a -> [a] -> Int
