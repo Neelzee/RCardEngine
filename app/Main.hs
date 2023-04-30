@@ -1,7 +1,7 @@
 module Main where
 
 import Data.List (sortOn)
-import System.Directory (listDirectory, renameFile)
+import System.Directory (listDirectory, renameFile, doesDirectoryExist, createDirectoryIfMissing)
 import System.Console.ANSI (clearScreen)
 import Control.Monad (unless, when)
 import System.IO ( hFlush, stdout )
@@ -18,6 +18,7 @@ import Functions (allGames)
 import Terminal.ExecGameCommands
     ( execGameCommands, confirmCommand, printGCEffect, fromCDSLParseErrorOnLoad,  )
 import Terminal.GameCommands (GCError (GCError, errType, UnknownFlagsError, input, UnknownCommandError, InvalidCommandArgumentError, CDSLError, MissingOrCorruptDataError), GameCommand (Help, Create, Save, cmd, Edit, Add, Update, Test, Remove, Copy, Rename, Status, Close, Clear, Quit, List, Play), Flag, commands, showAll)
+import Constants (gameFolder)
 
 -- Play the selected game
 playGame :: Int -> IO ()
@@ -101,7 +102,15 @@ mainLoop = do
 -- Main program entry point
 main :: IO ()
 main = do
+    setup
     clearScreen
     putStrLn "Welcome to CardEngine"
     mainLoop
 
+
+
+setup :: IO ()
+setup = do
+    let dir = gameFolder
+    exists <- doesDirectoryExist dir
+    createDirectoryIfMissing exists dir
