@@ -333,9 +333,9 @@ validateFeature x = case words x of
 
 
 getCardComperator :: String -> Maybe CDSLExpr
-getCardComperator "equal" = Just CEq
-getCardComperator "lesser_than" = Just CLEq
-getCardComperator "greater_than" = Just CGRq
-getCardComperator "lesser" = Just CLe
-getCardComperator "greater" = Just CGr
+getCardComperator "eq" = Just CEq
+getCardComperator "lte" = Just CLEq
+getCardComperator "gte" = Just CGRq
+getCardComperator "le" = Just CLe
+getCardComperator "ge" = Just CGr
 getCardComperator _ = Nothing

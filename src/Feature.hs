@@ -6,7 +6,9 @@ module Feature (
     , isAFeatureOf
     , featureInfo
     , validateAttribute
+    , getAttribute
 ) where
+
 
 data Attribute =
     GameAttributes
@@ -14,7 +16,15 @@ data Attribute =
     | PlayerAttributes
     | Actions
     | None
-    deriving (Show, Eq)
+    deriving (Eq, Ord)
+
+instance Show Attribute where
+    show a = case a of
+        GameAttributes -> "GAME"
+        PlayerAttributes -> "PLAYER"
+        Actions -> "ACTIONS"
+        CardAttributes -> "CARD"
+        _ -> "NO SHOW"
 
 data Feature = WinCon
     | CardSuits
@@ -50,35 +60,35 @@ data Feature = WinCon
 
 instance Show Feature where
     show f = case f of
-        WinCon -> "WIN_CON"
-        CardSuits -> "CARD_SUITS"
-        CardValues -> "CARD_VALUES"
-        CardRanks -> "CARD_RANKS"
-        EndCon -> "END_CON"
+        WinCon -> "win_con"
+        CardSuits -> "card_suits"
+        CardValues -> "card_values"
+        CardRanks -> "card_ranks"
+        EndCon -> "end_con"
         AnyTime -> "any_time"
         StartTime -> "start_time"
         TurnEndTime -> "turn_end"
         TurnStartTime -> "turn_start"
         PlayerHand -> "player_hand"
         PlayerMoves -> "player_moves"
-        PileCount -> "PILE_COUNT"
-        GameName -> "GAME_NAME"
-        Saved -> "SAVED"
-        CardConstraints -> "CARD_CONSTRAINTS"
-        CardFeatures -> "CARD"
-        PlayerFeatures -> "PLAYER"
+        PileCount -> "pile_count"
+        GameName -> "game_name"
+        Saved -> "saved"
+        CardConstraints -> "card_constraints"
+        CardFeatures -> "card"
+        PlayerFeatures -> "player"
         GameFeatures -> "GAME"
-        CardEffects -> "CARD_EFFECTS"
+        CardEffects -> "card_effects"
         CEChangeCard -> "change_card"
         CESwapHand -> "swap_hand"
         CETakeFromHand -> "take_from_hand"
         CEGiveCard -> "give_card"
         CEPassNext -> "pass_next"
         CEDrawCard -> "draw_card"
-        IgnoreConstraints -> "IGNORE_CONSTRAINTS"
-        CardCompare -> "CARD_COMPARE"
-        ExceptionConstraints -> "EXCEPTION_CONSTRAINTS"
-        TurnOrder -> "TURN_ORDER"
+        IgnoreConstraints -> "ignore_constraints"
+        CardCompare -> "card_compare"
+        ExceptionConstraints -> "exception_constraints"
+        TurnOrder -> "turn_order"
 
 
 -- Checks if the given feature is valid
@@ -180,6 +190,35 @@ isAFeatureOf EndCon GameAttributes = True
 isAFeatureOf TurnOrder GameAttributes = True
 
 isAFeatureOf _ _ = False
+
+
+getAttribute :: Feature -> Attribute
+getAttribute x = case x of
+    CEChangeCard -> CardAttributes
+    CEDrawCard -> CardAttributes
+    CEGiveCard -> CardAttributes
+    CEPassNext -> CardAttributes
+    CETakeFromHand -> CardAttributes
+    CESwapHand -> CardAttributes
+    CardEffects -> CardAttributes
+    CardConstraints -> CardAttributes
+    CardSuits -> CardAttributes
+    CardRanks -> CardAttributes
+    IgnoreConstraints -> CardAttributes
+    CardCompare -> CardAttributes
+    CardValues -> CardAttributes
+    ExceptionConstraints -> CardAttributes
+    PlayerHand -> PlayerAttributes
+    PlayerMoves -> PlayerAttributes
+    AnyTime -> Actions
+    StartTime -> Actions
+    TurnStartTime -> Actions
+    TurnEndTime -> Actions
+    WinCon -> GameAttributes
+    EndCon -> GameAttributes
+    TurnOrder -> GameAttributes
+    _ -> None
+
 
 
 featureInfo :: [(Feature, String)]

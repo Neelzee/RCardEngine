@@ -20,7 +20,7 @@ import CardGame.CardFunctions
 loadGameData :: GameData -> Int -> IO (Either GameData (CDSLParseError, Int))
 loadGameData gd n = do
     g <- allGames
-    let gm = reverse $ takeWhile (/= '.') (reverse (g !! n))
+    let gm = takeWhile (/= '.') (g !! n)
     if n < 0 || n >= length g
     then -- Shouldnt happen
         return (Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show n }, 0))
@@ -28,7 +28,7 @@ loadGameData gd n = do
         do
             content <- readFile (gameFolder ++ "/" ++ (g !! n))
             case loadGameData' gd content of
-                Left gamedata -> return (Left ((GameName, [Text (g !! n)]):gamedata))
+                Left gamedata -> return (Left ((GameName, [Text gm]):gamedata))
                 e -> return e
 
 

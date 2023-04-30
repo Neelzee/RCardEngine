@@ -13,6 +13,7 @@ import Feature (Feature, Attribute)
 import CardGame.PlayerMove (Move)
 import CardGame.Card (Card)
 
+
 data CardEffect =
     -- Choose a new card to change to, i.e. standard "Vri-Åttern"
     ChangeCard [CDSLExpr]

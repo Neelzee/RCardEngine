@@ -60,6 +60,7 @@ library
     , text
     , random
     , ansi-terminal
+    , containers
   default-language: Haskell2010
 
 executable CardEngine-exe
@@ -82,6 +83,7 @@ executable CardEngine-exe
     , time
     , bytestring
     , ansi-terminal
+    , containers
   default-language: Haskell2010
 
 test-suite CardEngine-test

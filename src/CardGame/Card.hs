@@ -30,3 +30,5 @@ shuffle' xs gen = y : shuffle' ys gen'
   where
     (index, gen') = randomR (0, length xs - 1) gen
     (y, ys) = removeNth index xs
+
+

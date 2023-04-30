@@ -1,16 +1,18 @@
 module GameData.SaveGD (saveGameData) where
 
 import GameData.GD (GameData)
-import Feature (Feature(..))
+import Feature (Feature(..), Attribute, getAttribute)
 import System.Directory (listDirectory)
 import Constants (gameFolder, gameExtension)
 import Data.List (elemIndex, intercalate)
-import CDSL.CDSLExpr (CDSLExpr(..), CDSLParseErrorCode (ParseErrorOnLine), CDSLParseError (pErr))
+import CDSL.CDSLExpr (CDSLExpr(..), CDSLParseErrorCode (ParseErrorOnLine), CDSLParseError (pErr), CardEffect (..))
 import System.IO (withFile, IOMode (WriteMode), hPrint, hPutStrLn)
 import CDSL.ExecCDSLExpr (fromCDSLToString)
 import GameData.LoadGD (loadGameData)
 import Terminal.GameCommands
-
+import Functions (lookupAll)
+import qualified Data.Map as Map
+import CardGame.CardFunctions (prettyShowCards)
 
 saveGameData :: GameData -> IO GCEffect
 saveGameData gd = do
@@ -50,13 +52,38 @@ saveGameData' gd = do
             , ve = "Saved " ++ show (length new) ++ " features."
             , gcErr = [MissingFeatureError GameName] })
     where
-        saveGD :: [(Feature, [CDSLExpr])] -> String -> IO ()
+        saveGD :: GameData -> String -> IO ()
         saveGD cd n = do
             let filtered = filter (\(f, _) -> f /= Saved && f /= GameName) cd
-            let cont = map (\(f, e) -> show f ++ "\n" ++ intercalate "," (map fromCDSLToString e)) filtered
-            let cs = intercalate "\nEND\n" cont
-            writeFile (gameFolder ++ "/" ++ n ++ gameExtension) (cs ++ "\nEND")
+            let pgd = Map.assocs $ Map.fromListWith (++) $ sortToAttributes filtered
+            print pgd
+            let cont = map (\(at, fs) -> show at ++ " {\n" ++ showContent fs ++ "\n}") pgd
+            let cs = intercalate "\n\n" cont
+            writeFile (gameFolder ++ "/" ++ n ++ gameExtension) cs
 
+        sortToAttributes :: GameData -> [(Attribute, [(Feature, [CDSLExpr])])]
+        sortToAttributes [] = []
+        sortToAttributes (x@(f, _):xs) = case getAttribute f of
+            at -> (at, [x]) : sortToAttributes xs
+
+
+        showContent :: [(Feature, [CDSLExpr])] -> String
+        showContent [] = ""
+        showContent fs = intercalate "\n" (map (uncurry showFeature) fs)
+
+        showFeature :: Feature -> [CDSLExpr] -> String
+        showFeature CardEffects [] = ""
+        showFeature CardEffects ((CEffect (ChangeCard _) crds):xs) = "change_card = [" ++ prettyShowCards crds ++ "];\n" ++ showFeature CardEffects xs
+        showFeature CardEffects ((CEffect SwapHand crds):xs) = "swap_hand = [" ++ prettyShowCards crds ++ "];\n" ++ showFeature CardEffects xs
+        showFeature CardEffects ((CEffect TakeFromHand crds):xs) = "take_from_hand = [" ++ prettyShowCards crds ++ "];\n" ++ showFeature CardEffects xs
+        showFeature CardEffects ((CEffect PassNext crds):xs) = "pass_next = [" ++ prettyShowCards crds ++ "];\n" ++ showFeature CardEffects xs
+        showFeature CardEffects ((CEffect (DrawCards i) crds):xs) = "draw_card " ++ show i ++ " = [" ++ prettyShowCards crds ++ "];\n" ++ showFeature CardEffects xs
+        showFeature CardEffects ((CEffect GiveCard crds):xs) = "give_card = [" ++ prettyShowCards crds ++ "]" ++ "\n" ++ showFeature CardEffects xs
+        showFeature ExceptionConstraints xs = show ExceptionConstraints ++ " " ++ fromCDSLToString (head xs) ++ " = [" ++ intercalate "," (map go xs) ++ "];"
+        showFeature f xs = show f ++ " = [" ++ intercalate "," (map go xs) ++ "];"
+        go :: CDSLExpr -> String
+        go (CEffect ce _) = show ce
+        go y = fromCDSLToString y
 
 findNew :: Eq a => [(a, b)] -> [(a, b)] -> [(a, b)]
 findNew [] _ = []

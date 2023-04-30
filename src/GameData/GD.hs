@@ -7,5 +7,3 @@ import CardGame.CardFunctions (makeDeck, cardElem)
 
 type GameData = [(Feature, [CDSLExpr])]
 
-
-
