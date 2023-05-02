@@ -5,7 +5,7 @@ module CardGame.PlayerMove (
 
 -- Valid moves, bool for if the move ends the turn or not
 data Move = PlayCard | DrawCard | Pass | DiscardCard
-    deriving (Eq)
+    deriving (Eq, Ord)
 
 instance Show Move where
     show PlayCard = "PLAY_CARD"

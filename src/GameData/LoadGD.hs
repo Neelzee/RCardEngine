@@ -1,20 +1,17 @@
 module GameData.LoadGD (loadGameData, loadGameData') where
 
-import System.Directory (listDirectory)
-import Constants (gameFolder, gameExtension)
+import Constants (gameFolder)
 import Data.Maybe (mapMaybe)
-import Data.Bifunctor (first, Bifunctor (second))
-import Feature (Feature (GameName, Saved, CardSuits, CardRanks, CardValues, CardEffects), fromStringToFeature, validateKeyWords, isAFeatureOf, Attribute (None), validateAttribute)
-import CDSL.ParseCardDSL (processIfString, parseStringList, parseCDSLPlayerAction, readCDSL, validateFeature)
+import Feature (Feature (GameName, CardSuits, CardRanks), isAFeatureOf, validateAttribute, Attribute (GameAttributes))
+import CDSL.ParseCDSL (readCDSL)
 import GameData.GD (GameData)
-import Functions (mergeList, removeMaybe, allGames, trim, lookupAll)
+import Functions (allGames, trim)
 import CDSL.CDSLValidater (validateCDSLExpression)
-import Data.Either (partitionEithers)
-import Data.List (stripPrefix)
-import Data.Char (isSpace)
-import Data.List.Extra (split, splitOn)
+import Data.List.Extra (splitOn)
 import CDSL.CDSLExpr
 import CardGame.CardFunctions
+import Data.Bifunctor (second)
+import qualified Data.Map as Map
 
 
 loadGameData :: GameData -> Int -> IO (Either GameData (CDSLParseError, Int))
@@ -28,7 +25,10 @@ loadGameData gd n = do
         do
             content <- readFile (gameFolder ++ "/" ++ (g !! n))
             case loadGameData' gd content of
-                Left gamedata -> return (Left ((GameName, [Text gm]):gamedata))
+                Left gamedata -> do
+                    case Map.lookup GameAttributes gamedata of
+                        Just res -> undefined
+                        Nothing -> return (Left (Map.insert GameAttributes (Map.fromList [((GameName, Nothing), [Text gm])]) gamedata))
                 e -> return e
 
 
@@ -37,16 +37,16 @@ loadGameData' oldGD c = case parseFile c of
     Left nGd -> case validateFeatureAttributes nGd of
         Left gamedata -> case validateExpr gamedata of
             Left gd -> case validateGameData gamedata of
-                Nothing -> Left (mergeList (concatMap snd gd) oldGD)
+                Nothing -> Left (Map.fromList (map (second Map.fromList) gd) `Map.union` oldGD)
                 Just (e, n) -> Right (e, n)
             Right e -> Right e
         Right e -> Right e
     Right e -> Right e
 
     where
-        validateGameData :: [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] -> Maybe (CDSLParseError, Int)
-        validateGameData gd = case (lookup CardSuits (concatMap (\(_, a, _, _) -> a) gd)
-            , lookup CardRanks (concatMap (\(_, a, _, _) -> a) gd)) of
+        validateGameData :: [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])], Int, Int)] -> Maybe (CDSLParseError, Int)
+        validateGameData gd = case (lookup CardSuits (concatMap (\(_, a, _, _) -> map (\((x, _), y) -> (x, y)) a ) gd)
+            , lookup CardRanks (concatMap (\(_, a, _, _) -> map (\((x, _), y) -> (x, y)) a ) gd)) of
             (Just suits, Just ranks) -> parse (map (\(_, d, e, f) -> (concatMap snd d, e, f)) gd)
                 where
                     parse :: [([CDSLExpr], Int, Int)] -> Maybe (CDSLParseError, Int)
@@ -65,24 +65,24 @@ loadGameData' oldGD c = case parseFile c of
 
 
 
-        validateExpr :: [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] ->
-            Either [(Attribute, [(Feature, [CDSLExpr])])] (CDSLParseError, Int)
+        validateExpr :: [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])], Int, Int)] ->
+            Either [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])])] (CDSLParseError, Int)
         validateExpr [] = Left []
-        validateExpr (x@(att, fets, st, _):xs) = case parse fets st of
+        validateExpr ((att, fets, st, _):xs) = case parse fets st of
             Just e -> Right e
             Nothing -> case validateExpr xs of
                 Left f -> Left ((att, fets):f)
                 e -> e
             where
-                parse :: [(Feature, [CDSLExpr])] -> Int -> Maybe (CDSLParseError, Int)
+                parse :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> Int -> Maybe (CDSLParseError, Int)
                 parse [] _ = Nothing
                 parse ((_, []):fs) n = parse fs n
                 parse ((f, y:ys):fs) n = case validateCDSLExpression y of
                     Left _ -> parse ((f, ys):fs) (n + 1)
-                    Right e -> Just (CDSLParseError { pErr = OnValidateFeature f e, pExpr = Null, rawExpr = "" }, n)
+                    Right e -> Just (CDSLParseError { pErr = OnValidateFeature (fst f) e, pExpr = Null, rawExpr = "" }, n)
 
-        validateFeatureAttributes :: [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] ->
-            Either [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] (CDSLParseError, Int)
+        validateFeatureAttributes :: [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])], Int, Int)] ->
+            Either [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])], Int, Int)] (CDSLParseError, Int)
         validateFeatureAttributes [] = Left []
         validateFeatureAttributes (x@(a, fets, st, _):xs) = case parse a fets st of
             Just e -> Right e
@@ -90,9 +90,9 @@ loadGameData' oldGD c = case parseFile c of
                 Left f -> Left (x:f)
                 e -> e
             where
-                parse :: Attribute -> [(Feature, [CDSLExpr])] -> Int -> Maybe (CDSLParseError, Int)
+                parse :: Attribute -> [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> Int -> Maybe (CDSLParseError, Int)
                 parse _ [] _ = Nothing
-                parse att ((f, _):fes) n = if f `isAFeatureOf` att
+                parse att (((f, _), _):fes) n = if f `isAFeatureOf` att
                     then
                         parse att fes (n + 1)
                     else
@@ -113,13 +113,13 @@ removeComments (y:ys) = rmc y : removeComments ys
             | otherwise = z : rmc zs
 
 
-parseFile :: String -> Either [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] (CDSLParseError, Int)
+parseFile :: String -> Either [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])], Int, Int)] (CDSLParseError, Int)
 parseFile xs = case parseAttributes (removeComments $ lines xs) 1 of
     Left ys -> parse ys
     Right e -> Right e
     where
         parse :: [(Attribute, [String], Int, Int)] ->
-            Either [(Attribute, [(Feature, [CDSLExpr])], Int, Int)] (CDSLParseError, Int)
+            Either [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])], Int, Int)] (CDSLParseError, Int)
         parse [] = Left []
         parse ((at, ys, st, ed):zs) = case parseFeatures (concatFeatures (unlines ys)) st of
             Left fet -> case parse zs of
@@ -155,7 +155,7 @@ parseAttributes (x:xs) n = case validateAttribute (trim $ takeWhile (/= '{') x) 
 concatFeatures :: String -> [String]
 concatFeatures xs = splitOn ";" (unwords (map trim (words xs)))
 
-parseFeatures :: [String] -> Int -> Either [(Feature, [CDSLExpr])] (CDSLParseError, Int)
+parseFeatures :: [String] -> Int -> Either [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] (CDSLParseError, Int)
 parseFeatures [] _ = Left []
 parseFeatures ("":xs) n = parseFeatures xs n
 parseFeatures (x:xs) n = case readCDSL x of
@@ -163,8 +163,3 @@ parseFeatures (x:xs) n = case readCDSL x of
         Left fs -> Left (fe:fs)
         e -> e
     Right (f, er) -> Right (CDSLParseError {pErr=OnValidateExpressions f er, pExpr=Null, rawExpr=x}, n)
-
-
-
-test :: String -> IO ()
-test str = print (parseFile str)

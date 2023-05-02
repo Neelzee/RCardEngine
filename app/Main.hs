@@ -13,12 +13,13 @@ import CDSL.CDSLExpr ( CDSLExpr(Numeric, Text) )
 import Terminal.GameCommands (GameCommand(Play, Create), GCEffect (GCEffect, se, ve, gcErr))
 import Terminal.ValidateGameCommands (validateGameCommand)
 import GameEditor (editor)
-import Feature (Feature(GameName))
-import Functions (allGames)
+import Feature
+import Functions (allGames, lookupM)
 import Terminal.ExecGameCommands
     ( execGameCommands, confirmCommand, printGCEffect, fromCDSLParseErrorOnLoad,  )
 import Terminal.GameCommands (GCError (GCError, errType, UnknownFlagsError, input, UnknownCommandError, InvalidCommandArgumentError, CDSLError, MissingOrCorruptDataError), GameCommand (Help, Create, Save, cmd, Edit, Add, Update, Test, Remove, Copy, Rename, Status, Close, Clear, Quit, List, Play), Flag, commands, showAll)
 import Constants (gameFolder)
+import qualified Data.Map as Map
 
 -- Play the selected game
 playGame :: Int -> IO ()
@@ -53,7 +54,8 @@ mainLoop = do
                     if res
                         then
                             do
-                                editor [(GameName, [Text gm])]
+                                let im = (Map.fromList [((GameName, Just []), [Text gm])])
+                                editor (Map.fromList [(GameAttributes, im)])
                                 mainLoop
                         else
                             mainLoop
@@ -63,16 +65,17 @@ mainLoop = do
                 if i `elem` [0..(length g)]
                     then
                         do
-                            res <- loadGameData [] i
+                            res <- loadGameData Map.empty i
                             case res of
                                 Left gd' -> do
-                                    gce <- case lookup GameName gd' of
-                                        Just [Text gm] -> return [GCEffect { se = "Loaded GameData: " ++ gm
-                                            , ve = "Loaded GameData: " ++ gm
-                                            , gcErr = [] }]
-                                        _ -> return [GCEffect { se = "Loaded GameData"
-                                            , ve = "Loaded GameData"
-                                            , gcErr = [GCError { errType = MissingOrCorruptDataError "No GameName Found", input = showAll gc}] }]
+                                    gce <- case Map.lookup GameAttributes gd' of
+                                        Just att -> case lookupM GameName att of
+                                            Just (_, [Text gm]) -> return [GCEffect { se = "Loaded GameData: " ++ gm
+                                                , ve = "Loaded GameData: " ++ gm
+                                                , gcErr = [] }]
+                                            _ -> return [GCEffect { se = "Loaded GameData"
+                                                , ve = "Loaded GameData"
+                                                , gcErr = [GCError { errType = MissingOrCorruptDataError "No GameName Found", input = showAll gc}] }]
                                     r <- confirmCommand gc gce flg
                                     if r
                                         then

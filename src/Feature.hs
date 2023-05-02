@@ -55,7 +55,7 @@ data Feature = WinCon
     | CEDrawCard
     | CardCompare
     | TurnOrder
-    deriving (Eq)
+    deriving (Eq, Ord)
 
 
 instance Show Feature where

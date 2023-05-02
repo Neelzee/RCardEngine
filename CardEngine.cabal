@@ -34,7 +34,7 @@ library
       GameData.LoadGD
       GameData.SaveGD
       Constants
-      CDSL.ParseCardDSL
+      CDSL.ParseCDSL
       CDSL.CDSLExpr
       CDSL.ExecCDSLExpr
       CDSL.CDSLValidater
@@ -43,7 +43,6 @@ library
       Terminal.GameCommands
       Terminal.ValidateGameCommands
       Terminal.ExecGameCommands
-      Terminal.GameTerminal
   other-modules:
       Paths_CardEngine
   hs-source-dirs:

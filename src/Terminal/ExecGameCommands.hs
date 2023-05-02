@@ -14,9 +14,9 @@ import GameData.GD (GameData)
 import CDSL.CDSLExpr
     ( infoCDSL, showF, CDSLExpr(Text), CDSLParseError )
 import System.Console.ANSI (clearScreen)
-import Functions (allGames)
+import Functions (allGames, lookupM)
 import Feature
-    ( featureInfo, fromStringToFeature, Feature(GameName, Saved) )
+    ( featureInfo, fromStringToFeature, Feature(GameName, Saved), Attribute (GameAttributes) )
 import GameData.LoadGD ( loadGameData )
 import Control.Monad (zipWithM, when)
 import Terminal.GameCommands
@@ -30,7 +30,8 @@ import Terminal.GameCommands
       GameCommand(GameCommand, Help, Clear, List) )
 import System.IO (hFlush, stdout)
 import Terminal.ValidateGameCommands (validateGCFlags, validateGameCommand)
-import CDSL.ParseCardDSL (parseOneCDSL)
+import CDSL.ParseCDSL (parseOneCDSL)
+import qualified Data.Map as Map (empty, lookup)
 
 
 execGameCommands :: GameCommand -> IO ()
@@ -126,15 +127,17 @@ printTable rows = do
 listGameData :: IO [GCEffect]
 listGameData = do
     games <- allGames
-    agd <- zipWithM (\ _x i -> loadGameData [] i) games [0..]
+    agd <- zipWithM (\ _x i -> loadGameData Map.empty i) games [0..]
     return (listGameData' agd 0)
     where
         listGameData' :: [Either GameData (CDSLParseError, Int)] -> Int -> [GCEffect]
         listGameData' [] _ = []
         listGameData' (x:xs) n = case x of
-            Left gd -> case lookup GameName gd of
-                Just (Text gm:_) -> GCEffect { se = show n ++ " " ++ gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1)
-                _ -> GCEffect { se = "Failed listing game: " ++ show n ++ ", found no name", ve = "Failed loading game: " ++ show n ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ show n)]} : listGameData' xs (n + 1)
+            Left gd -> case Map.lookup GameAttributes gd of
+                Just att -> case lookupM GameName att of
+                    Just (_, Text gm:_) -> GCEffect { se = show n ++ " " ++ gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1)
+                    _ -> GCEffect { se = "Failed listing game: " ++ show n ++ ", found no name", ve = "Failed loading game: " ++ show n ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ show n)]} : listGameData' xs (n + 1)
+                _ -> undefined
             Right (e, i) -> GCEffect { se = "Failed listing game: " ++ show n, ve = "Failed loading game: " ++ show n ++ ", error at: " ++ show e ++ ", at line: " ++ show i, gcErr = [CDSLError (Right [e])] } : listGameData' xs (n + 1)
 
 
@@ -151,7 +154,22 @@ fromCDSLParseErrorOnLoad :: (CDSLParseError, Int) -> GCEffect
 fromCDSLParseErrorOnLoad (e, i) = GCEffect { se = "Failed loading game", ve = "Failed loading game, error: " ++ show e ++ " on line: " ++ show i, gcErr = [CDSLError (Right [e])] }
 
 gameDataStatus :: GameData -> [GCEffect]
-gameDataStatus [] = []
-gameDataStatus ((Saved, _):xs) = gameDataStatus xs
-gameDataStatus ((GameName, _):xs) = gameDataStatus xs
-gameDataStatus ((f, s):xs) = GCEffect { se = show f, ve = "Feature " ++ show f ++ " : Statement ->\n\t" ++ intercalate "\n\t" (map fromCDSLToString s), gcErr = []}: gameDataStatus xs
+gameDataStatus gd = undefined
+
+
+
+gds :: (Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])]) -> GCEffect
+gds (att, fs) = GCEffect { 
+    ve = show att ++ "\n" ++ intercalate "\n\t" (showVE fs) 
+    , se = "Attribute:" ++ "\n\t" ++ show att ++ "\n\t\tFeatures:" ++ intercalate "\n\t\t" (showSE fs)
+    , gcErr = []
+    }
+    where
+        showVE :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [String]
+        showVE [] = []
+        showVE (((fet, _), _):xs) = show fet : showVE xs
+
+        showSE :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [String]
+        showSE [] = []
+        showSE (((fet, Nothing), ex):xs) = (show fet ++ "\n\t\t\tExpressions:" ++ intercalate "\n\t\t\t" (map fromCDSLToString ex)) : showVE xs
+        showSE (((fet, Just arg), ex):xs) = (show fet ++ "\n\t\t\tArguments:" ++ intercalate "\n\t\t\t" (map fromCDSLToString arg) ++ "\n\t\t\tExpressions:" ++ intercalate "\n\t\t\t" (map fromCDSLToString ex)) : showVE xs

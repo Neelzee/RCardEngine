@@ -1,12 +1,12 @@
 module CDSLExprTest.CDSLParseListSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import CDSL.ParseCardDSL (parseStringList)
+import CDSL.ParseCDSL (parseStringList)
 import CDSL.CDSLExpr
 
 
 moduleName :: String -> String
-moduleName = ("ParseCardDSL." ++)
+moduleName = ("ParseCDSL." ++)
 
 exprTest :: String -> String
 exprTest s = "should parse '" ++ s ++ "'"

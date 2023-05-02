@@ -1,7 +1,7 @@
 module CDSLExprTest.CDSLParseExprSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import CDSL.ParseCardDSL
+import CDSL.ParseCDSL
 import CDSL.CDSLExpr
 import CDSL.CDSLExpr (CDSLExpr (CurrentPlayer, PMoves, Always))
 import Feature
@@ -11,7 +11,7 @@ import CardGame.Card
 
 
 moduleName :: String -> String
-moduleName = ("ParseCardDSL." ++)
+moduleName = ("ParseCDSL." ++)
 
 exprTest :: String -> String
 exprTest s = "should parse '" ++ s ++ "'"

@@ -4,10 +4,10 @@ module CDSLExprTest.ValidateFeatureSpec where
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
 
 import Feature (Feature (CEDrawCard))
-import CDSL.ParseCardDSL (validateFeature)
+import CDSL.ParseCDSL (validateFeature)
 
 moduleName :: String -> String
-moduleName = ("ParseCardDSL." ++)
+moduleName = ("ParseCDSL." ++)
 
 exprTest :: String -> String
 exprTest s = "should parse '" ++ s ++ "'"

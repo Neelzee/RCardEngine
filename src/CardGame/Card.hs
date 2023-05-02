@@ -13,11 +13,14 @@ data Card = Card {
     , rank :: String
     , cScore :: Int
 }
+    deriving (Ord)
 instance Show Card where
     show (Card s cn cv) = s ++ "." ++ cn ++ "." ++ show cv
 
 instance Eq Card where
     (Card s1 cn1 _) == (Card s2 cn2 _) = s1 == s2 && cn1 == cn2
+
+
 
 
 shuffle :: [a] -> [a]

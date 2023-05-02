@@ -1,4 +1,4 @@
-module CDSL.ParseCardDSL (
+module CDSL.ParseCDSL (
     isCDSLExprNumeric
     , parseCDSLPlayerAction
     , parseStringList
@@ -96,30 +96,30 @@ getCardFields (x:xs) = case x of
         Right err -> Right (CDSLParseError { pErr = NotACardFieldError, pExpr = Null, rawExpr = x }:err)
         _ -> Right [CDSLParseError { pErr = NotACardFieldError, pExpr = Null, rawExpr = x }]
 
-readCDSL :: String -> Either (Feature, [CDSLExpr]) (Maybe Feature, [CDSLParseError])
+readCDSL :: String -> Either ((Feature, Maybe [CDSLExpr]), [CDSLExpr]) (Maybe Feature, [CDSLParseError])
 readCDSL xs = do
     let (y, ys) = (takeWhile (/='=') xs, removeFirst (dropWhile (/='=') xs) '=')
     case validateFeature (unpack $ strip $ pack y) of
         -- Cards
         Left CEDrawCard -> case readMaybe (unwords (drop 1 (words y))) :: Maybe Int of
-            Just i -> Left (CardEffects, [CEffect (DrawCards i) (getCards (stringToList ys))])
+            Just i -> Left ((CEDrawCard, Just [Numeric i]), [CEffect (DrawCards i) (getCards (stringToList ys))])
             Nothing -> Right (Just CardEffects, [CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = show (drop 1 (words y)) }])
-        Left CESwapHand -> Left (CardEffects, [CEffect SwapHand (getCards (stringToList ys))])
+        Left CESwapHand -> Left ((CESwapHand, Nothing), [CEffect SwapHand (getCards (stringToList ys))])
         Left CEChangeCard -> case getCardFields (drop 1 (words y)) of
-            Left ex -> Left (CardEffects, [CEffect (ChangeCard ex) (getCards (stringToList ys))])
+            Left ex -> Left ((CEChangeCard, Nothing), [CEffect (ChangeCard ex) (getCards (stringToList ys))])
             Right err -> Right (Just CEChangeCard, err)
-        Left CETakeFromHand -> Left (CardEffects, [CEffect TakeFromHand (getCards (stringToList ys))])
-        Left CEPassNext -> Left (CardEffects, [CEffect PassNext (getCards (stringToList ys))])
-        Left CEGiveCard -> Left (CardEffects, [CEffect GiveCard (getCards (stringToList ys))])
-        Left PlayerMoves -> Left (PlayerMoves, map (uncurry PlayerAction) (mapMaybe parsePlayerMove (stringToList ys)))
+        Left CETakeFromHand -> Left ((CETakeFromHand, Nothing), [CEffect TakeFromHand (getCards (stringToList ys))])
+        Left CEPassNext -> Left ((CEPassNext, Nothing), [CEffect PassNext (getCards (stringToList ys))])
+        Left CEGiveCard -> Left ((CEGiveCard, Nothing), [CEffect GiveCard (getCards (stringToList ys))])
+        Left PlayerMoves -> Left ((PlayerMoves, Nothing), map (uncurry PlayerAction) (mapMaybe parsePlayerMove (stringToList ys)))
         Left ExceptionConstraints -> case getCardComperator (unwords (drop 1 (words y))) of
             Just cc -> case parseExpr (stringToList ys) of
-                Left expr -> Left (ExceptionConstraints, cc:expr)
+                Left expr -> Left ((ExceptionConstraints, Just [cc]), expr)
                 Right err -> Right (Just ExceptionConstraints, err)
             _ -> Right (Just ExceptionConstraints, [CDSLParseError {rawExpr=xs, pExpr=Null, pErr=InvalidFeatureArgumentError}])
-        Left IgnoreConstraints -> Left (IgnoreConstraints, [Cards (getCards (stringToList ys))])
+        Left IgnoreConstraints -> Left ((IgnoreConstraints, Nothing), [Cards (getCards (stringToList ys))])
         Left f -> case parseExpr (stringToList ys) of
-            Left exprs -> Left (f, exprs)
+            Left exprs -> Left ((f, Nothing), exprs)
             Right err -> Right (Just f, err)
         Right err -> Right (Nothing, [err])
 

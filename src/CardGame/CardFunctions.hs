@@ -40,7 +40,7 @@ prettyPrintCards :: [Card] -> IO ()
 prettyPrintCards xs = putStrLn (intercalate ", " (map show xs))
 
 prettyShowCards :: [Card] -> String
-prettyShowCards xs = intercalate ", " (map show xs)
+prettyShowCards xs = intercalate ", " (map (\(Card s r _) -> s ++ "." ++ r) xs)
 cardElem :: Card -> [Card] -> Bool
 cardElem _ [] = False
 cardElem c@(Card s r _) ((Card ss rr _):xs)

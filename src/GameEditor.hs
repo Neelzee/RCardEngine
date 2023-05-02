@@ -1,9 +1,10 @@
 module GameEditor (editor) where
 
+import Prelude hiding (lookup)
 import GHC.IO.Handle (hFlush)
 import System.IO (stdout)
 import Data.List (intercalate)
-import Feature (Feature (Saved, GameName))
+import Feature (Feature (Saved, GameName), Attribute (GameAttributes), getAttribute)
 import GameData.GD (GameData)
 import CDSL.CDSLExpr (CDSLExpr(Text))
 import CDSL.ExecCDSLExpr (fromCDSLToString)
@@ -13,24 +14,24 @@ import Terminal.ExecGameCommands (confirmCommand, printGCEffect)
 import qualified Terminal.ExecGameCommands as ExecGameCommands (execGameCommands)
 import GameData.SaveGD (saveGameData)
 import CDSL.CDSLValidater (validateCDSLExpression)
+import Data.Map (lookup, insert, fromList, delete, toList)
+import Functions (lookupM)
+import System.Directory (getAccessTime)
+import Data.Bifunctor (second)
 
 editor :: GameData -> IO ()
 editor gd = do
-    case lookup GameName gd of
-        Just (Text nm:_) -> putStr ("edit -> " ++ nm ++ " > ")
+    case lookup GameAttributes gd of
+        Just ga -> case lookup (GameName, Nothing) ga of
+            Just (Text nm:_) -> putStr ("edit -> " ++ nm ++ " > ")
+            _ -> putStr "edit > "
         _ -> putStr "edit > "
     hFlush stdout
     c <- getLine
     case validateGameCommand c of
         Left cm -> case cm of
             (Close flg) -> do
-                gce <-case (lookup Saved gd, lookup GameName gd) of
-                    (Just _, Just [Text gm]) -> do
-                        let (diff, _) = span ((/=Saved) . fst) gd
-                        let gc = GCEffect { se = "Closing GameData " ++ gm, ve = "Thrashed a total of " ++ show (length diff - 1) ++ " features", gcErr = [] }
-                        return [gc]
-                    _ -> return [GCEffect { se = "Closing GameData", ve = "Trashed a total of " ++ show (length gd - 1) ++ " features", gcErr = [] }]
-                res <- confirmCommand cm gce flg
+                res <- confirmCommand cm [GCEffect { se = "Closing GameData", ve = "Closing GameData", gcErr = []}] flg
                 if res
                     then
                         return ()
@@ -57,16 +58,45 @@ execGameCommand c gd = case c of
                 printGCEffect gce flg
                 return gd
         else
-            do
-                let gce = [GCEffect { se = "Added " ++ show fs, ve = "Added feature " ++ show fs ++ ":\n" ++ intercalate "\n" (map fromCDSLToString s), gcErr = [] }]
-                res <- confirmCommand c gce flg
-                if res
-                    then
-                        do
-                            return ((fs, s):gd)
-                    else
-                        do
-                            return gd
+            case lookup (getAttribute fs) gd of
+                Just att -> case lookupM fs att of
+                    Just (k, vl) -> do
+                        let gce = [GCEffect { se = "Added new content too feature.", ve = "Added: " ++ intercalate "\n\t" (map fromCDSLToString s), gcErr = []}]
+                                ++ [GCEffect { se = "", ve = "Pre-existing: " ++ intercalate "\n\t" (map fromCDSLToString vl), gcErr = []}]
+                                ++ [GCEffect { se = "", ve = "New: " ++ intercalate "\n\t" (map fromCDSLToString s), gcErr = []}]
+                        res <- confirmCommand c gce flg
+                        if res
+                            then
+                                do
+                                    let att' = insert k (vl ++ s) att
+                                    let gd' = insert (getAttribute fs) att' gd
+                                    return gd'
+                            else
+                                return gd
+                    Nothing -> do
+                        let gce = [GCEffect { se = "Added " ++ show fs, ve = "Added feature " ++ show fs ++ ":\n" ++ intercalate "\n" (map fromCDSLToString s), gcErr = [] }]
+                        res <- confirmCommand c gce flg
+                        if res
+                            then
+                                do
+                                    let att' = insert (fs, Nothing) s att
+                                    let gd' = insert (getAttribute fs) att' gd
+                                    return gd'
+                            else
+                                return gd
+
+                Nothing -> do
+                        let gce = [GCEffect { se = "Added new feature: " ++ show fs ++ ", which is part of a new attribute: " ++ show (getAttribute fs), ve = "Added feature " ++ show fs ++ ":\n" ++ intercalate "\n" (map fromCDSLToString s), gcErr = [] }]
+                        res <- confirmCommand c gce flg
+                        if res
+                            then
+                                do
+                                    let gd' = insert (getAttribute fs) (fromList [((fs, Nothing), s)]) gd
+                                    return gd'
+                            else
+                                return gd
+
+
 
     -- Test command
     (Test f exprs flgs) -> do
@@ -103,31 +133,32 @@ execGameCommand c gd = case c of
                 printGCEffect gce flg
                 return gd
         else
-            case lookup fs gd of
-                Just old -> do
-                    let (gd', gc) = removeFeature gd [fs]
-                    let gce = gc
-                            ++[
-                            GCEffect { se = "Updated " ++ show fs
-                                , ve = "Updated " ++ show fs ++ " from\n" ++ intercalate "\n\t" (map fromCDSLToString old) ++ "\nto\n" ++ intercalate "\n\t" (map fromCDSLToString s)
-                                , gcErr = []}]
-                    res <- confirmCommand c gce flg
-                    if res
-                        then
-                            return gd'
-                        else
-                            return gd
-
+            case lookup (getAttribute fs) gd of
+                Just att -> case lookupM fs att of
+                    Just (_, old) -> do
+                        let (gd', gc) = removeFeature gd [fs]
+                        let gce = gc
+                                ++[
+                                GCEffect { se = "Updated " ++ show fs
+                                    , ve = "Updated " ++ show fs ++ " from\n" ++ intercalate "\n\t" (map fromCDSLToString old) ++ "\nto\n" ++ intercalate "\n\t" (map fromCDSLToString s)
+                                    , gcErr = []}]
+                        res <- confirmCommand c gce flg
+                        if res
+                            then
+                                return gd'
+                            else
+                                return gd
+                    Nothing -> do
+                        let gce = [GCEffect { se = "No GameData too update feature.", ve = "No GameData too update feature '" ++ show fs ++ "'",
+                        gcErr = [GCError { errType = NoGameDataError, input = showAll c }]}]
+                        printGCEffect gce flg
+                        return gd
                 Nothing -> do
-                    let gce =[GCEffect { se = show fs ++ " not found in " ++ case lookup GameName gd of
-                            Just [Text gm] -> gm ++ "."
-                            _ -> "gamedata."
-                        , ve = show fs ++ " not found in " ++ case lookup GameName gd of
-                            Just [Text gm] -> gm ++ "."
-                            _ -> "gamedata."
-                        , gcErr = [GCError { errType = MissingFeatureError fs, input = showAll c }]}]
+                    let gce = [GCEffect { se = "No GameData too update feature.", ve = "No GameData too update feature '" ++ show fs ++ "'",
+                    gcErr = [GCError { errType = NoGameDataError, input = showAll c }]}]
                     printGCEffect gce flg
                     return gd
+
     -- remove
     (Remove features flg) -> if null gd
         then
@@ -174,20 +205,13 @@ execGameCommand c gd = case c of
                 return gd
         else
             do
-                (gce, gds) <- case lookup Saved gd of
-                    Just _ -> do
-                        let (_, diff) = span ((/=Saved) . fst) gd
-                        let (_, ecc) = removeFeature gd [Saved]
-                        let gc = GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length diff - 1) ++ " new features", gcErr = [] }
-                        return (gc:ecc, gd)
-                    Nothing -> return ([GCEffect { se = "Saved game data", ve = "Saved a total of " ++ show (length gd - 1) ++ " features", gcErr = [] }], (Saved, []):gd)
+                let gce = [GCEffect { se = "Saving GameData", ve = "Saving GameData", gcErr = [] }]
                 res <- confirmCommand c gce flg
                 if res
                     then
                         do
-                            let (gd', _) = removeFeature gd [Saved]
-                            _ <- saveGameData gds
-                            return ((Saved, []) : gd')
+                            _ <- saveGameData gd
+                            return gd
                     else
                         return gd
     _ -> do
@@ -209,24 +233,36 @@ removeFeature fs xs = removeFeature' fs xs []
 
 removeFeature' :: GameData -> [Feature] -> [GCEffect] -> (GameData, [GCEffect])
 removeFeature' gd [] ecc = (gd, ecc)
-removeFeature' [] _ ecc = ([], ecc)
-removeFeature' gd (f:xs) ecc = case lookup f gd of
-        Just old -> do
-            let gd' = rmFirst f gd
-            removeFeature' gd' xs (GCEffect { se = "Removed: " ++ show f, ve = "Removed: " ++ show f ++ " : " ++ intercalate "," (map show old), gcErr = [] }:ecc)
+removeFeature' gd (f:xs) ecc = case lookup (getAttribute f) gd of
+        Just att -> case lookupM f att of
+            Just (k, old) -> do
+                let gd' = rmFirst (getAttribute f) k gd
+                removeFeature' gd' xs (GCEffect { se = "Removed: " ++ show f, ve = "Removed: " ++ show f ++ " : " ++ intercalate "," (map show old), gcErr = [] }:ecc)
+            Nothing -> removeFeature' gd xs (GCEffect { se = "No instance of " ++ show f ++ " found.", ve = "No instance of " ++ show f ++ " found."
+                , gcErr = [GCError { errType = MissingFeatureError f, input = show f }]}:ecc)
         Nothing -> removeFeature' gd xs (GCEffect { se = "No instance of " ++ show f ++ " found.", ve = "No instance of " ++ show f ++ " found."
             , gcErr = [GCError { errType = MissingFeatureError f, input = show f }]}:ecc)
     where
-        rmFirst :: Feature -> GameData -> GameData
-        rmFirst _ [] = []
-        rmFirst x (y@(z, _):ws)
-            | x == z = ws
-            | otherwise = y : rmFirst x ws
+        rmFirst :: Attribute -> (Feature, Maybe [CDSLExpr]) -> GameData -> GameData
+        rmFirst x y mp = case lookup x mp of
+            Just mp' -> insert x (delete y mp') mp
+            Nothing -> mp
 
 
 
 gameDataStatus :: GameData -> [GCEffect]
-gameDataStatus [] = []
-gameDataStatus ((Saved, _):xs) = gameDataStatus xs
-gameDataStatus ((GameName, _):xs) = gameDataStatus xs
-gameDataStatus ((f, s):xs) = GCEffect { se = show f, ve = "Feature " ++ show f ++ " : Statement ->\n\t" ++ intercalate "\n\t" (map fromCDSLToString s), gcErr = []}: gameDataStatus xs
+gameDataStatus mp = gameDataStatus' (map (second toList) (toList mp))
+
+gameDataStatus' :: [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])])] -> [GCEffect]
+gameDataStatus' [] = []
+gameDataStatus' ((at, fs):xs)
+    = GCEffect {
+        se = show at ++ "\n\t" ++ intercalate "\n\t" (map (\(f, _) -> show f) fs)
+        , ve = show at ++ "\n\tFeatures:" ++ intercalate "\n\t\t" (map pShow fs)
+        , gcErr = []
+    } : gameDataStatus' xs
+    where
+        pShow :: ((Feature, Maybe [CDSLExpr]), [CDSLExpr]) -> String
+        pShow ((fet, args), exprs) = case args of
+            Just arg -> show fet ++ ", with arguments: " ++ intercalate ", " (map fromCDSLToString arg) ++ " ->\n\t\t\t" ++ intercalate "\n\t\t\t" (map fromCDSLToString exprs)
+            Nothing -> show fet ++ " ->\n\t\t\t" ++ intercalate "\n\t\t\t" (map fromCDSLToString exprs)

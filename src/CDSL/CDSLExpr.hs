@@ -29,7 +29,7 @@ data CardEffect =
     | DrawCards Int
     -- Nothing happens
     | Blank
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- Card Domain Specific Language
 data CDSLExpr =
@@ -130,7 +130,7 @@ data CDSLExpr =
     | CGRq
     -- Null value, is not used in normal expressions, and just in error messages
     | Null
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 data CDSLParseError =
     CDSLParseError
