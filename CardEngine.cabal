@@ -108,4 +108,5 @@ test-suite CardEngine-test
     , ansi-terminal
     , random
     , hspec
+    , containers
   default-language: Haskell2010

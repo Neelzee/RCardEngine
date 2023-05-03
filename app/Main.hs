@@ -54,7 +54,7 @@ mainLoop = do
                     if res
                         then
                             do
-                                let im = (Map.fromList [((GameName, Just []), [Text gm])])
+                                let im = Map.fromList [((GameName, Just []), [Text gm])]
                                 editor (Map.fromList [(GameAttributes, im)])
                                 mainLoop
                         else

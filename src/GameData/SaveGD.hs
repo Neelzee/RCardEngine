@@ -37,7 +37,12 @@ saveGameData gd = do
 
 
         sortToAttributes :: [(Attribute, Map.Map (Feature, Maybe [CDSLExpr]) [CDSLExpr])] -> [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])])]
-        sortToAttributes = map (second Map.toList)
+        sortToAttributes = map (second (check . Map.toList))
+            where
+                check :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [((Feature, Maybe [CDSLExpr]), [CDSLExpr])]
+                check [] = []
+                check (((GameName, _), _):xs) = check xs
+                check (x:xs) = x : check xs
 
 
         showContent :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> String
@@ -49,34 +54,5 @@ saveGameData gd = do
         showFeature (f, Just arg) xs = show f ++ " " ++ intercalate ", " (map fromCDSLToString arg)  ++ " = [" ++ intercalate "," (map go xs) ++ "];"
 
         go :: CDSLExpr -> String
-        go (CEffect ce _) = show ce
+        go (CEffect _ cs) = prettyShowCards cs
         go y = fromCDSLToString y
-
-findNew :: Eq a => [(a, b)] -> [(a, b)] -> [(a, b)]
-findNew [] _ = []
-findNew _ [] = []
-findNew old (y:ys) = case lookup (fst y) old of
-    Just _ -> findNew old ys
-    Nothing -> y : findNew old ys
-
-findDiff :: Eq a => Eq b => [(a, b)] -> [(a, b)] -> [(a, b)]
-findDiff [] _ = []
-findDiff _ [] = []
-findDiff old (y:ys) = case lookup (fst y) old of
-    Just o -> if o == snd y
-        then
-            findDiff old ys
-        else
-            y : findDiff old ys
-    Nothing -> findDiff old ys
-
-findSim :: Eq a => Eq b => [(a, b)] -> [(a, b)] -> [(a, b)]
-findSim [] _ = []
-findSim _ [] = []
-findSim old (y:ys) = case lookup (fst y) old of
-    Just o -> if o == snd y
-        then
-            findSim old ys
-        else
-            y : findSim old ys
-    Nothing -> findSim old ys

@@ -136,7 +136,7 @@ listGameData = do
         listGameData' (x:xs) n g = case x of
             Left gd -> case Map.lookup GameAttributes gd of
                 Just att -> case lookupM GameName att of
-                    Just (_, Text gm:_) -> GCEffect { se = (g !! n) ++ " " ++ gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1) g
+                    Just (_, Text gm:_) -> GCEffect { se = show n ++ ": " ++ gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1) g
                     _ -> GCEffect { se = "Failed listing game: " ++ (g !! n) ++ ", found no name", ve = "Failed loading game: " ++ (g !! n) ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ (g !! n))]} : listGameData' xs (n + 1) g
                 _ -> GCEffect { se = "Failed listing game: " ++ (g !! n) ++ ", found no name", ve = "Failed loading game: " ++ (g !! n) ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ (g !! n))]} : listGameData' xs (n + 1) g
             Right (e, i) -> GCEffect { se = "Failed listing game: " ++ (g !! n), ve = "Failed loading game: " ++ (g !! n) ++ ", error at: " ++ show e ++ ", at line: " ++ show i, gcErr = [CDSLError (Right [e])] } : listGameData' xs (n + 1) g
