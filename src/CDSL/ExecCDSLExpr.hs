@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use lambda-case" #-}
 module CDSL.ExecCDSLExpr (
     placeCardStmt
     , compareCards
@@ -22,6 +24,8 @@ import Text.Read (readMaybe, Lexeme (String))
 import CardGame.CardFunctions (prettyPrintCards)
 import Extra (sleep)
 import CardGame.PlayerMove (Move(Pass))
+import CDSL.ParseCDSL (toNumeric)
+import Data.Maybe (mapMaybe)
 
 
 placeCardStmt :: [CDSLExpr] -> (Game -> Card -> Bool)
@@ -86,22 +90,23 @@ execCDSLGame ((Shuffle a):xs) g = case a of
 execCDSLGame (Reset (CurrentPlayer PMoves):xs) g = case focus (players g) of
     Just p -> execCDSLGame xs (g { players = update (p { moves = playerMoves g }) (players g) })
     Nothing -> return g
-execCDSLGame (AffectPlayer ce:xs) g = case ce of
+execCDSLGame (AffectPlayer ce ar:xs) g = case ce of
     PassNext -> do
         putStrLn "Your turn was passed."
         sleep 1
         execCDSLGame (turnOrder g ++ xs) g
-    (DrawCards n) -> case focus (players g) of
-        Just p -> do
+    DrawCards -> case (focus (players g), ar) of
+        (Just p, Just arg) -> do
+            let n = sum $ map (\a -> case a of Numeric i -> i; _ -> 0) (mapMaybe toNumeric arg)
             putStrLn ("You must draw " ++ show n ++ " cards")
             sleep 1
             let crds = take n (deck g)
             execCDSLGame xs (g { players = update (p { hand = crds ++ hand p }) (players g) })
-        Nothing -> if isEmpty (players g)
+        _ -> if isEmpty (players g)
             then
                 return g
             else
-                 execCDSLGame (turnOrder g ++ [AffectPlayer ce] ++ xs) g
+                 execCDSLGame (turnOrder g ++ [AffectPlayer ce ar] ++ xs) g
     _ -> execCDSLGame xs g
 execCDSLGame (TOLeft:xs) g = execCDSLGame xs (g { players = rotL (players g) })
 execCDSLGame (TORight:xs) g = execCDSLGame xs (g { players = rotR (players g) })
@@ -235,33 +240,33 @@ fromCDSLToCard x = case x of
     _ -> Nothing
 
 
-execCardEffect :: CardEffect -> Game -> Player -> IO Game
-execCardEffect ce g plr = case ce of
-    ChangeCard xs -> do
-        c <- createCard xs g
+execCardEffect :: (CardEffect, Maybe [CDSLExpr]) -> Game -> Player -> IO Game
+execCardEffect (ce, a) g plr = case (ce, a) of
+    (ChangeCard, Just arg) -> do
+        c <- createCard arg g
         let pc = fst $ head (pile g)
         return (g { pile = (pc, Just c) : drop 1 (pile g) })
 
-    GiveCard -> do
+    (GiveCard, _) -> do
         (p, i) <- choosePlayer g plr
         (p', c) <- chooseCard plr
         let plrs = rotatePlr g i (update (p { hand = c:hand p }) (players g)  )
         return (g { players = rotatePlrBack g i (update p' plrs) })
 
-    SwapHand -> do
+    (SwapHand, _) -> do
         (p, i) <- choosePlayer g plr
         let plrs = rotatePlr g i (update (plr { hand = hand p }) (players g))
         return (g { players = rotatePlrBack g i (update (p { hand = hand plr }) plrs) })
 
-    TakeFromHand -> do
+    (TakeFromHand, _) -> do
         (p, i) <- choosePlayer g plr
         (p', c) <- chooseCard p
         let plrs = rotatePlr g i (update (p { hand = c:hand p }) (players g)  )
         return (g { players = rotatePlrBack g i (update p' plrs) })
 
-    PassNext -> return (g { actions = (TurnEnd, [(execCDSLGame [AffectPlayer PassNext], False)]) : actions g})
+    (PassNext, _) -> return (g { actions = (TurnEnd, [(execCDSLGame [AffectPlayer PassNext Nothing], False)]) : actions g})
 
-    (DrawCards n) -> return (g { actions = (TurnEnd, [(execCDSLGame [AffectPlayer (DrawCards n)], False)]) : actions g})
+    (DrawCards, arg) -> return (g { actions = (TurnEnd, [(execCDSLGame [AffectPlayer DrawCards arg], False)]) : actions g})
 
     _ -> return g
 
@@ -326,7 +331,8 @@ fromCDSLToString CardSuit = "suit"
 fromCDSLToString CardValue = "value"
 fromCDSLToString (Text s) = s
 fromCDSLToString (PlayerAction a b) = show a ++ " " ++ if b then "TRUE" else "FALSE"
-fromCDSLToString (AffectPlayer ce) = "affect_player " ++ show ce
+fromCDSLToString (AffectPlayer ce (Just ar)) = "affect_player " ++ show ar ++ show ce 
+fromCDSLToString (AffectPlayer ce Nothing) = "affect_player " ++ show ce
 fromCDSLToString (CEffect ce cs) = "card_effect " ++ show ce ++ " " ++ show cs
 fromCDSLToString (Reset ce) = "reset " ++ fromCDSLToString ce
 fromCDSLToString (CurrentPlayer ce) = "player " ++ fromCDSLToString ce

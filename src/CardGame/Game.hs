@@ -26,7 +26,7 @@ data Game = Game {
     , turnOrder :: [CDSLExpr]
     , cardSuits :: [CDSLExpr]
     , cardRanks :: [CDSLExpr]
-    , cardEffects :: [CDSLExpr]
+    , cardEffects :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])]
     , deck :: [Card]
     , pile :: [(Card, Maybe Card)]
     , players :: CList Player

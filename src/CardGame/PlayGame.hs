@@ -259,9 +259,9 @@ checkCardEffect c g = case checkCE (cardEffects g) of
         Nothing -> return g
     Nothing -> return g
     where
-        checkCE :: [CDSLExpr] -> Maybe CardEffect
+        checkCE :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> Maybe (CardEffect, Maybe [CDSLExpr])
         checkCE [] = Nothing
-        checkCE  (CEffect ef xs:ys)
-            | c `cardElem` xs = Just ef
-            | otherwise = checkCE ys
+        checkCE  ((f@(_, Just ar), CEffect ef xs:ws):ys)
+            | c `cardElem` xs = Just (ef, Just ar)
+            | otherwise = checkCE ((f, ws):ys)
         checkCE (_:xs) = checkCE xs

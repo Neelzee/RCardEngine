@@ -8,7 +8,7 @@ import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
 import CardGame.Card (Card (Card, cScore, suit), rank)
 import Data.List.Extra (sortBy)
-import Feature (Feature(CardSuits, CardRanks, CardValues, PlayerMoves, PileCount, PlayerHand, EndCon, WinCon, CardConstraints, AnyTime, StartTime, GameName, CardEffects, TurnStartTime, TurnEndTime, IgnoreConstraints, CardCompare, ExceptionConstraints, TurnOrder), Attribute (GameAttributes, CardAttributes, PlayerAttributes))
+import Feature (Feature(..), Attribute (GameAttributes, CardAttributes, PlayerAttributes))
 import Data.Maybe (mapMaybe)
 import CardGame.Player (standardMoves, parsePlayerMovesExpr, Player (pScore, hand), parsePlayerMoves)
 import CDSL.CDSLExpr (CDSLExpr(Numeric, Greatest, Players, Score, IsEqual, All, IsEmpty, Hand, CardValue, CardRank, CardSuit, Text, CLe, CGr, CLEq, CGRq, Null))
@@ -29,9 +29,7 @@ loadGame g n = do
             return g
 
 
-
-
-
+-- TODO: Add card effects back to the game
 loadGame' :: GameData -> Game -> IO Game
 loadGame' gd g = do
     -- gamename
@@ -68,7 +66,27 @@ loadGame' gd g = do
     let cards' = makeDeck cs cr cv
 
     ce <- case Map.lookup CardAttributes gd of
-        Just att -> undefined
+        Just att -> do
+            cc <- case lookupM CEChangeCard att of
+                Just e -> return [e]
+                Nothing -> return []
+            sh <- case lookupM CESwapHand att of
+                Just e -> return [e]
+                Nothing -> return []
+            tfh <- case lookupM CETakeFromHand att of
+                Just e -> return [e]
+                Nothing -> return []
+            gc <- case lookupM CEGiveCard att of
+                Just e -> return [e]
+                Nothing -> return []
+            pn <- case lookupM CEPassNext att of
+                Just e -> return [e]
+                Nothing -> return []
+            dc <- case lookupM CEDrawCard att of
+                Just e -> return [e]
+                Nothing -> return []
+
+            return (cc ++ sh ++ tfh ++ gc ++ pn ++ dc)
         Nothing -> return []
 
     to <- case Map.lookup GameAttributes gd of

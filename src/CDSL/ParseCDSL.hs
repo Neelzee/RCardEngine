@@ -102,11 +102,11 @@ readCDSL xs = do
     case validateFeature (unpack $ strip $ pack y) of
         -- Cards
         Left CEDrawCard -> case readMaybe (unwords (drop 1 (words y))) :: Maybe Int of
-            Just i -> Left ((CEDrawCard, Just [Numeric i]), [CEffect (DrawCards i) (getCards (stringToList ys))])
+            Just i -> Left ((CEDrawCard, Just [Numeric i]), [CEffect DrawCards (getCards (stringToList ys))])
             Nothing -> Right (Just CardEffects, [CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = show (drop 1 (words y)) }])
         Left CESwapHand -> Left ((CESwapHand, Nothing), [CEffect SwapHand (getCards (stringToList ys))])
         Left CEChangeCard -> case getCardFields (drop 1 (words y)) of
-            Left ex -> Left ((CEChangeCard, Nothing), [CEffect (ChangeCard ex) (getCards (stringToList ys))])
+            Left ex -> Left ((CEChangeCard, Just ex), [CEffect ChangeCard (getCards (stringToList ys))])
             Right err -> Right (Just CEChangeCard, err)
         Left CETakeFromHand -> Left ((CETakeFromHand, Nothing), [CEffect TakeFromHand (getCards (stringToList ys))])
         Left CEPassNext -> Left ((CEPassNext, Nothing), [CEffect PassNext (getCards (stringToList ys))])

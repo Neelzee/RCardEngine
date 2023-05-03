@@ -16,7 +16,7 @@ import CardGame.Card (Card)
 
 data CardEffect =
     -- Choose a new card to change to, i.e. standard "Vri-Åttern"
-    ChangeCard [CDSLExpr]
+    ChangeCard
     -- Swap hand with another Player
     | SwapHand
     -- Takes a Card from an Player's Hand
@@ -26,7 +26,7 @@ data CardEffect =
     -- Passes the next Player's round
     | PassNext
     -- Makes the Player draw the given amount of cards, and skip their turn
-    | DrawCards Int
+    | DrawCards
     -- Nothing happens
     | Blank
     deriving (Show, Eq, Ord)
@@ -76,7 +76,7 @@ data CDSLExpr =
     -- Evals too true if any condition is true
     | Or [CDSLExpr] [CDSLExpr]
     -- The following expression affects the next player
-    | AffectPlayer CardEffect
+    | AffectPlayer CardEffect (Maybe [CDSLExpr])
     -- References the turn order
     | TOLeft
     | TORight
@@ -202,7 +202,7 @@ infoCDSL =
         , (Not [], "Negates the expressions")
         , (And [] [], "Evaluates too true if both expressions evaluates to true")
         , (Or [] [], "Evaluates too true if any expressions evaluates to true")
-        , (AffectPlayer Blank, "Specifies an action that will affect the current player")
+        , (AffectPlayer Blank Nothing, "Specifies an action that will affect the current player")
         , (TOLeft, "References the turn ordering, will start with the first player, then go to the last, second last, etc")
         , (TORight, "References the turn ordering, will start with the first player, then second, then third, etc")
         , (CardSuit, "References the suit of a card")
@@ -253,7 +253,7 @@ showF CardRank = "rank"
 showF CardSuit = "suit"
 showF CardValue = "value"
 showF (PlayerAction _ _) = "playerAction"
-showF (AffectPlayer _) = "affectPlayer"
+showF (AffectPlayer _ _) = "affectPlayer"
 showF (CEffect _ _) = "cardEffect"
 showF (Reset _) = "reset"
 showF (CurrentPlayer _) = "currentPlayer"
