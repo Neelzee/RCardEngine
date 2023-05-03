@@ -16,7 +16,7 @@ import CDSL.CDSLExpr
 import System.Console.ANSI (clearScreen)
 import Functions (allGames, lookupM)
 import Feature
-    ( featureInfo, fromStringToFeature, Feature(GameName, Saved), Attribute (GameAttributes) )
+    ( featureInfo, fromStringToFeature, Feature(GameName), Attribute (GameAttributes) )
 import GameData.LoadGD ( loadGameData )
 import Control.Monad (zipWithM, when)
 import Terminal.GameCommands
@@ -31,7 +31,8 @@ import Terminal.GameCommands
 import System.IO (hFlush, stdout)
 import Terminal.ValidateGameCommands (validateGCFlags, validateGameCommand)
 import CDSL.ParseCDSL (parseOneCDSL)
-import qualified Data.Map as Map (empty, lookup)
+import qualified Data.Map as Map (empty, lookup, toList)
+import Data.Bifunctor (second)
 
 
 execGameCommands :: GameCommand -> IO ()
@@ -128,17 +129,17 @@ listGameData :: IO [GCEffect]
 listGameData = do
     games <- allGames
     agd <- zipWithM (\ _x i -> loadGameData Map.empty i) games [0..]
-    return (listGameData' agd 0)
+    return (listGameData' agd 0 (map (reverse . drop 1 . dropWhile (/='.') . reverse) games))
     where
-        listGameData' :: [Either GameData (CDSLParseError, Int)] -> Int -> [GCEffect]
-        listGameData' [] _ = []
-        listGameData' (x:xs) n = case x of
+        listGameData' :: [Either GameData (CDSLParseError, Int)] -> Int -> [String] -> [GCEffect]
+        listGameData' [] _ _ = []
+        listGameData' (x:xs) n g = case x of
             Left gd -> case Map.lookup GameAttributes gd of
                 Just att -> case lookupM GameName att of
-                    Just (_, Text gm:_) -> GCEffect { se = show n ++ " " ++ gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1)
-                    _ -> GCEffect { se = "Failed listing game: " ++ show n ++ ", found no name", ve = "Failed loading game: " ++ show n ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ show n)]} : listGameData' xs (n + 1)
-                _ -> undefined
-            Right (e, i) -> GCEffect { se = "Failed listing game: " ++ show n, ve = "Failed loading game: " ++ show n ++ ", error at: " ++ show e ++ ", at line: " ++ show i, gcErr = [CDSLError (Right [e])] } : listGameData' xs (n + 1)
+                    Just (_, Text gm:_) -> GCEffect { se = (g !! n) ++ " " ++ gm, ve = "Game:\n" ++ gm ++ "\nFeatures:\n" ++ intercalate "\n" (map ve (gameDataStatus gd)) ++ "\n" , gcErr = [] } : listGameData' xs (n + 1) g
+                    _ -> GCEffect { se = "Failed listing game: " ++ (g !! n) ++ ", found no name", ve = "Failed loading game: " ++ (g !! n) ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ (g !! n))]} : listGameData' xs (n + 1) g
+                _ -> GCEffect { se = "Failed listing game: " ++ (g !! n) ++ ", found no name", ve = "Failed loading game: " ++ (g !! n) ++ ", found no name", gcErr = [MissingOrCorruptDataError ("Failed loading game: " ++ (g !! n))]} : listGameData' xs (n + 1) g
+            Right (e, i) -> GCEffect { se = "Failed listing game: " ++ (g !! n), ve = "Failed loading game: " ++ (g !! n) ++ ", error at: " ++ show e ++ ", at line: " ++ show i, gcErr = [CDSLError (Right [e])] } : listGameData' xs (n + 1) g
 
 
 printCommands :: [GameCommand] -> IO ()
@@ -154,13 +155,13 @@ fromCDSLParseErrorOnLoad :: (CDSLParseError, Int) -> GCEffect
 fromCDSLParseErrorOnLoad (e, i) = GCEffect { se = "Failed loading game", ve = "Failed loading game, error: " ++ show e ++ " on line: " ++ show i, gcErr = [CDSLError (Right [e])] }
 
 gameDataStatus :: GameData -> [GCEffect]
-gameDataStatus gd = undefined
+gameDataStatus gd = map (gds . second Map.toList) (Map.toList gd)
 
 
 
 gds :: (Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])]) -> GCEffect
-gds (att, fs) = GCEffect { 
-    ve = show att ++ "\n" ++ intercalate "\n\t" (showVE fs) 
+gds (att, fs) = GCEffect {
+    ve = show att ++ "\n" ++ intercalate "\n\t" (showVE fs)
     , se = "Attribute:" ++ "\n\t" ++ show att ++ "\n\t\tFeatures:" ++ intercalate "\n\t\t" (showSE fs)
     , gcErr = []
     }

@@ -12,6 +12,7 @@ import CDSL.CDSLExpr
 import CardGame.CardFunctions
 import Data.Bifunctor (second)
 import qualified Data.Map as Map
+import Data.Char (isSpace)
 
 
 loadGameData :: GameData -> Int -> IO (Either GameData (CDSLParseError, Int))
@@ -27,7 +28,7 @@ loadGameData gd n = do
             case loadGameData' gd content of
                 Left gamedata -> do
                     case Map.lookup GameAttributes gamedata of
-                        Just res -> undefined
+                        Just att -> return (Left (Map.insert GameAttributes (Map.insert (GameName, Nothing) [Text gm] att) gamedata))
                         Nothing -> return (Left (Map.insert GameAttributes (Map.fromList [((GameName, Nothing), [Text gm])]) gamedata))
                 e -> return e
 
@@ -134,22 +135,24 @@ parseAttributes :: [String] -> Int ->
     Either [(Attribute, [String], Int, Int)] (CDSLParseError, Int)
 parseAttributes [] _ = Left []
 parseAttributes ("":xs) n = parseAttributes xs (n + 1)
-parseAttributes (x:xs) n = case validateAttribute (trim $ takeWhile (/= '{') x) of
-    Just att -> case get xs (n + 1) of
-        (c, rm, n') -> case parseAttributes rm n' of
-            Left ys -> Left ((att, c, n, n'):ys)
-            e -> e
-    Nothing -> Right (CDSLParseError {
-        pErr = NotAnAttributeError
-        , pExpr = Text (trim $ takeWhile (/= '{') x)
-        , rawExpr = "'" ++ x ++ "'" }, n)
-    where
-        get :: [String] -> Int -> ([String], [String], Int)
-        get [] i = ([], [], i)
-        get (y:ys) i
-            | '}' `elem` y = ([takeWhile (/= '}') y], ys, i + 1)
-            | otherwise = case get ys (i + 1) of
-                (c, rm, i') -> (y:c, rm, i')
+parseAttributes (x@(y:ys):xs) n
+    | isSpace y = parseAttributes (ys:xs) n
+    | otherwise = case validateAttribute (trim $ takeWhile (/= '{') x) of
+        Just att -> case get xs (n + 1) of
+            (c, rm, n') -> case parseAttributes rm n' of
+                Left zs -> Left ((att, c, n, n'):zs)
+                e -> e
+        Nothing -> Right (CDSLParseError {
+            pErr = NotAnAttributeError
+            , pExpr = Text (trim $ takeWhile (/= '{') x)
+            , rawExpr = "'" ++ x ++ "'" }, n)
+        where
+            get :: [String] -> Int -> ([String], [String], Int)
+            get [] i = ([], [], i)
+            get (z:zs) i
+                | '}' `elem` z = ([takeWhile (/= '}') z], zs, i + 1)
+                | otherwise = case get zs (i + 1) of
+                    (c, rm, i') -> (z:c, rm, i')
 
 
 concatFeatures :: String -> [String]

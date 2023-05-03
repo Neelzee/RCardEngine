@@ -14,7 +14,7 @@ CARD {
         7, 8, 9, 10, 11, 12, 13];
     card_ranks = [Ace, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King];
     card_constraints = rank;
-    exception_constraints equal = rank;
+    exception_constraints eq = rank;
     ignore_constraints = [Hearts.Ace];
     card_compare = gte;
     

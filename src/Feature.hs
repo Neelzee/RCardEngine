@@ -39,7 +39,6 @@ data Feature = WinCon
     | PlayerMoves
     | PileCount
     | GameName
-    | Saved
     | CardConstraints
     | IgnoreConstraints
     | ExceptionConstraints
@@ -73,7 +72,6 @@ instance Show Feature where
         PlayerMoves -> "player_moves"
         PileCount -> "pile_count"
         GameName -> "game_name"
-        Saved -> "saved"
         CardConstraints -> "card_constraints"
         CardFeatures -> "card"
         PlayerFeatures -> "player"
