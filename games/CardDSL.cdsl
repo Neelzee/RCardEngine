@@ -13,13 +13,13 @@ CARD {
         [1, 2, 3, 4, 5, 6,
         7, 8, 9, 10, 11, 12, 13];
     card_ranks = [Ace, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King];
-    card_constraints = rank;
-    exception_constraints eq = rank;
+    card_constraints = ranks;
+    exception_constraints eq = ranks;
     ignore_constraints = [Hearts.Ace];
     card_compare = gte;
     
     # Define some card effects
-    change_card suits = Hearts.Ace;
+    change_card suits = [Hearts.Ace];
     swap_hand = [Diamonds.Ace, Spades.Ace];
     take_from_hand = [Clubs.Ace];
     give_card = Hearts.Two;

@@ -1,7 +1,7 @@
 module CDSLExprTest.CDSLParsePlayerActionSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import CDSL.ParseCDSL (parseCDSLPlayerAction)
+import CDSL.ParseCDSLExpr (parseCDSLPlayerAction)
 import CDSL.CDSLExpr
 import CardGame.PlayerMove (Move(DrawCard, PlayCard, Pass))
 

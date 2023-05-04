@@ -30,7 +30,7 @@ import Terminal.GameCommands
       GameCommand(GameCommand, Help, Clear, List) )
 import System.IO (hFlush, stdout)
 import Terminal.ValidateGameCommands (validateGCFlags, validateGameCommand)
-import CDSL.ParseCDSL (parseOneCDSL)
+import CDSL.ParseCDSLExpr (parseOneCDSL)
 import qualified Data.Map as Map (empty, lookup, toList)
 import Data.Bifunctor (second)
 

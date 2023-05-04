@@ -50,7 +50,8 @@ saveGameData gd = do
         showContent fs = intercalate "\n" (map (uncurry showFeature) fs)
 
         showFeature :: (Feature, Maybe [CDSLExpr]) -> [CDSLExpr] -> String
-        showFeature (f, Nothing) xs = show f ++ " = [" ++ intercalate "," (map go xs) ++ "];"
+        showFeature (IgnoreConstraints, _) xs = show IgnoreConstraints ++ " = " ++ intercalate ", " (map go xs) ++ ";"
+        showFeature (f, Nothing) xs = show f ++ " = [" ++ intercalate ", " (map go xs) ++ "];"
         showFeature (f, Just arg) xs = show f ++ " " ++ intercalate ", " (map fromCDSLToString arg)  ++ " = [" ++ intercalate "," (map go xs) ++ "];"
 
         go :: CDSLExpr -> String

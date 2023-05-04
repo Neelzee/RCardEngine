@@ -8,7 +8,7 @@ import Data.List.Extra (trim, sortOn, partition, groupBy)
 import CDSL.CDSLExpr (CDSLExpr(Text, Numeric))
 import Text.Read (readMaybe)
 import Feature (fromStringToFeature)
-import CDSL.ParseCDSL (parseExpr, parseOneCDSL)
+import CDSL.ParseCDSLExpr (parseExpr, parseOneCDSL)
 
 
 validateGameCommand :: String -> Either GameCommand GCError

@@ -3,7 +3,7 @@ module GameData.LoadGD (loadGameData, loadGameData') where
 import Constants (gameFolder)
 import Data.Maybe (mapMaybe)
 import Feature (Feature (GameName, CardSuits, CardRanks), isAFeatureOf, validateAttribute, Attribute (GameAttributes))
-import CDSL.ParseCDSL (readCDSL)
+import CDSL.ParseCDSLExpr (readCDSL)
 import GameData.GD (GameData)
 import Functions (allGames, trim)
 import CDSL.CDSLValidater (validateCDSLExpression)

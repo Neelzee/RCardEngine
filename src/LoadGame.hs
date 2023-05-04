@@ -15,7 +15,7 @@ import CDSL.CDSLExpr (CDSLExpr(Numeric, Greatest, Players, Score, IsEqual, All, 
 import CDSL.ExecCDSLExpr (execCDSLGame, execCDSLGameBool, cardFromCDSL)
 import Data.CircularList (toList)
 import Functions (lookupAll, lookupOrDefault, lookupM, lookupMAll)
-import CDSL.ParseCDSL (toNumeric)
+import CDSL.ParseCDSLExpr (toNumeric)
 import CardGame.CardFunctions (defaultCardSuits, defaultCardRanks, defaultCardValues, makeDeck, cardElem)
 import qualified Data.Map as Map
 

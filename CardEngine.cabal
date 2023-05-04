@@ -34,7 +34,7 @@ library
       GameData.LoadGD
       GameData.SaveGD
       Constants
-      CDSL.ParseCDSL
+      CDSL.ParseCDSLExpr
       CDSL.CDSLExpr
       CDSL.ExecCDSLExpr
       CDSL.CDSLValidater

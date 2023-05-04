@@ -1,7 +1,7 @@
 module CDSLExprTest.CDSLParseExprSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import CDSL.ParseCDSL
+import CDSL.ParseCDSLExpr
 import CDSL.CDSLExpr
 import CDSL.CDSLExpr (CDSLExpr (CurrentPlayer, PMoves, Always))
 import Feature

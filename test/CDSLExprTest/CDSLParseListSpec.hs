@@ -1,7 +1,7 @@
 module CDSLExprTest.CDSLParseListSpec where
 
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
-import CDSL.ParseCDSL (parseStringList)
+import CDSL.ParseCDSLExpr (parseStringList)
 import CDSL.CDSLExpr
 
 

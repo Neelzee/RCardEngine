@@ -1,7 +1,7 @@
 module CDSL.CDSLValidater (validateCDSLExpression) where
 import CDSL.CDSLExpr
 import Data.Either (partitionEithers, isLeft)
-import CDSL.ParseCDSL (isCDSLExprNumeric)
+import CDSL.ParseCDSLExpr (isCDSLExprNumeric)
 
 
 

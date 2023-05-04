@@ -4,7 +4,7 @@ module CDSLExprTest.ValidateFeatureSpec where
 import Test.Hspec ( describe, it, shouldBe, Spec, hspec )
 
 import Feature (Feature (CEDrawCard))
-import CDSL.ParseCDSL (validateFeature)
+import CDSL.ParseCDSLExpr (validateFeature)
 
 moduleName :: String -> String
 moduleName = ("ParseCDSL." ++)

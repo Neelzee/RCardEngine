@@ -24,7 +24,7 @@ import Text.Read (readMaybe, Lexeme (String))
 import CardGame.CardFunctions (prettyPrintCards)
 import Extra (sleep)
 import CardGame.PlayerMove (Move(Pass))
-import CDSL.ParseCDSL (toNumeric)
+import CDSL.ParseCDSLExpr (toNumeric)
 import Data.Maybe (mapMaybe)
 
 
@@ -326,8 +326,8 @@ fromCDSLToString Never = "never"
 fromCDSLToString (Not e) = "!" ++ intercalate ", " (map fromCDSLToString e)
 fromCDSLToString (And l r) = "&& " ++ intercalate ", " (map fromCDSLToString l) ++ " " ++ intercalate ", " (map fromCDSLToString r)
 fromCDSLToString (Or l r) = "|| " ++ intercalate ", " (map fromCDSLToString l) ++ " " ++ intercalate ", " (map fromCDSLToString r)
-fromCDSLToString CardRank = "rank"
-fromCDSLToString CardSuit = "suit"
+fromCDSLToString CardRank = "ranks"
+fromCDSLToString CardSuit = "suits"
 fromCDSLToString CardValue = "value"
 fromCDSLToString (Text s) = s
 fromCDSLToString (PlayerAction a b) = show a ++ " " ++ if b then "TRUE" else "FALSE"

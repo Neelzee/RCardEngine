@@ -1,4 +1,4 @@
-module CDSL.ParseCDSL (
+module CDSL.ParseCDSLExpr (
     isCDSLExprNumeric
     , parseCDSLPlayerAction
     , parseStringList
@@ -82,14 +82,14 @@ toNumeric x = case x of
 
 getCardFields :: [String] -> Either [CDSLExpr] [CDSLParseError]
 getCardFields [] = Left []
-getCardFields (x:xs) = case x of
-    "rank" -> case getCardFields xs of
+getCardFields (x:xs) = case trim x of
+    "ranks" -> case getCardFields xs of
         Left ex -> Left (CardRank:ex)
         e -> e
     "suits" -> case getCardFields xs of
         Left ex -> Left (CardSuit:ex)
         e -> e
-    "value" -> case getCardFields xs of
+    "values" -> case getCardFields xs of
         Left ex -> Left (CardValue:ex)
         e -> e
     _ -> case getCardFields xs of
