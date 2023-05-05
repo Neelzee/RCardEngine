@@ -14,6 +14,7 @@ import Data.Bifunctor (second)
 import qualified Data.Map as Map
 import Data.Char (isSpace)
 import Data.Either (partitionEithers)
+import CardGame.Card (Card)
 
 
 loadGameData :: GameData -> Int -> IO (Either GameData (CDSLParseError, Int))
@@ -38,15 +39,35 @@ loadGameData' :: GameData -> String -> Either GameData (CDSLParseError, Int)
 loadGameData' oldGD c = case parseFile c of
     Left nGd -> case validateFeatureAttributes nGd of
         Left gamedata -> case map (\(_, ex, s, _) -> mapMaybe (`validateFeatures` s) ex) gamedata of
-            err -> if null (concat err)
+            err -> if all null err
                 then
-                    case validateExpr gamedata of
-                        Left gd -> case validateGameData gamedata of
-                            Nothing -> Left (Map.fromList (map (second Map.fromList) gd) `Map.union` oldGD)
-                            Just (e, n) -> Right (e, n)
-                        Right e -> Right e
+                    do
+
+                        (cs, cr, cv) <- case Map.lookup CardAttributes (Map.fromList (map (second Map.fromList . (\(a, ex, _, _) -> (a, ex))) gamedata)) of
+                            Just att -> do
+                                s <- case lookupM CardSuits att of
+                                    Just (_, suits) -> return suits
+                                    _ -> return defaultCardSuits
+                                r <- case lookupM CardRanks att of
+                                    Just (_, ranks) -> return ranks
+                                    _ -> return defaultCardRanks
+                                v <- case lookupM CardValues att of
+                                    Just (_, values) -> return (mapMaybe toNumeric values)
+                                    _ -> return defaultCardValues
+                                return (s, r, v)
+
+                            Nothing -> return (defaultCardSuits, defaultCardRanks, defaultCardValues)
+                        let deck = makeDeck cs cr cv
+
+                        case concatMap (\(_, fs, s, _) -> concatMap (\(_, e) -> mapMaybe (\x -> validateCards x deck s) e) fs) gamedata of
+                            [] -> case validateExpr gamedata of
+                                    Left gd -> case validateGameData gamedata of
+                                        Nothing -> Left (Map.fromList (map (second Map.fromList) gd) `Map.union` oldGD)
+                                        Just (e, n) -> Right (e, n)
+                                    Right e -> Right e
+                            er -> Right (headDef (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = "'" ++ show er ++ "'"}, 0) er)
                 else
-                    Right (headDef (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = ""}, 0)(concat err))
+                    Right (headDef (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = "'" ++ show err ++ "'"}, 0) (concat err))
         Right e -> Right e
     Right e -> Right e
 
@@ -165,6 +186,18 @@ validateFeatures ((CEDrawCard, _), _) n = Just (CDSLParseError { pErr = InvalidF
 validateFeatures _ _ = Nothing
 
 
+validateCards :: CDSLExpr -> [Card] -> Int -> Maybe (CDSLParseError, Int)
+validateCards e@(CEffect _ crds) dck n = if all (`cardElem` dck) crds
+    then
+        Nothing
+    else
+        Just (CDSLParseError { pErr = MissMatchCardError crds dck, pExpr = e, rawExpr = "" }, n)
+validateCards e@(Cards crds) dck n = if all (`cardElem` dck) crds
+    then
+        Nothing
+    else
+        Just (CDSLParseError { pErr = MissMatchCardError crds dck, pExpr = e, rawExpr = "" }, n)
+validateCards _ _ _ = Nothing
 
 
 removeComments :: [String] -> [String]

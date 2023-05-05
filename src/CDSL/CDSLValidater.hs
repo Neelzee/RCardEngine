@@ -190,6 +190,7 @@ isNumericList _ = False
 
 isCard :: CDSLExpr -> Bool
 isCard (Cards _) = True
+isCard (CEffect _ _) = True
 isCard _ = False
 
 

@@ -46,7 +46,7 @@ ACTIONS {
             [
                 always : reset player moves,
                 # Not sure if needed
-                isSame rank look 4 pile : [
+                isSame ranks look 4 pile : [
                         put pile discard
                         , goBack turn]
                 
