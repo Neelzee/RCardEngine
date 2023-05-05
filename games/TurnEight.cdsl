@@ -9,7 +9,7 @@ GAME {
 CARD {
     card_suits = [Hearts, Diamonds, Clubs, Spades];
     card_ranks = [Ace, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King];
-    card_constraints = suit;
+    card_constraints = suits;
 }
 
 # Player stats

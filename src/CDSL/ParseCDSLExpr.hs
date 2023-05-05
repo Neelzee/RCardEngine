@@ -229,9 +229,9 @@ parseOneCDSL (x:xs) n = case x of
         (_, _, Right (e, i)) -> Right (e { pErr = IncompleteExpressionError, pExpr = Take Null Null Null, rawExpr = if null xs then x else x ++ " " ++ unwords xs}, i)
     "always" -> Left (Always, xs)
     "never" -> Left (Never, xs)
-    "rank" -> Left (CardRank, xs)
-    "suit" -> Left (CardSuit, xs)
-    "value" -> Left (CardValue, xs)
+    "ranks" -> Left (CardRank, xs)
+    "suits" -> Left (CardSuit, xs)
+    "values" -> Left (CardValue, xs)
     "discard" -> Left (Discard, xs)
     "left" -> Left (TOLeft, xs)
     "right" -> Left (TORight, xs)
@@ -301,9 +301,9 @@ validateFeature x = case words x of
                 , rawExpr = x
             })
     -- Cards
-    ["suits"] -> Left CardSuits
-    ["values"] -> Left CardValues
-    ["ranks"] -> Left CardRanks
+    ["card_suits"] -> Left CardSuits
+    ["card_values"] -> Left CardValues
+    ["card_ranks"] -> Left CardRanks
     ["card_constraints"] -> Left CardConstraints
     ["ignore_constraints"] -> Left IgnoreConstraints
     -- Player

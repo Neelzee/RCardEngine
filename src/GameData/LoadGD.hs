@@ -2,17 +2,18 @@ module GameData.LoadGD (loadGameData, loadGameData') where
 
 import Constants (gameFolder)
 import Data.Maybe (mapMaybe)
-import Feature (Feature (GameName, CardSuits, CardRanks, CardConstraints), isAFeatureOf, validateAttribute, Attribute (GameAttributes))
-import CDSL.ParseCDSLExpr (readCDSL)
+import Feature (Feature (GameName, CardSuits, CardRanks, CardConstraints, ExceptionConstraints, CardCompare, IgnoreConstraints, CEChangeCard, CESwapHand, CETakeFromHand, CEGiveCard, CEPassNext, CEDrawCard, CardValues), isAFeatureOf, validateAttribute, Attribute (GameAttributes, CardAttributes))
+import CDSL.ParseCDSLExpr (readCDSL, isCDSLExprNumeric, toNumeric)
 import GameData.GD (GameData)
-import Functions (allGames, trim)
-import CDSL.CDSLValidater (validateCDSLExpression, isCardField)
-import Data.List.Extra (splitOn)
+import Functions (allGames, trim, lookupM)
+import CDSL.CDSLValidater (validateCDSLExpression, isCardField, isComperator, isCard, getNonCards, getNonComperators, getNonCardFields, getNonNumerics)
+import Data.List.Extra (splitOn, headDef)
 import CDSL.CDSLExpr
 import CardGame.CardFunctions
 import Data.Bifunctor (second)
 import qualified Data.Map as Map
 import Data.Char (isSpace)
+import Data.Either (partitionEithers)
 
 
 loadGameData :: GameData -> Int -> IO (Either GameData (CDSLParseError, Int))
@@ -36,11 +37,16 @@ loadGameData gd n = do
 loadGameData' :: GameData -> String -> Either GameData (CDSLParseError, Int)
 loadGameData' oldGD c = case parseFile c of
     Left nGd -> case validateFeatureAttributes nGd of
-        Left gamedata -> case validateExpr gamedata of
-            Left gd -> case validateGameData gamedata of
-                Nothing -> Left (Map.fromList (map (second Map.fromList) gd) `Map.union` oldGD)
-                Just (e, n) -> Right (e, n)
-            Right e -> Right e
+        Left gamedata -> case map (\(_, ex, s, _) -> mapMaybe (`validateFeatures` s) ex) gamedata of
+            err -> if null (concat err)
+                then
+                    case validateExpr gamedata of
+                        Left gd -> case validateGameData gamedata of
+                            Nothing -> Left (Map.fromList (map (second Map.fromList) gd) `Map.union` oldGD)
+                            Just (e, n) -> Right (e, n)
+                        Right e -> Right e
+                else
+                    Right (headDef (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = ""}, 0)(concat err))
         Right e -> Right e
     Right e -> Right e
 
@@ -98,6 +104,65 @@ loadGameData' oldGD c = case parseFile c of
                         parse att fes (n + 1)
                     else
                         Just (CDSLParseError { pErr = NotAFeatureOfAttribute att f, pExpr = Null, rawExpr = "" }, n)
+
+validateFeatures :: ((Feature, Maybe [CDSLExpr]), [CDSLExpr]) -> Int -> Maybe (CDSLParseError, Int)
+validateFeatures ((ExceptionConstraints, Just comp), ex) n = case (all isComperator comp, isCard (makeCards ex)) of
+    (True, True) -> Nothing
+    (False, _) ->  Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = headDef Null (mapMaybe getNonComperators comp), rawExpr = "" }, n)
+    (_, False) -> Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonCards ex), rawExpr = "" }, n)
+validateFeatures ((ExceptionConstraints, _), _) n = Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = "" } , n)
+validateFeatures ((CardConstraints, Nothing), ex) n = if all isCardField ex
+    then
+        Nothing
+    else
+        Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonCardFields ex), rawExpr = "" }, n)
+validateFeatures ((CardCompare, Nothing), ex) n = if all isComperator ex
+    then
+        Nothing
+    else
+        Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonComperators ex), rawExpr = "" }, n)
+validateFeatures ((CardCompare, _), _) n = Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = "" } , n)
+validateFeatures ((IgnoreConstraints, Nothing), ex) n = if isCard (makeCards ex)
+    then
+        Nothing
+    else
+        Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonCards ex), rawExpr = "" }, n)
+validateFeatures ((IgnoreConstraints, _), _) n = Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = "" } , n)
+validateFeatures ((CEChangeCard, Just comp), ex) n = case (all isCardField comp, isCard (makeCards ex)) of
+    (True, True) -> Nothing
+    (False, _) ->  Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = headDef Null (mapMaybe getNonCardFields comp), rawExpr = "" }, n)
+    (_, False) -> Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonCards ex), rawExpr = "" }, n)
+validateFeatures ((CEChangeCard, _), _) n = Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = "" } , n)
+validateFeatures ((CESwapHand, Nothing), ex) n = if isCard (makeCards ex)
+    then
+        Nothing
+    else
+        Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonCards ex), rawExpr = "" }, n)
+validateFeatures ((CESwapHand, _), _) n = Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = "" } , n)
+validateFeatures ((CETakeFromHand, Nothing), ex) n = if isCard (makeCards ex)
+    then
+        Nothing
+    else
+        Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonCards ex), rawExpr = "" }, n)
+validateFeatures ((CETakeFromHand, _), _) n = Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = "" } , n)
+validateFeatures ((CEGiveCard, Nothing), ex) n = if isCard (makeCards ex)
+    then
+        Nothing
+    else
+        Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonCards ex), rawExpr = "" }, n)
+validateFeatures ((CEGiveCard, _), _) n = Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = "" } , n)
+validateFeatures ((CEPassNext, Nothing), ex) n = if isCard (makeCards ex)
+    then
+        Nothing
+    else
+        Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonCards ex), rawExpr = "" }, n)
+validateFeatures ((CEPassNext, _), _) n = Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = "" } , n)
+validateFeatures ((CEDrawCard, Just nr), ex) n = case (all isCDSLExprNumeric nr, isCard (makeCards ex)) of
+    (True, True) -> Nothing
+    (False, _) ->  Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = headDef Null (mapMaybe getNonNumerics nr), rawExpr = "" }, n)
+    (_, False) -> Just (CDSLParseError { pErr = InvalidExpressionError, pExpr = headDef Null (mapMaybe getNonCards ex), rawExpr = "" }, n)
+validateFeatures ((CEDrawCard, _), _) n = Just (CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = "" } , n)
+validateFeatures _ _ = Nothing
 
 
 
@@ -166,3 +231,6 @@ parseFeatures (x:xs) n = case readCDSL x of
         Left fs -> Left (fe:fs)
         e -> e
     Right (f, er) -> Right (CDSLParseError {pErr=OnValidateExpressions f er, pExpr=Null, rawExpr=x}, n)
+
+
+

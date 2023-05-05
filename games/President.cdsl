@@ -20,7 +20,7 @@ CARD {
         , King
         , Ace
         , Two];
-    card_constraints = rank;
+    card_constraints = ranks;
     card_compare = gte;
 }
 

@@ -7,12 +7,15 @@ module CardGame.CardFunctions (
   , cardElem
   , makeDeck
   , prettyShowCards
+  , makeCards
 ) where
 
 
 import CDSL.CDSLExpr
 import CardGame.Card
 import Data.List (intercalate)
+import Extra (split)
+import Data.Maybe (mapMaybe)
 
 
 
@@ -48,3 +51,13 @@ cardElem _ [] = False
 cardElem c@(Card s r _) ((Card ss rr _):xs)
     | (ss == "" || s == ss) && (rr == "" || rr == r) = True
     | otherwise = cardElem c xs
+
+
+makeCards :: [CDSLExpr] -> CDSLExpr
+makeCards ex = Cards (mapMaybe go ex)
+  where
+    go ((Text str)) = case split (==',') str of
+      [s, r, _] -> Just (Card s r 0)
+      [s, r] -> Just (Card s r 0)
+      _ -> Nothing
+    go _ = Nothing

@@ -1,8 +1,18 @@
-module CDSL.CDSLValidater (validateCDSLExpression, isCardField, isComperator) where
+module CDSL.CDSLValidater (
+    validateCDSLExpression
+    , isCardField
+    , isComperator
+    , isCard
+    , getNonCards
+    , getNonComperators
+    , getNonCardFields
+    , getNonNumerics
+    ) where
 import CDSL.CDSLExpr
 import Data.Either (partitionEithers, isLeft)
 import CDSL.ParseCDSLExpr (isCDSLExprNumeric)
 import Feature
+import Data.Bits (Bits(xor))
 
 
 
@@ -174,3 +184,35 @@ isPlayerField _ = False
 isNumericList :: CDSLExpr -> Bool
 isNumericList (Players Score) = True
 isNumericList _ = False
+
+
+
+
+isCard :: CDSLExpr -> Bool
+isCard (Cards _) = True
+isCard _ = False
+
+
+
+getNonCards :: CDSLExpr -> Maybe CDSLExpr
+getNonCards x
+    | isCard x = Nothing
+    | otherwise = Just x
+
+
+getNonComperators :: CDSLExpr -> Maybe CDSLExpr
+getNonComperators x
+    | isComperator x = Nothing
+    | otherwise = Just x
+
+
+getNonCardFields :: CDSLExpr -> Maybe CDSLExpr
+getNonCardFields x
+    | isCardField x = Nothing
+    | otherwise = Just x
+
+
+getNonNumerics :: CDSLExpr -> Maybe CDSLExpr
+getNonNumerics x
+    | isCDSLExprNumeric x = Nothing
+    | otherwise = Just x
