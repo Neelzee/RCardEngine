@@ -1,7 +1,8 @@
-module CDSL.CDSLValidater (validateCDSLExpression) where
+module CDSL.CDSLValidater (validateCDSLExpression, isCardField, isComperator) where
 import CDSL.CDSLExpr
 import Data.Either (partitionEithers, isLeft)
 import CDSL.ParseCDSLExpr (isCDSLExprNumeric)
+import Feature
 
 
 
@@ -83,6 +84,13 @@ validateCDSLExpression e@(GoBack Turn) = Left e
 validateCDSLExpression e@(GoForward Turn) = Left e
 validateCDSLExpression e = Right [CDSLExecError { err = UnknownExpressionError, expr = e }]
 
+isComperator :: CDSLExpr -> Bool
+isComperator CEq = True
+isComperator CLEq = True
+isComperator CGRq = True
+isComperator CLe = True
+isComperator CGr = True
+isComperator _ = False
 
 -- Checks if the given expression is a list
 isList :: CDSLExpr -> Bool

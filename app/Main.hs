@@ -76,6 +76,9 @@ mainLoop = do
                                             _ -> return [GCEffect { se = "Loaded GameData"
                                                 , ve = "Loaded GameData"
                                                 , gcErr = [GCError { errType = MissingOrCorruptDataError "No GameName Found", input = showAll gc}] }]
+                                        Nothing -> return [GCEffect { se = "Loaded GameData"
+                                                , ve = "Loaded GameData"
+                                                , gcErr = [GCError { errType = MissingOrCorruptDataError "No GameName Found", input = showAll gc}] }]
                                     r <- confirmCommand gc gce flg
                                     if r
                                         then
@@ -85,7 +88,7 @@ mainLoop = do
                                         else
                                             mainLoop
                                 Right err -> do
-                                    printGCEffect [(fromCDSLParseErrorOnLoad err)] flg
+                                    printGCEffect [fromCDSLParseErrorOnLoad err] flg
                                     mainLoop
                     else
                         do

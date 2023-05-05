@@ -2,11 +2,11 @@ module GameData.LoadGD (loadGameData, loadGameData') where
 
 import Constants (gameFolder)
 import Data.Maybe (mapMaybe)
-import Feature (Feature (GameName, CardSuits, CardRanks), isAFeatureOf, validateAttribute, Attribute (GameAttributes))
+import Feature (Feature (GameName, CardSuits, CardRanks, CardConstraints), isAFeatureOf, validateAttribute, Attribute (GameAttributes))
 import CDSL.ParseCDSLExpr (readCDSL)
 import GameData.GD (GameData)
 import Functions (allGames, trim)
-import CDSL.CDSLValidater (validateCDSLExpression)
+import CDSL.CDSLValidater (validateCDSLExpression, isCardField)
 import Data.List.Extra (splitOn)
 import CDSL.CDSLExpr
 import CardGame.CardFunctions
@@ -160,7 +160,7 @@ concatFeatures xs = splitOn ";" (unwords (map trim (words xs)))
 
 parseFeatures :: [String] -> Int -> Either [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] (CDSLParseError, Int)
 parseFeatures [] _ = Left []
-parseFeatures ("":xs) n = parseFeatures xs n
+parseFeatures ("":xs) n = parseFeatures xs (n + 1)
 parseFeatures (x:xs) n = case readCDSL x of
     Left fe -> case parseFeatures xs (n + 1) of
         Left fs -> Left (fe:fs)

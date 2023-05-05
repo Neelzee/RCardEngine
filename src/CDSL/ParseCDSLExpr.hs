@@ -301,9 +301,9 @@ validateFeature x = case words x of
                 , rawExpr = x
             })
     -- Cards
-    ["card_suits"] -> Left CardSuits
-    ["card_values"] -> Left CardValues
-    ["card_ranks"] -> Left CardRanks
+    ["suits"] -> Left CardSuits
+    ["values"] -> Left CardValues
+    ["ranks"] -> Left CardRanks
     ["card_constraints"] -> Left CardConstraints
     ["ignore_constraints"] -> Left IgnoreConstraints
     -- Player
