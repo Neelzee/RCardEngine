@@ -82,8 +82,15 @@ execCDSLGame ((Take (Numeric n) a b):xs) g = if (a == Deck || a == Pile) && (b =
     else
         execCDSLGame xs g
 execCDSLGame ((Shuffle a):xs) g = case a of
-    Deck -> execCDSLGame xs (g { deck = shuffle (deck g) })
-    Pile -> execCDSLGame xs (g { pile = shuffle (pile g) })
+    Deck -> do
+        deck' <- shuffle (deck g)
+        execCDSLGame xs (g { deck = deck' })
+    Pile -> do
+        pile' <- shuffle (pile g)
+        execCDSLGame xs (g { pile = pile' })
+    Discard -> do
+        discard' <- shuffle (discard g)
+        execCDSLGame xs (g { discard = discard' })
     _ -> execCDSLGame xs g
 execCDSLGame (Reset (CurrentPlayer PMoves):xs) g = case focus (players g) of
     Just p -> execCDSLGame xs (g { players = update (p { moves = playerMoves g }) (players g) })

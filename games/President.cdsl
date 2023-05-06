@@ -22,6 +22,7 @@ CARD {
         , Two];
     card_constraints = ranks;
     card_compare = gte;
+    change_card suits = [Hearts.Six, Diamonds.Six, Spades.Six, Clubs.Six]
 }
 
 # Player stats
@@ -53,8 +54,3 @@ ACTIONS {
             ]; 
 }
 
-
-# Define some card effects
-CARD_EFFECTS  {
-    change_card = [Hearts.Six, Diamonds.Six, Spades.Six, Clubs.Six]
-}

@@ -139,7 +139,6 @@ validateKeyWords x = case x of
     "PLAYER" -> Just "PLAYER"
     "ACTIONS" -> Just "ACTIONS"
     "GAME" -> Just "GAME"
-    "CARD_EFFECTS" -> Just "CARD_EFFECTS"
     "change_card" -> Just "change_card"
     "swap_hand" -> Just "swap_hand"
     "take_from_hand" -> Just "take_from_hand"
@@ -248,5 +247,4 @@ validateAttribute x = case x of
     "CARD" -> Just CardAttributes
     "PLAYER" -> Just PlayerAttributes
     "ACTIONS" -> Just Actions
-    "CARD_EFFECTS" -> Just CardAttributes
     _ -> Nothing

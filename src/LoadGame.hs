@@ -197,20 +197,20 @@ loadGame' gd g = do
                     -- Checks :)
                     case x of
                         CardValue -> if v' == 0
-                        then
-                            placeCardStmt xs fi fs ex gm c
-                        else
-                            v `fi` v' && placeCardStmt xs fi fs ex gm c
+                            then
+                                placeCardStmt xs fi fs ex gm c
+                            else
+                                v `fi` v' && placeCardStmt xs fi fs ex gm c
                         CardRank -> if r' == ""
-                            then
-                                placeCardStmt xs fi fs ex gm c
-                            else
-                                r `fs` r' && placeCardStmt xs fi fs ex gm c
+                                then
+                                    placeCardStmt xs fi fs ex gm c
+                                else
+                                    r `fs` r' && placeCardStmt xs fi fs ex gm c
                         CardSuit -> if s' == ""
-                            then
-                                placeCardStmt xs fi fs ex gm c
-                            else
-                                s `fs` s' && placeCardStmt xs fi fs ex gm c
+                                then
+                                    placeCardStmt xs fi fs ex gm c
+                                else
+                                    s `fs` s' && placeCardStmt xs fi fs ex gm c
                         _ -> placeCardStmt xs fi fs ex gm c
             where
                 isException :: Either (Int -> Int -> Bool) (String -> String -> Bool) -> CDSLExpr -> Bool

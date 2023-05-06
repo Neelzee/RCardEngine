@@ -3,7 +3,8 @@ module CardGame.Card (
     , shuffle
     ) where
 
-import System.Random ( mkStdGen, Random(randomR), RandomGen )
+import System.Random.Shuffle (shuffle')
+import System.Random (newStdGen)
 import Functions (removeNth)
 
 
@@ -22,16 +23,6 @@ instance Eq Card where
 
 
 
-
-shuffle :: [a] -> [a]
-shuffle xs = shuffle' xs (mkStdGen 420)
-
-
-shuffle' :: RandomGen mkStdGen => [a] -> mkStdGen -> [a]
-shuffle' [] _ = []
-shuffle' xs gen = y : shuffle' ys gen'
-  where
-    (index, gen') = randomR (0, length xs - 1) gen
-    (y, ys) = removeNth index xs
-
+shuffle :: [a] -> IO [a]
+shuffle xs = shuffle' xs (length xs) <$> newStdGen
 
