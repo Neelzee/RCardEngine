@@ -64,15 +64,6 @@ giveCards plrs (x:xs) = case focus plrs of
     Nothing -> giveCards (rotR plrs) (x:xs)
 
 
--- Deals the given card to the given player
-dealPlayer :: (Card, Player) -> Player
-dealPlayer (c, p) = p { hand = c : hand p }
-
--- Checks if player has the given move
-hasMove :: Player -> Move -> Bool
-hasMove plr m = case lookup m (moves plr) of
-    Just _ -> True
-    Nothing -> False
 
 -- Gets move from string
 getMoveFromString :: String -> Maybe Move
@@ -81,22 +72,6 @@ getMoveFromString "draw" = Just DrawCard
 getMoveFromString "pass" = Just Pass
 getMoveFromString _ = Nothing
 
--- Gets the given move from the player, with the corresponding continuing bool
-getMoveFromPlayer :: Player -> Move -> Move
-getMoveFromPlayer p m
-    | null (moves p) = Pass
-    | otherwise = do
-        let (x, _) = head (moves p)
-        if m == x
-            then
-                x
-            else
-                getMoveFromPlayer (p {moves = drop 1 (moves p)}) m
--- Checks if the typed action is an action the player can do
-isValidMove :: String -> Player -> Bool
-isValidMove c plr = case getMoveFromString c of
-    Just m -> hasMove plr m
-    Nothing -> False
 
 standardMoves :: [(Move, Bool)]
 standardMoves = [

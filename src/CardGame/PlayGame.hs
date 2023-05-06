@@ -9,7 +9,7 @@ import System.Time.Extra ( sleep )
 import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore, movesHistory), prettyPrintMoves )
 import Text.Read (readMaybe)
 import Data.List (find, intercalate)
-import Feature ( Feature(PlayerHand) )
+import Feature ( Feature(PlayerHand, CardEffects) )
 import CDSL.CDSLExpr (CDSLExpr(Numeric, CEffect), CardEffect)
 import LoadGame (loadGame)
 import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique, removeLookupAll, remLst, elemLst)
@@ -57,7 +57,7 @@ gameLoop g = do
 -- Returns once a player turn is over
 doPlayerTurn :: Game -> IO Game
 doPlayerTurn g = do
-    -- Applies actions on game start
+    -- Applies actions on round start
     let g' = g { state = TurnStart }
     let acts = map (map fst) (lookupAll (state g') (actions g'))
     game <- gameActions acts g'
@@ -252,16 +252,20 @@ createPlayer = do
 
 checkCardEffect :: Card -> Game -> IO Game
 checkCardEffect c g = case checkCE (cardEffects g) of
-    Just ef -> case focus (players g) of
-        Just p -> do
-            print ef
-            execCardEffect ef g p
+    [] -> return g
+    ef -> case focus (players g) of
+        Just p -> exec ef g p
         Nothing -> return g
-    Nothing -> return g
     where
-        checkCE :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> Maybe (CardEffect, Maybe [CDSLExpr])
-        checkCE [] = Nothing
+        exec :: [(CardEffect, Maybe [CDSLExpr])] -> Game -> Player -> IO Game
+        exec [] gm _ = return gm
+        exec (x:xs) gm p = do
+            g' <- execCardEffect x gm p
+            exec xs g' p
+
+        checkCE :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [(CardEffect, Maybe [CDSLExpr])]
+        checkCE [] = []
         checkCE  ((f@(_, Just ar), CEffect ef xs:ws):ys)
-            | c `cardElem` xs = Just (ef, Just ar)
+            | c `cardElem` xs = (ef, Just ar) : checkCE ys
             | otherwise = checkCE ((f, ws):ys)
         checkCE (_:xs) = checkCE xs

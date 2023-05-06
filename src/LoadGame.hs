@@ -8,12 +8,12 @@ import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
 import CardGame.Card (Card (Card, cScore, suit), rank)
 import Data.List.Extra (sortBy)
-import Feature (Feature(..), Attribute (GameAttributes, CardAttributes, PlayerAttributes))
+import Feature (Feature(..), Attribute (GameAttributes, CardAttributes, PlayerAttributes, Actions))
 import Data.Maybe (mapMaybe)
-import CardGame.Player (standardMoves, parsePlayerMovesExpr, Player (pScore, hand), parsePlayerMoves)
+import CardGame.Player (standardMoves, parsePlayerMovesExpr, Player (pScore, hand), parsePlayerMoves, resetMoves)
 import CDSL.CDSLExpr (CDSLExpr(Numeric, Greatest, Players, Score, IsEqual, All, IsEmpty, Hand, CardValue, CardRank, CardSuit, Text, CLe, CGr, CLEq, CGRq, Null))
 import CDSL.ExecCDSLExpr (execCDSLGame, execCDSLGameBool, cardFromCDSL)
-import Data.CircularList (toList)
+import Data.CircularList (toList, fromList)
 import Functions (lookupAll, lookupOrDefault, lookupM, lookupMAll)
 import CDSL.ParseCDSLExpr (toNumeric)
 import CardGame.CardFunctions (defaultCardSuits, defaultCardRanks, defaultCardValues, makeDeck, cardElem)
@@ -142,6 +142,7 @@ loadGame' gd g = do
 
     let game = g {
         deck = cards'
+        --, players = fromList (map (`resetMoves` mv) (toList (players g)))
         , cardSuits = cs
         , cardRanks = cr
         , turnOrder = to
@@ -156,12 +157,11 @@ loadGame' gd g = do
         , canPlaceCard = [pc]
     }
 
-    case Map.lookup GameAttributes gd of
+    case Map.lookup Actions gd of
         Just att -> do
             -- Rules that should be checked at specific times
             -- Anytime
             let at = map (execCDSLGame . snd) (lookupMAll AnyTime att)
-
             -- Start
             let st = map (execCDSLGame . snd) (lookupMAll StartTime att)
 

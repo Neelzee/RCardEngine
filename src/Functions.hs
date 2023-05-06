@@ -255,10 +255,10 @@ lookupM ky mp = lookupM' (toList mp) ky
 
 
 lookupMAll :: Eq a => a -> Map (a, Maybe b) c -> [((a, Maybe b), c)]
-lookupMAll ky mp = lookupM' (toList mp) ky
+lookupMAll ky mp = lookupMAll' (toList mp) ky
   where
-    lookupM' :: Eq a => [((a, Maybe b), c)] -> a -> [((a, Maybe b), c)] 
-    lookupM' [] _ = []
-    lookupM' (((x, y), z):xs) w
-      | x == w = ((x, y), z) : lookupM' xs w
-      | otherwise = lookupM' xs w
+    lookupMAll' :: Eq a => [((a, Maybe b), c)] -> a -> [((a, Maybe b), c)] 
+    lookupMAll' [] _ = []
+    lookupMAll' (x@((kx, _), _):xs) k
+      | kx == k = x : lookupMAll' xs k
+      | otherwise = lookupMAll' xs k
