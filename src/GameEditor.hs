@@ -1,4 +1,4 @@
-module GameEditor (editor) where
+module GameEditor (editor, gameDataStatus) where
 
 import Prelude hiding (lookup)
 import GHC.IO.Handle (hFlush)

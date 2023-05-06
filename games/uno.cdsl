@@ -1,0 +1,39 @@
+GAME {
+    end_con = any players isEmpty hand;
+    win_con = any players isEmpty hand;
+}
+
+
+CARD {
+    card_suits = [Red, Green, Yellow, Blue];
+    card_ranks = [One, Two, Three, Four, Five, Six, ChangeCard, Skip, DrawTwo, ChangeDrawFour];
+    card_compare = gte;
+    card_constraints = [ranks, suits];
+
+    # Card effects
+    change_card suits = [Red.ChangeCard, Green.ChangeCard, Yellow.ChangeCard, Blue.ChangeCard];
+    pass_next = [Red.Skip, Green.Skip, Yellow.Skip, Blue.Skip];
+    draw_card 2 = [Red.DrawTwo, Green.DrawTwo, Yellow.DrawTwo, Blue.DrawTwo];
+}
+
+
+PLAYER {
+    player_hand = 7;
+    player_moves = [PLAY_CARD FALSE, DRAW_CARD TRUE];
+}
+
+
+ACTIONS {
+    start_time = [
+        shuffle deck,
+        take 1 deck pile
+    ];
+
+    any_time = [
+        [isEmpty deck] : [
+            swap pile deck,
+            take 1 deck pile,
+            shuffle deck
+        ]
+    ];
+}

@@ -10,6 +10,7 @@ module CDSL.ExecCDSLExpr (
     , execCardEffect
     , fromCDSLToCard
     , fromCDSLToString
+    , temPexecCDSLGame
     , cardFromCDSL) where
 
 import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves, cardSuits, cardRanks, turnOrder, discard), GameState (TurnEnd))
@@ -51,11 +52,14 @@ compareCards (x:xs) g c = do
 
 
 
-
+temPexecCDSLGame :: [CDSLExpr] -> Game -> IO Game
+temPexecCDSLGame ex g = do
+    print ex
+    execCDSLGame ex g
 
 execCDSLGame :: [CDSLExpr] -> Game -> IO Game
 execCDSLGame [] g = return g
-execCDSLGame (e@(If l r):xs) g = do
+execCDSLGame ((If l r):xs) g = do
     case partitionEithers (map (`execCDSLGameBool` g) l) of
         (res, []) -> if and res
             then
@@ -329,7 +333,7 @@ fromCDSLToString (Or l r) = "|| " ++ intercalate ", " (map fromCDSLToString l) +
 fromCDSLToString CardRank = "ranks"
 fromCDSLToString CardSuit = "suits"
 fromCDSLToString CardValue = "value"
-fromCDSLToString (Text s) = s
+fromCDSLToString (Text s) = "Text: '" ++ s ++ "'"
 fromCDSLToString (PlayerAction a b) = show a ++ " " ++ if b then "TRUE" else "FALSE"
 fromCDSLToString (AffectPlayer ce (Just ar)) = "affect_player " ++ show ar ++ show ce 
 fromCDSLToString (AffectPlayer ce Nothing) = "affect_player " ++ show ce

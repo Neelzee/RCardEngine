@@ -107,14 +107,6 @@ standardMoves = [
     (Pass, False)]
 
 
-addScore :: Player -> Card -> Player
-addScore p (Card _ _ s) = p { pScore = pScore p + s }
-
-
-toString :: (Move, Bool) -> String
-toString (a, b) = show a ++ " " ++ (if b then "TRUE" else "FALSE")
-
-
 parsePlayerMovesExpr :: [CDSLExpr] -> [(Move, Bool)]
 parsePlayerMovesExpr [] = []
 parsePlayerMovesExpr (Text m:xs) = parsePlayerMoves m ++ parsePlayerMovesExpr xs

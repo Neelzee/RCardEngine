@@ -12,7 +12,7 @@ import Data.List.Extra (intercalate)
 import CDSL.ExecCDSLExpr (fromCDSLToString)
 import GameData.GD (GameData)
 import CDSL.CDSLExpr
-    ( infoCDSL, showF, CDSLExpr(Text), CDSLParseError )
+    ( infoCDSL, showF, CDSLExpr(Text, Numeric), CDSLParseError )
 import System.Console.ANSI (clearScreen)
 import Functions (allGames, lookupM)
 import Feature
@@ -27,7 +27,7 @@ import Terminal.GameCommands
       Flag,
       GCEffect(..),
       GCError(CDSLError, MissingOrCorruptDataError),
-      GameCommand(GameCommand, Help, Clear, List) )
+      GameCommand(GameCommand, Help, Clear, List, Debug) )
 import System.IO (hFlush, stdout)
 import Terminal.ValidateGameCommands (validateGCFlags, validateGameCommand)
 import CDSL.ParseCDSLExpr (parseOneCDSL)

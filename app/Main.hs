@@ -8,18 +8,17 @@ import System.IO ( hFlush, stdout )
 import CardGame.PlayGame (gameStart)
 import Text.Read (readMaybe)
 import GameData.GD (GameData)
-import GameData.LoadGD (loadGameData)
+import GameData.LoadGD (loadGameData, loadGameDataDebug)
 import CDSL.CDSLExpr ( CDSLExpr(Numeric, Text) )
-import Terminal.GameCommands (GameCommand(Play, Create), GCEffect (GCEffect, se, ve, gcErr))
 import Terminal.ValidateGameCommands (validateGameCommand)
-import GameEditor (editor)
+import GameEditor (editor, gameDataStatus)
 import Feature
 import Functions (allGames, lookupM)
 import Terminal.ExecGameCommands
     ( execGameCommands, confirmCommand, printGCEffect, fromCDSLParseErrorOnLoad,  )
-import Terminal.GameCommands (GCError (GCError, errType, UnknownFlagsError, input, UnknownCommandError, InvalidCommandArgumentError, CDSLError, MissingOrCorruptDataError), GameCommand (Help, Create, Save, cmd, Edit, Add, Update, Test, Remove, Copy, Rename, Status, Close, Clear, Quit, List, Play), Flag, commands, showAll)
 import Constants (gameFolder)
 import qualified Data.Map as Map
+import Terminal.GameCommands
 
 -- Play the selected game
 playGame :: Int -> IO ()
@@ -95,7 +94,31 @@ mainLoop = do
                             printGCEffect [GCEffect { se = "Invalid number: '" ++ show i ++ "'"
                                 , ve = "Invalid number: '" ++ show i ++ "', expected a number in the range of 0 to " ++ show (length g)
                                 , gcErr = [GCError { errType = InvalidCommandArgumentError (show i), input = showAll gc }] }] flg
-                            return ()
+                            mainLoop
+
+            -- Debug Command
+
+            (Debug (Numeric i) flg) -> do
+                let ge = GCEffect { se = "All information about the game, and errors, if any", ve = "All information about the game, and errors, if any", gcErr = [] }
+                g <- allGames
+                if i `elem` [0..(length g)]
+                    then
+                        do
+                            r <- confirmCommand gc [ge] flg
+                            when r $ do
+                                        (gd, res) <- loadGameDataDebug i
+                                        putStrLn "\nGameData:\n"
+                                        printGCEffect (gameDataStatus gd) flg
+                                        putStrLn "\nErrors:\n"
+                                        printGCEffect (map (\(e, i) -> GCEffect { se = "Error at line: " ++ show i, ve = "Error at line: " ++ show i, gcErr = [GCError { errType = CDSLError (Right [e]), input = "" }] }) res) flg
+                                        mainLoop
+                    else
+                        do
+                            printGCEffect [GCEffect { se = "Invalid number: '" ++ show i ++ "'"
+                                , ve = "Invalid number: '" ++ show i ++ "', expected a number in the range of 0 to " ++ show (length g)
+                                , gcErr = [GCError { errType = InvalidCommandArgumentError (show i), input = showAll gc }] }] flg
+                            mainLoop
+
             -- Quit
             (Quit flgs) -> do
                 res <- confirmCommand gc [GCEffect { se = "Quitting program.", ve = "Quitting program.", gcErr = [] }] flgs

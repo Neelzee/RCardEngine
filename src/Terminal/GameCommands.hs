@@ -52,6 +52,8 @@ data GameCommand =
     | Copy CDSLExpr [Feature] Flag
     -- Renames an existing game
     | Rename CDSLExpr CDSLExpr Flag
+    -- Debugs the given game
+    | Debug CDSLExpr Flag
     -- Gives the status of the current game
     | Status Flag
     -- Closes the current game
@@ -110,6 +112,7 @@ data GCError =
     | MissingFeatureError Feature
     | OpenGameDataError String
     | NoGameDataError
+    | IncompleteCommandError
 
 instance Show GCError where
     show e = case e of
@@ -117,12 +120,13 @@ instance Show GCError where
         (InvalidCommandArgumentError s) -> "InvalidCommandArgumentError: " ++ s
         InvalidFlagsError -> "InvalidFlagsError"
         UnknownFlagsError -> "UnknownFlagsError"
-        (CDSLError (Left s)) -> "CDSLError->CDSLExecError: " ++ intercalate "," (map show s)
-        (CDSLError (Right s)) -> "CDSLError->CDSLParseError: " ++ intercalate "," (map show s)
+        (CDSLError (Left s)) -> "CDSLError -> CDSLExecError: " ++ intercalate "," (map show s)
+        (CDSLError (Right s)) -> "CDSLError -> CDSLParseError: " ++ intercalate "," (map show s)
         (MissingOrCorruptDataError s) -> "MissingOrCorruptData: " ++ s
         (MissingFeatureError f) -> "MissingFeatureError '" ++ show f ++ "'"
         (OpenGameDataError s) -> "OpenGameDataError: '" ++ s ++ "'"
         NoGameDataError -> "NoGameDataError"
+        IncompleteCommandError -> "IncompleteCommandError"
         (GCError { errType = GCError {}, input = y}) -> "GCError: " ++ y
         (GCError { errType = x, input = y}) -> show x ++ ", input: '" ++ y ++ "'"
 
