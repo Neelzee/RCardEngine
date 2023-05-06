@@ -104,7 +104,9 @@ confirmCommand c xs flg
             case ans of
                 "y" -> return True
                 _ -> return False
-    | otherwise = return True
+    | otherwise = do
+        printGCEffect xs flg
+        return True
 
 
 

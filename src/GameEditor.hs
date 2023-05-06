@@ -1,6 +1,6 @@
 module GameEditor (editor, gameDataStatus) where
 
-import Prelude hiding (lookup)
+import Prelude hiding (lookup, null)
 import GHC.IO.Handle (hFlush)
 import System.IO (stdout)
 import Data.List (intercalate)
@@ -14,7 +14,7 @@ import Terminal.ExecGameCommands (confirmCommand, printGCEffect)
 import qualified Terminal.ExecGameCommands as ExecGameCommands (execGameCommands)
 import GameData.SaveGD (saveGameData)
 import CDSL.CDSLValidater (validateCDSLExpression)
-import Data.Map (lookup, insert, fromList, delete, toList)
+import Data.Map (lookup, insert, fromList, delete, toList, null)
 import Functions (lookupM)
 import System.Directory (getAccessTime)
 import Data.Bifunctor (second)
@@ -22,8 +22,8 @@ import Data.Bifunctor (second)
 editor :: GameData -> IO ()
 editor gd = do
     case lookup GameAttributes gd of
-        Just ga -> case lookup (GameName, Nothing) ga of
-            Just (Text nm:_) -> putStr ("edit -> " ++ nm ++ " > ")
+        Just ga -> case lookupM GameName ga of
+            Just (_, Text nm:_) -> putStr ("edit -> " ++ nm ++ " > ")
             _ -> putStr "edit > "
         _ -> putStr "edit > "
     hFlush stdout
@@ -136,16 +136,18 @@ execGameCommand c gd = case c of
             case lookup (getAttribute fs) gd of
                 Just att -> case lookupM fs att of
                     Just (_, old) -> do
-                        let (gd', gc) = removeFeature gd [fs]
-                        let gce = gc
-                                ++[
+                        let (gd', _) = removeFeature gd [fs]
+                        let gce = [
                                 GCEffect { se = "Updated " ++ show fs
                                     , ve = "Updated " ++ show fs ++ " from\n" ++ intercalate "\n\t" (map fromCDSLToString old) ++ "\nto\n" ++ intercalate "\n\t" (map fromCDSLToString s)
                                     , gcErr = []}]
                         res <- confirmCommand c gce flg
                         if res
                             then
-                                return gd'
+                                do
+                                    let att' = insert (fs, Nothing) s att
+                                    let gd'' = insert (getAttribute fs) att' gd'
+                                    return gd''
                             else
                                 return gd
                     Nothing -> do
