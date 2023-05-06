@@ -9,6 +9,7 @@ module CDSL.ParseCDSLExpr (
     , toNumeric
     , parseExpr
     , parseOneCDSL
+    , exprToCard
 ) where
 
 import Text.Read (readMaybe)
@@ -103,7 +104,7 @@ readCDSL xs = do
         -- Cards
         Left CEDrawCard -> case readMaybe (unwords (drop 1 (words y))) :: Maybe Int of
             Just i -> Left ((CEDrawCard, Just [Numeric i]), [CEffect DrawCards (getCards (stringToList ys))])
-            Nothing -> Right (Just CardEffects, [CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = show (drop 1 (words y)) }])
+            Nothing -> Right (Just CEDrawCard, [CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = show (drop 1 (words y)) }])
         Left CESwapHand -> Left ((CESwapHand, Nothing), [CEffect SwapHand (getCards (stringToList ys))])
         Left CEChangeCard -> case getCardFields (drop 1 (words y)) of
             Left ex -> Left ((CEChangeCard, Just ex), [CEffect ChangeCard (getCards (stringToList ys))])
@@ -283,7 +284,6 @@ parseOneCDSL (x:xs) n = case x of
 validateFeature :: String -> Either Feature CDSLParseError
 validateFeature x = case words x of
     -- Card Effects
-    ["CARD_EFFECTS"] -> Left CardEffects
     ("change_card":xs) -> case getCardFields xs of
         Left _ -> Left CEChangeCard
         Right e -> Right (head e)
@@ -331,6 +331,11 @@ validateFeature x = case words x of
                 , rawExpr = unwords y
             })
 
+
+exprToCard :: CDSLExpr -> [Card]
+exprToCard (Cards cs) = cs
+exprToCard (CEffect _ cs) = cs
+exprToCard _ = []
 
 getCardComperator :: String -> Maybe CDSLExpr
 getCardComperator "eq" = Just CEq

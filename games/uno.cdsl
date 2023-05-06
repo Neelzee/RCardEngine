@@ -12,8 +12,17 @@ CARD {
 
     # Card effects
     change_card suits = [Red.ChangeCard, Green.ChangeCard, Yellow.ChangeCard, Blue.ChangeCard];
-    pass_next = [Red.Skip, Green.Skip, Yellow.Skip, Blue.Skip];
+    pass_next = [
+        # Normal skips
+        Red.Skip, Green.Skip, Yellow.Skip, Blue.Skip,
+        # We skip on draw 2s
+        Red.DrawTwo, Green.DrawTwo, Yellow.DrawTwo, Blue.DrawTwo,
+        # And we skip on draw 4s
+        Red.ChangeDrawFour, Green.ChangeDrawFour, Yellow.ChangeDrawFour, Blue.ChangeDrawFour
+        ];
     draw_card 2 = [Red.DrawTwo, Green.DrawTwo, Yellow.DrawTwo, Blue.DrawTwo];
+    draw_card 4 = [Red.ChangeDrawFour, Green.ChangeDrawFour, Yellow.ChangeDrawFour, Blue.ChangeDrawFour];
+    change_card suits = [Red.ChangeDrawFour, Green.ChangeDrawFour, Yellow.ChangeDrawFour, Blue.ChangeDrawFour];
 }
 
 

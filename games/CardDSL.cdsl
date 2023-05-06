@@ -13,21 +13,22 @@ CARD {
         [1, 2, 3, 4, 5, 6,
         7, 8, 9, 10, 11, 12, 13];
     card_ranks = [Ace, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King];
-    card_constraints = ranks;
+    #card_constraints = ranks;
     exception_constraints eq = ranks;
     ignore_constraints = [Hearts.Ace];
-    card_compare = gte;
+    #card_compare = gte;
     
     # Define some card effects
-    #change_card suits = [Hearts.Ace];
     #swap_hand = [Diamonds.Ace, Spades.Ace];
     #take_from_hand = [Clubs.Ace];
     #give_card = Hearts.Two;
     #pass_next = [Hearts.King];
     #draw_card 2 = [Hearts.Queen, Spades.Queen];
+    #change_card suits = [Hearts.Ace];
+    #draw_card 4 = [Hearts.Ace];
+    #draw_card 2 = [Hearts.Three];
     change_card suits = [Hearts.Ace];
-    draw_card 4 = [Hearts.Ace];
-    change_card suits = [Hearts.Three];
+    change_card ranks = [Hearts.Three];
 }
 
 # Player stats

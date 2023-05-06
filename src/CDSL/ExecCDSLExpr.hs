@@ -10,7 +10,6 @@ module CDSL.ExecCDSLExpr (
     , execCardEffect
     , fromCDSLToCard
     , fromCDSLToString
-    , temPexecCDSLGame
     , cardFromCDSL) where
 
 import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves, cardSuits, cardRanks, turnOrder, discard), GameState (TurnEnd))
@@ -51,11 +50,6 @@ compareCards (x:xs) g c = do
         _ -> True
 
 
-
-temPexecCDSLGame :: [CDSLExpr] -> Game -> IO Game
-temPexecCDSLGame ex g = do
-    print ex
-    execCDSLGame ex g
 
 execCDSLGame :: [CDSLExpr] -> Game -> IO Game
 execCDSLGame [] g = return g
@@ -106,11 +100,8 @@ execCDSLGame (AffectPlayer ce ar:xs) g = case ce of
             sleep 1
             let crds = take n (deck g)
             execCDSLGame xs (g { players = update (p { hand = crds ++ hand p }) (players g) })
-        _ -> if isEmpty (players g)
-            then
-                return g
-            else
-                 execCDSLGame (turnOrder g ++ [AffectPlayer ce ar] ++ xs) g
+        _ -> execCDSLGame (turnOrder g ++ [AffectPlayer ce ar] ++ xs) g
+                 
     _ -> execCDSLGame xs g
 execCDSLGame (TOLeft:xs) g = execCDSLGame xs (g { players = rotL (players g) })
 execCDSLGame (TORight:xs) g = execCDSLGame xs (g { players = rotR (players g) })
@@ -406,7 +397,7 @@ createCard = cc []
                     Nothing -> do
                         putStrLn ("Expected a number between 1 and " ++ show (length (cardRanks g)))
                         cc xs (y:ys) g
-            _ -> undefined
+            _ -> error (show y)
 
 cardFromCDSL :: [CDSLExpr] -> [Card]
 cardFromCDSL [] = []

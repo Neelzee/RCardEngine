@@ -9,8 +9,8 @@ import System.Time.Extra ( sleep )
 import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore, movesHistory), prettyPrintMoves )
 import Text.Read (readMaybe)
 import Data.List (find, intercalate)
-import Feature ( Feature(PlayerHand, CardEffects) )
-import CDSL.CDSLExpr (CDSLExpr(Numeric, CEffect), CardEffect)
+import Feature ( Feature(..) )
+import CDSL.CDSLExpr (CDSLExpr(Numeric, CEffect, Take), CardEffect (ChangeCard, SwapHand, TakeFromHand, GiveCard, PassNext, DrawCards))
 import LoadGame (loadGame)
 import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique, removeLookupAll, remLst, elemLst)
 import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass, DiscardCard))
@@ -20,6 +20,9 @@ import CardGame.Game (GameState (Start, TurnEnd, TurnStart), dealCards, gameActi
 import CardGame.Card (Card)
 import CDSL.ExecCDSLExpr (execCardEffect, execCDSLGame)
 import CardGame.CardFunctions (prettyPrintCards, cardElem)
+import CDSL.ParseCDSLExpr (getCards, exprToCard)
+import Data.Maybe (mapMaybe)
+import CDSL.CDSLValidater (getAllCards)
 
 gameLoop :: Game -> IO Game
 gameLoop g = do
@@ -251,8 +254,7 @@ createPlayer = do
 
 
 checkCardEffect :: Card -> Game -> IO Game
-checkCardEffect c g = case checkCE (cardEffects g) of
-    [] -> return g
+checkCardEffect c g = case check (cardEffects g) of
     ef -> case focus (players g) of
         Just p -> exec ef g p
         Nothing -> return g
@@ -263,9 +265,25 @@ checkCardEffect c g = case checkCE (cardEffects g) of
             g' <- execCardEffect x gm p
             exec xs g' p
 
-        checkCE :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [(CardEffect, Maybe [CDSLExpr])]
-        checkCE [] = []
-        checkCE  ((f@(_, Just ar), CEffect ef xs:ws):ys)
-            | c `cardElem` xs = (ef, Just ar) : checkCE ys
-            | otherwise = checkCE ((f, ws):ys)
-        checkCE (_:xs) = checkCE xs
+
+        check :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [(CardEffect, Maybe [CDSLExpr])]
+        check [] = []
+        check (((CEChangeCard, ar), ex):xs)
+            | c `cardElem` concatMap exprToCard (mapMaybe getAllCards ex) = (ChangeCard, ar) : check xs
+            | otherwise = check xs
+        check (((CESwapHand, ar), ex):xs)
+            | c `cardElem` concatMap exprToCard (mapMaybe getAllCards ex) = (SwapHand, ar) : check xs
+            | otherwise = check xs
+        check (((CETakeFromHand, ar), ex):xs)
+            | c `cardElem` concatMap exprToCard (mapMaybe getAllCards ex) = (TakeFromHand, ar) : check xs
+            | otherwise = check xs
+        check (((CEGiveCard, ar), ex):xs)
+            | c `cardElem` concatMap exprToCard (mapMaybe getAllCards ex) = (GiveCard, ar) : check xs
+            | otherwise = check xs
+        check (((CEPassNext, ar), ex):xs)
+            | c `cardElem` concatMap exprToCard (mapMaybe getAllCards ex) = (PassNext, ar) : check xs
+            | otherwise = check xs
+        check (((CEDrawCard, ar), ex):xs)
+            | c `cardElem` concatMap exprToCard (mapMaybe getAllCards ex) = (DrawCards, ar) : check xs
+            | otherwise = check xs
+        check (_:xs) = check xs

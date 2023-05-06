@@ -7,6 +7,7 @@ module CDSL.CDSLValidater (
     , getNonComperators
     , getNonCardFields
     , getNonNumerics
+    , getAllCards
     ) where
 import CDSL.CDSLExpr
 import Data.Either (partitionEithers, isLeft)
@@ -200,6 +201,11 @@ getNonCards x
     | isCard x = Nothing
     | otherwise = Just x
 
+
+getAllCards :: CDSLExpr -> Maybe CDSLExpr
+getAllCards x
+    | isCard x = Just x
+    | otherwise = Nothing
 
 getNonComperators :: CDSLExpr -> Maybe CDSLExpr
 getNonComperators x

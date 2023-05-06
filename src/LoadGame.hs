@@ -67,25 +67,12 @@ loadGame' gd g = do
 
     ce <- case Map.lookup CardAttributes gd of
         Just att -> do
-            cc <- case lookupM CEChangeCard att of
-                Just e -> return [e]
-                Nothing -> return []
-            sh <- case lookupM CESwapHand att of
-                Just e -> return [e]
-                Nothing -> return []
-            tfh <- case lookupM CETakeFromHand att of
-                Just e -> return [e]
-                Nothing -> return []
-            gc <- case lookupM CEGiveCard att of
-                Just e -> return [e]
-                Nothing -> return []
-            pn <- case lookupM CEPassNext att of
-                Just e -> return [e]
-                Nothing -> return []
-            dc <- case lookupM CEDrawCard att of
-                Just e -> return [e]
-                Nothing -> return []
-
+            let cc = lookupMAll CEChangeCard att
+            let sh = lookupMAll CESwapHand att
+            let tfh = lookupMAll CETakeFromHand att
+            let gc = lookupMAll CEGiveCard att
+            let pn = lookupMAll CEPassNext att
+            let dc = lookupMAll CEDrawCard att
             return (cc ++ sh ++ tfh ++ gc ++ pn ++ dc)
         Nothing -> return []
 
@@ -160,13 +147,17 @@ loadGame' gd g = do
     case Map.lookup Actions gd of
         Just att -> do
             -- Rules that should be checked at specific times
+
             -- Anytime
             let at = map (execCDSLGame . snd) (lookupMAll AnyTime att)
+
             -- Start
             let st = map (execCDSLGame . snd) (lookupMAll StartTime att)
 
             -- TurnStart
             let ts = map (execCDSLGame . snd) (lookupMAll TurnStartTime att)
+
+            -- TurnEnd
             let te = map (execCDSLGame . snd) (lookupMAll TurnEndTime att)
             return (game { actions = [
                 (Start, map (\val -> (val, True)) at)

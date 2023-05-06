@@ -45,7 +45,6 @@ data Feature = WinCon
     | CardFeatures
     | PlayerFeatures
     | GameFeatures
-    | CardEffects
     | CEChangeCard
     | CESwapHand
     | CETakeFromHand
@@ -76,7 +75,6 @@ instance Show Feature where
         CardFeatures -> "card"
         PlayerFeatures -> "player"
         GameFeatures -> "GAME"
-        CardEffects -> "card_effects"
         CEChangeCard -> "change_card"
         CESwapHand -> "swap_hand"
         CETakeFromHand -> "take_from_hand"
@@ -107,7 +105,6 @@ fromStringToFeature x = case x of
     "CARD" -> Just CardFeatures
     "PLAYER" -> Just PlayerFeatures
     "GAME" -> Just GameFeatures
-    "CARD_EFFECTS" -> Just CardEffects
     "change_card" -> Just CEChangeCard
     "swap_hand" -> Just CESwapHand
     "take_from_hand" -> Just CETakeFromHand
@@ -165,7 +162,6 @@ isAFeatureOf CEGiveCard CardAttributes = True
 isAFeatureOf CEPassNext CardAttributes = True
 isAFeatureOf CETakeFromHand CardAttributes = True
 isAFeatureOf CESwapHand CardAttributes = True
-isAFeatureOf CardEffects CardAttributes = True
 
 isAFeatureOf CardConstraints CardAttributes = True
 isAFeatureOf CardSuits CardAttributes = True
@@ -198,7 +194,6 @@ getAttribute x = case x of
     CEPassNext -> CardAttributes
     CETakeFromHand -> CardAttributes
     CESwapHand -> CardAttributes
-    CardEffects -> CardAttributes
     CardConstraints -> CardAttributes
     CardSuits -> CardAttributes
     CardRanks -> CardAttributes
