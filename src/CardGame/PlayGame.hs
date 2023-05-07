@@ -10,7 +10,7 @@ import CardGame.Player ( createPlayers, Player (name, moves, hand, pScore, moves
 import Text.Read (readMaybe)
 import Data.List (find, intercalate)
 import Feature ( Feature(..) )
-import CDSL.CDSLExpr (CDSLExpr(Numeric, CEffect, Take), CardEffect (ChangeCard, SwapHand, TakeFromHand, GiveCard, PassNext, DrawCards))
+import CDSL.CDSLExpr (CDSLExpr(Numeric), CardEffect (ChangeCard, SwapHand, TakeFromHand, GiveCard, PassNext, DrawCards))
 import LoadGame (loadGame)
 import Functions (lookupAll, removeFirst, count, dropFilteredCount, unique, removeLookupAll, remLst, elemLst)
 import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass, DiscardCard))
@@ -20,7 +20,7 @@ import CardGame.Game (GameState (Start, TurnEnd, TurnStart), dealCards, gameActi
 import CardGame.Card (Card)
 import CDSL.ExecCDSLExpr (execCardEffect, execCDSLGame)
 import CardGame.CardFunctions (prettyPrintCards, cardElem)
-import CDSL.ParseCDSLExpr (getCards, exprToCard)
+import CDSL.ParseCDSLExpr (exprToCard)
 import Data.Maybe (mapMaybe)
 import CDSL.CDSLValidater (getAllCards)
 
@@ -52,32 +52,13 @@ gameLoop g = do
                         game' <- gameActions acts game
                         -- Filters the actions on the snd parameter in the tuple, which would be a boolean
                         -- , on if this actions should be removed or not
+                        -- Only used for CEEffects, that do not occur on the player who placed the card
                         let acts' = map (filter snd) (lookupAll (state game) (actions game))
                         gameLoop (game' { actions = removeLookupAll TurnEnd acts' (actions game) })
 
 
-
--- Returns once a player turn is over
-doPlayerTurn :: Game -> IO Game
-doPlayerTurn g = do
-    -- Applies actions on round start
-    let g' = g { state = TurnStart }
-    let acts = map (map fst) (lookupAll (state g') (actions g'))
-    game <- gameActions acts g'
-    case focus (players game) of
-        Just plr -> do
-            putStr ("Playing -> " ++ gameName game ++ " -> " ++ name plr ++ " > ")
-            hFlush stdout
-            putStr "\nPile: "
-            case pile game of
-                [] -> putStrLn "no cards on deck"
-                p -> case snd $ head $ pile game of
-                    Just c -> prettyPrintCards [c]
-                    Nothing -> prettyPrintCards [fst (head p)]
-            action <- getLine
-            case validatePLCommand action of
-                Left cm -> case plc cm of
-                    (Play cardIndex) -> case lookup PlayCard (moves plr) of
+playerPlayCard :: Int -> Player -> Game -> IO Game
+playerPlayCard cardIndex plr game = case lookup PlayCard (moves plr) of
                         Just b -> if cardIndex `elem` [1..(length (hand plr))]
                             then
                                 do
@@ -88,9 +69,11 @@ doPlayerTurn g = do
                                         then
                                             do
                                                 putStrLn ("Plays " ++ show card)
-                                                let plr' = plr { hand = removeFirst (hand plr) card, moves = removeFirst (moves plr) (PlayCard, b), movesHistory = (PlayCard, b) : movesHistory plr }
+                                                let plr' = plr { hand = removeFirst (hand plr) card
+                                                    , moves = removeFirst (moves plr) (PlayCard, b)
+                                                    , movesHistory = (PlayCard, b) : movesHistory plr }
                                                 -- Check card effect
-                                                game' <- checkCardEffect card (g { pile = (card, Nothing):pile game })
+                                                game' <- checkCardEffect card (game { pile = (card, Nothing):pile game })
                                                 -- If player can play card again, 
                                                 if b
                                                     then
@@ -113,50 +96,111 @@ doPlayerTurn g = do
                             putStrLn "Cannot Play a card this turn, type 'moves', to show available moves."
                             doPlayerTurn game
 
-                    (Draw c) -> do
-                        let bls = lookupAll DrawCard (moves plr)
-                        let tC = count True bls
-                        let fC = length bls - tC
-                        case (tC >= c, fC == 1 && (tC + 1) >= c) of
-                            -- Can do action again
-                            (True, _) -> do
-                                let crds = take c (deck game)
-                                putStrLn ("Drew: " ++ intercalate ", " (map show crds))
-                                let p' = plr {hand = crds ++ hand plr, moves = dropFilteredCount (== (DrawCard, True)) c (moves plr), movesHistory = replicate c (PlayCard, True) ++ movesHistory plr }
-                                doPlayerTurn (game { deck = drop c (deck game), players = update p' (players game) })
-                            -- Cannot do action again
-                            (False, True) -> do
-                                let crds = take c (deck game)
-                                putStrLn ("Drew: " ++ intercalate ", " (map show crds))
-                                let p' = plr {hand = crds ++ hand plr, moves = filter (\(m, _) -> m == DrawCard) (moves plr), movesHistory = replicate c (PlayCard, True) ++ movesHistory plr }
-                                putStrLn "Hit Enter to go to next turn."
-                                _ <- getLine
-                                return (game { deck = drop c (deck game), players = update p' (players game) })
-                            -- Invalid
-                            _ -> do
-                                putStrLn "Cannot Draw a card this turn, type 'moves', to show available moves."
-                                doPlayerTurn game
 
-                    PassTurn -> case lookup Pass (moves plr) of
-                        Just b ->
-                            do
-                                let p' = plr { moves = removeFirst (moves plr) (Pass, b), movesHistory = (Pass, b) : movesHistory plr }
-                                if b
-                                    then
-                                        doPlayerTurn game { players = update p' (players game) }
-                                    else
-                                        do
-                                            -- Find the name of the next player
-                                            tG <- execCDSLGame (turnOrder game) game
-                                            nm <- case focus (players tG) of
-                                                Just p -> return ("Hit Enter to go to " ++ name p ++ "'s turn.")
-                                                Nothing -> return "Hit Enter to go to next turn."
-                                            putStrLn nm
-                                            _ <- getLine
-                                            return game { players = update p' (players game) }
-                        _ -> do
-                            putStrLn "Cannot Pass this turn, type 'moves', to show available moves."
-                            doPlayerTurn game
+playerDrawCard :: Int -> Player -> Game -> IO Game
+playerDrawCard c plr game = do
+    let bls = lookupAll DrawCard (moves plr)
+    let tC = count True bls
+    let fC = length bls - tC
+    case (tC >= c, fC == 1 && (tC + 1) >= c) of
+        -- Can do action again
+        (True, _) -> do
+            let crds = take c (deck game)
+            putStrLn ("Drew: " ++ intercalate ", " (map show crds))
+            let p' = plr {hand = crds ++ hand plr, moves = dropFilteredCount (== (DrawCard, True)) c (moves plr), movesHistory = replicate c (PlayCard, True) ++ movesHistory plr }
+            doPlayerTurn (game { deck = drop c (deck game), players = update p' (players game) })
+        -- Cannot do action again
+        (False, True) -> do
+            let crds = take c (deck game)
+            putStrLn ("Drew: " ++ intercalate ", " (map show crds))
+            let p' = plr {hand = crds ++ hand plr, moves = filter (\(m, _) -> m == DrawCard) (moves plr), movesHistory = replicate c (PlayCard, True) ++ movesHistory plr }
+            putStrLn "Hit Enter to go to next turn."
+            _ <- getLine
+            return (game { deck = drop c (deck game), players = update p' (players game) })
+        -- Invalid
+        _ -> do
+            putStrLn "Cannot Draw a card this turn, type 'moves', to show available moves."
+            doPlayerTurn game
+
+
+
+playerPassTurn :: Player -> Game -> IO Game
+playerPassTurn plr game = case lookup Pass (moves plr) of
+    Just b ->
+        do
+            let p' = plr { moves = removeFirst (moves plr) (Pass, b), movesHistory = (Pass, b) : movesHistory plr }
+            if b
+                then
+                    doPlayerTurn game { players = update p' (players game) }
+                else
+                    do
+                        -- Find the name of the next player
+                        tG <- execCDSLGame (turnOrder game) game
+                        nm <- case focus (players tG) of
+                            Just p -> return ("Hit Enter to go to " ++ name p ++ "'s turn.")
+                            Nothing -> return "Hit Enter to go to next turn."
+                        putStrLn nm
+                        _ <- getLine
+                        return game { players = update p' (players game) }
+    _ -> do
+        putStrLn "Cannot Pass this turn, type 'moves', to show available moves."
+        doPlayerTurn game
+
+
+playerDiscardCard :: [Int] -> Player -> Game -> IO Game
+playerDiscardCard is plr game = case lookup DiscardCard (moves plr) of
+    Just b -> if is `elemLst` [1..length (hand plr)]
+        then
+            do
+                putStrLn ("Discarding the cards: " ++ intercalate ", " (map show is))
+                let p = plr { hand = remLst (hand plr) (map (\c -> c - 1) is) }
+                tG <- execCDSLGame (turnOrder game) game
+                nm <- case focus (players tG) of
+                    Just p' -> return ("Hit Enter to go to " ++ name p' ++ "'s turn.")
+                    Nothing -> return "Hit Enter to go to next turn."
+                putStrLn nm
+                _ <- getLine
+                if b
+                    then
+                        doPlayerTurn (game { players = update p (players game) })
+                    else
+                        return (game { players = update p (players game) })
+        else
+            do
+                putStrLn ("Invalid numbers, expected something in the range of 1 to " ++ show (length (hand plr)))
+                doPlayerTurn game
+
+    Nothing -> do
+        putStrLn "Cannot Discard this turn, type 'moves', to show available moves."
+        doPlayerTurn game
+
+-- Returns once a player turn is over
+doPlayerTurn :: Game -> IO Game
+doPlayerTurn g = do
+    -- Applies actions on round start
+    let g' = g { state = TurnStart }
+    let acts = map (map fst) (lookupAll (state g') (actions g'))
+    game <- gameActions acts g'
+    case focus (players game) of
+        Just plr -> do
+            putStr ("Playing -> " ++ gameName game ++ " -> " ++ name plr ++ " > ")
+            hFlush stdout
+            putStr "\nPile: "
+            case pile game of
+                [] -> putStrLn "no cards on deck"
+                p -> case snd $ head $ pile game of
+                    Just c -> prettyPrintCards [c]
+                    Nothing -> prettyPrintCards [fst (head p)]
+            action <- getLine
+            case validatePLCommand action of
+                Left cm -> case plc cm of
+                    (Play cardIndex) -> playerPlayCard cardIndex plr game
+
+                    (Draw c) -> playerDrawCard c plr game
+
+                    PassTurn -> playerPassTurn plr game
+
+                    (DiscardUA is) -> playerDiscardCard is plr game
 
                     Moves -> do
                         let mv = moves plr
@@ -186,37 +230,11 @@ doPlayerTurn g = do
                     HelpUA -> do
                         printUACommands
                         doPlayerTurn game
-                    -- Checking if its a valid move
-                    (DiscardUA is) -> case lookup DiscardCard (moves plr) of
-                        Just b -> if is `elemLst` [1..length (hand plr)]
-                            then
-                                do
-                                    putStrLn ("Discarding the cards: " ++ intercalate ", " (map show is))
-                                    let p = plr { hand = remLst (hand plr) (map (\c -> c - 1) is) }
-                                    nm <- case focus (players g) of
-                                                Just p' -> return ("Hit Enter to go to " ++ name p' ++ "'s turn.")
-                                                Nothing -> return "Hit Enter to go to next turn."
-                                    putStrLn nm
-                                    _ <- getLine
-                                    if b
-                                        then
-                                            doPlayerTurn (game { players = update p (players game) })
-                                        else
-                                            return (game { players = update p (players game) })
-                            else
-                                do
-                                    putStrLn ("Invalid numbers, expected something in the range of 1 to " ++ show (length (hand plr)))
-                                    doPlayerTurn game
-
-                        Nothing -> do
-                            putStrLn "Cannot Discard this turn, type 'moves', to show available moves."
-                            doPlayerTurn game
 
                 _ -> do
                     putStrLn "Unknown command, type 'help' to list all commands."
                     doPlayerTurn game
         _ -> return game
-
 
 
 
@@ -265,7 +283,7 @@ checkCardEffect c g = case check (cardEffects g) of
             g' <- execCardEffect x gm p
             exec xs g' p
 
-
+        -- The expressions is only used, earlier, to check if the card was places, not in the actuall execution of the effect
         check :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [(CardEffect, Maybe [CDSLExpr])]
         check [] = []
         check (((CEChangeCard, ar), ex):xs)

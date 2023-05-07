@@ -30,6 +30,7 @@ library
       CardGame.CardFunctions
       Functions
       GameEditor
+      GameData.DebugGD
       GameData.GD
       GameData.LoadGD
       GameData.SaveGD

@@ -14,8 +14,8 @@ module CardGame.CardFunctions (
 import CDSL.CDSLExpr
 import CardGame.Card
 import Data.List (intercalate)
-import Extra (split)
 import Data.Maybe (mapMaybe)
+import Data.List.Extra (split)
 
 
 
@@ -32,6 +32,7 @@ defaultCardValues = map Numeric [1..13]
 defaultCardDeck :: [Card]
 defaultCardDeck = [ Card s n sc | (Text s) <- defaultCardSuits, (Text n) <- defaultCardRanks, (Numeric sc) <- defaultCardValues ]
 
+-- Due to prev. validation, there will only be Text and Numeric expressions here
 makeDeck :: [CDSLExpr] -> [CDSLExpr] -> [CDSLExpr] -> [Card]
 makeDeck suits ranks values =
   let paddedValues = values ++ repeat (Numeric 0)

@@ -26,7 +26,7 @@ module Functions (
   , lookupMAll
   ) where
 
-import Data.List.Extra (splitOn, split)
+import Data.List.Extra (splitOn)
 import Data.Char (isSpace)
 import Data.Maybe (fromMaybe)
 import System.Directory (listDirectory)

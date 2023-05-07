@@ -12,14 +12,10 @@ import Terminal.GameCommands (GCError (GCError, InvalidCommandArgumentError, err
 import Data.List.Extra (trim)
 import Text.Read (readMaybe)
 import Terminal.ExecGameCommands (printTable)
-import Data.Maybe
+import Data.Maybe ( mapMaybe )
 
 
-data PLCommand =
-    PLCommand
-    {
-        plc :: UserActions
-    }
+newtype PLCommand = PLCommand { plc :: UserActions }
     deriving (Show, Eq)
 
 data UserActions =
@@ -54,6 +50,7 @@ validatePLCommand xs = case map trim (words xs) of
         Nothing -> Right (GCError { 
             errType = InvalidCommandArgumentError xs
             , input = xs})
+    ["draw"] -> Left (PLCommand (Draw 1))
     ("draw":ys) -> case readMaybe (concat ys) :: Maybe Int of
         Just i -> Left (PLCommand (Draw i))
         Nothing -> Right (GCError { 

@@ -1,19 +1,15 @@
 module GameData.SaveGD (saveGameData) where
 
 import GameData.GD (GameData)
-import Feature (Feature(..), Attribute (GameAttributes), getAttribute)
-import System.Directory (listDirectory)
+import Feature (Feature(..), Attribute (GameAttributes))
 import Constants (gameFolder, gameExtension)
-import Data.List (elemIndex, intercalate)
-import CDSL.CDSLExpr (CDSLExpr(..), CDSLParseErrorCode (ParseErrorOnLine), CDSLParseError (pErr), CardEffect (..))
-import System.IO (withFile, IOMode (WriteMode), hPrint, hPutStrLn)
+import Data.List (intercalate)
+import CDSL.CDSLExpr (CDSLExpr(..))
 import CDSL.ExecCDSLExpr (fromCDSLToString)
-import GameData.LoadGD (loadGameData)
-import Terminal.GameCommands
-import Functions (lookupAll, lookupM)
+import Terminal.GameCommands ( GCEffect(..) )
+import Functions (lookupM)
 import qualified Data.Map as Map
 import CardGame.CardFunctions (prettyShowCards)
-import CardGame.Card (Card)
 import Data.Bifunctor (Bifunctor(second))
 
 
@@ -27,33 +23,35 @@ saveGameData gd = do
     saveGD gd gm
     return (GCEffect { se = "Saved " ++ gm
     , ve = "Saved " ++ show (Map.size gd) ++ " attributes, saved " ++ show (sum (map (\(_, b) -> Map.size b) (Map.toList gd))) ++ " features", gcErr = []})
+
+
+saveGD :: GameData -> String -> IO ()
+saveGD cd n = do
+    let pgd = Map.assocs $ Map.fromListWith (++) $ sortToAttributes (Map.toList cd)
+    let cont = map (\(at, fs) -> show at ++ " {\n" ++ showContent fs ++ "\n}") pgd
+    let cs = intercalate "\n\n" cont
+    writeFile (gameFolder ++ "/" ++ n ++ gameExtension) cs
+
+
+sortToAttributes :: [(Attribute, Map.Map (Feature, Maybe [CDSLExpr]) [CDSLExpr])] -> [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])])]
+sortToAttributes = map (second (check . Map.toList))
     where
-        saveGD :: GameData -> String -> IO ()
-        saveGD cd n = do
-            let pgd = Map.assocs $ Map.fromListWith (++) $ sortToAttributes (Map.toList cd)
-            let cont = map (\(at, fs) -> show at ++ " {\n" ++ showContent fs ++ "\n}") pgd
-            let cs = intercalate "\n\n" cont
-            writeFile (gameFolder ++ "/" ++ n ++ gameExtension) cs
+        check :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [((Feature, Maybe [CDSLExpr]), [CDSLExpr])]
+        check [] = []
+        check (((GameName, _), _):xs) = check xs
+        check (x:xs) = x : check xs
 
 
-        sortToAttributes :: [(Attribute, Map.Map (Feature, Maybe [CDSLExpr]) [CDSLExpr])] -> [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])])]
-        sortToAttributes = map (second (check . Map.toList))
-            where
-                check :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [((Feature, Maybe [CDSLExpr]), [CDSLExpr])]
-                check [] = []
-                check (((GameName, _), _):xs) = check xs
-                check (x:xs) = x : check xs
+showContent :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> String
+showContent [] = ""
+showContent fs = intercalate "\n" (map (uncurry showFeature) fs)
+
+showFeature :: (Feature, Maybe [CDSLExpr]) -> [CDSLExpr] -> String
+showFeature (IgnoreConstraints, _) xs = show IgnoreConstraints ++ " = " ++ intercalate ", " (map prShow xs) ++ ";"
+showFeature (f, Nothing) xs = show f ++ " = [" ++ intercalate ", " (map prShow xs) ++ "];"
+showFeature (f, Just arg) xs = show f ++ " " ++ intercalate ", " (map fromCDSLToString arg)  ++ " = [" ++ intercalate "," (map prShow xs) ++ "];"
 
 
-        showContent :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> String
-        showContent [] = ""
-        showContent fs = intercalate "\n" (map (uncurry showFeature) fs)
-
-        showFeature :: (Feature, Maybe [CDSLExpr]) -> [CDSLExpr] -> String
-        showFeature (IgnoreConstraints, _) xs = show IgnoreConstraints ++ " = " ++ intercalate ", " (map go xs) ++ ";"
-        showFeature (f, Nothing) xs = show f ++ " = [" ++ intercalate ", " (map go xs) ++ "];"
-        showFeature (f, Just arg) xs = show f ++ " " ++ intercalate ", " (map fromCDSLToString arg)  ++ " = [" ++ intercalate "," (map go xs) ++ "];"
-
-        go :: CDSLExpr -> String
-        go (CEffect _ cs) = prettyShowCards cs
-        go y = fromCDSLToString y
+prShow :: CDSLExpr -> String
+prShow (CEffect _ cs) = prettyShowCards cs
+prShow y = fromCDSLToString y

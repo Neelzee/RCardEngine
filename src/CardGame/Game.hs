@@ -35,7 +35,6 @@ data Game = Game {
     , state :: GameState
     , rules :: [(Feature, [CDSLExpr])]
     , actions :: [(GameState, [(Game -> IO Game, Bool)])]
-    , rounds :: Int
     , canPlaceCard :: [Game -> Card -> Bool]
     , cpcException :: [CDSLExpr]
 }
@@ -67,10 +66,10 @@ createEmptyGame = Game {
                     , state = Start
                     , rules = []
                     , actions = []
-                    , rounds = 0
                     , canPlaceCard = []
                     }
 
+-- Applies the game actions to the game
 gameActions :: [[Game -> IO Game]] -> Game -> IO Game
 gameActions xs = go (concat xs)
     where

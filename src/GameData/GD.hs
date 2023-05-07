@@ -1,6 +1,6 @@
 module GameData.GD (GameData) where
 
-import Data.Map
+import Data.Map ( Map )
 import Feature (Feature, Attribute)
 import CDSL.CDSLExpr (CDSLExpr)
 

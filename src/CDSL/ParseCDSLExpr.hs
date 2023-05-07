@@ -14,13 +14,31 @@ module CDSL.ParseCDSLExpr (
 
 import Text.Read (readMaybe)
 import CDSL.CDSLExpr
+    ( CDSLExpr(CGr, PlayerAction, Not, Or, If, Any, All, Greatest,
+               Players, Score, Hand, IsEqual, IsEmpty, Swap, PreviousPlayer,
+               Shuffle, Deck, Pile, Take, Always, Never, CardRank, CardSuit,
+               CardValue, Discard, TOLeft, TORight, Turn, GoBack, GoForward,
+               Reset, CurrentPlayer, PMoves, IsMove, PAPass, PADraw, PAPlay,
+               IsSame, Look, Put, Numeric, Text, Null, Cards, CEffect, CEq, CLEq,
+               CGRq, CLe),
+      CDSLParseError(..),
+      CDSLParseErrorCode(NotAFeatureError, SyntaxError,
+                         NotACardFieldError, IncompleteExpressionError,
+                         InvalidFeatureArgumentError),
+      CardEffect(GiveCard, DrawCards, SwapHand, ChangeCard, TakeFromHand,
+                 PassNext) )
 import Data.List.Extra (splitOn, trim)
 import Data.Text (unpack, strip, pack)
 import CardGame.PlayerMove (Move(PlayCard, DrawCard, Pass))
 import Feature
+    ( Feature(ExceptionConstraints, CEChangeCard, CESwapHand,
+              CETakeFromHand, CEGiveCard, CEPassNext, CEDrawCard, CardSuits,
+              CardValues, CardRanks, CardConstraints, IgnoreConstraints,
+              PlayerHand, PlayerMoves, AnyTime, StartTime),
+      fromStringToFeature )
 import CardGame.Player (parsePlayerMove)
 import Data.Maybe (mapMaybe)
-import CardGame.Card
+import CardGame.Card ( Card(Card) )
 import Functions (subString, stringToList, removeFirst)
 
 
@@ -57,8 +75,6 @@ parseCDSLPlayerAction xs = parse (parseStringList xs)
 
 parseStringList :: String -> [CDSLExpr]
 parseStringList xs = map (Text . trim) (splitOn "," xs)
-
-
 
 
 
@@ -101,7 +117,7 @@ readCDSL :: String -> Either ((Feature, Maybe [CDSLExpr]), [CDSLExpr]) (Maybe Fe
 readCDSL xs = do
     let (y, ys) = (takeWhile (/='=') xs, removeFirst (dropWhile (/='=') xs) '=')
     case validateFeature (unpack $ strip $ pack y) of
-        -- Cards
+        -- Cardeffects
         Left CEDrawCard -> case readMaybe (unwords (drop 1 (words y))) :: Maybe Int of
             Just i -> Left ((CEDrawCard, Just [Numeric i]), [CEffect DrawCards (getCards (stringToList ys))])
             Nothing -> Right (Just CEDrawCard, [CDSLParseError { pErr = InvalidFeatureArgumentError, pExpr = Null, rawExpr = show (drop 1 (words y)) }])

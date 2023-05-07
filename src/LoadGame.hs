@@ -10,11 +10,11 @@ import CardGame.Card (Card (Card, cScore, suit), rank)
 import Data.List.Extra (sortBy)
 import Feature (Feature(..), Attribute (GameAttributes, CardAttributes, PlayerAttributes, Actions))
 import Data.Maybe (mapMaybe)
-import CardGame.Player (standardMoves, parsePlayerMovesExpr, Player (pScore, hand), parsePlayerMoves, resetMoves)
+import CardGame.Player (standardMoves, parsePlayerMovesExpr, Player (pScore, hand))
 import CDSL.CDSLExpr (CDSLExpr(Numeric, Greatest, Players, Score, IsEqual, All, IsEmpty, Hand, CardValue, CardRank, CardSuit, Text, CLe, CGr, CLEq, CGRq, Null))
 import CDSL.ExecCDSLExpr (execCDSLGame, execCDSLGameBool, cardFromCDSL)
-import Data.CircularList (toList, fromList)
-import Functions (lookupAll, lookupOrDefault, lookupM, lookupMAll)
+import Data.CircularList (toList)
+import Functions (lookupM, lookupMAll)
 import CDSL.ParseCDSLExpr (toNumeric)
 import CardGame.CardFunctions (defaultCardSuits, defaultCardRanks, defaultCardValues, makeDeck, cardElem)
 import qualified Data.Map as Map
@@ -29,7 +29,6 @@ loadGame g n = do
             return g
 
 
--- TODO: Add card effects back to the game
 loadGame' :: GameData -> Game -> IO Game
 loadGame' gd g = do
     -- gamename
@@ -186,7 +185,8 @@ loadGame' gd g = do
             CGRq -> (<=)
             _ -> (==)
 
-        placeCardStmt :: [CDSLExpr] -> (Int -> Int -> Bool) -> (String -> String -> Bool) -> (Either (Int -> Int -> Bool) (String -> String -> Bool), CDSLExpr) -> Game -> Card -> Bool
+        placeCardStmt :: [CDSLExpr] -> (Int -> Int -> Bool) -> (String -> String -> Bool)
+            -> (Either (Int -> Int -> Bool) (String -> String -> Bool), CDSLExpr) -> Game -> Card -> Bool
         placeCardStmt [] _ _ _ _ _ = True
         placeCardStmt (x:xs) fi fs ex gm c@(Card s r v)
             | null (pile gm) = True

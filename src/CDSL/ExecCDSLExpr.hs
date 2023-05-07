@@ -13,19 +13,25 @@ module CDSL.ExecCDSLExpr (
     , cardFromCDSL) where
 
 import CardGame.Game (Game (deck, pile, players, cardGen, actions, playerMoves, cardSuits, cardRanks, turnOrder, discard), GameState (TurnEnd))
-import Data.CircularList (toList, size, update, fromList, rotR, rotL, focus, isEmpty, rotL, rotNL, rotNR, CList)
+import Data.CircularList (toList, size, update, rotR, rotL, focus, rotL, rotNL, rotNR, CList)
 import CardGame.Player (Player(hand, pScore, name, moves, movesHistory))
 import Data.Either (partitionEithers)
 import CardGame.Card (shuffle, Card (..))
 import CDSL.CDSLExpr
+    ( CDSLExecError(..),
+      CDSLExecErrorCode(InvalidSyntaxError, SyntaxErrorRightOperand,
+                        SyntaxErrorLeftOperand),
+      CDSLExpr(..),
+      CardEffect(DrawCards, ChangeCard, GiveCard, SwapHand, TakeFromHand,
+                 PassNext) )
 import Data.List (elemIndex, intercalate)
-import Functions (takeUntilDuplicate, deleteAt, removeFirst, updateAt, lookupOrDefault)
-import Text.Read (readMaybe, Lexeme (String))
+import Functions (takeUntilDuplicate, deleteAt, removeFirst, lookupOrDefault)
+import Text.Read (readMaybe)
 import CardGame.CardFunctions (prettyPrintCards)
-import Extra (sleep)
 import CardGame.PlayerMove (Move(Pass))
 import CDSL.ParseCDSLExpr (toNumeric)
 import Data.Maybe (mapMaybe)
+import System.Time.Extra (sleep)
 
 
 placeCardStmt :: [CDSLExpr] -> (Game -> Card -> Bool)

@@ -88,8 +88,11 @@ data CDSLExpr =
     | CardValue
     -- References Player Action
     | PlayerAction Move Bool
+    -- Player Action Pass
     | PAPass
+    -- Player Action Draw
     | PADraw
+    -- Player Action Play
     | PAPlay
     -- CardEffect
     | CEffect CardEffect [Card]
@@ -142,14 +145,20 @@ data CDSLParseError =
     deriving (Show, Eq)
 
 data CDSLParseErrorCode =
+    -- Expression that is incomplete
     IncompleteExpressionError
+    -- Not a valid if statement, i.e. the condition does not evaluates to a boolean
     | NotIfStatementError
+    -- General syntax error
     | SyntaxError
     | UnnecessaryOperandError
     | MissingTerminationStatement Int
     | UnknownKeyWord Int
+    -- Parse errors on load
     | OnLoad Feature CDSLParseErrorCode
+    -- Errors on validate of a feature
     | OnValidateFeature Feature [CDSLExecError]
+    -- Errors on validation of CDSL-script 'feature arg = expression'
     | OnValidateExpressions (Maybe Feature) [CDSLParseError]
     | NotAFeatureError
     | NotAnAttributeError
@@ -158,6 +167,7 @@ data CDSLParseErrorCode =
     | InvalidFeatureArgumentError
     | NotACardFieldError
     | ParseErrorOnLine CDSLParseErrorCode Int
+    -- The given cards, are not actual cards
     | MissMatchCardError [Card] [Card]
     | InvalidExpressionError
     deriving (Show, Eq)
@@ -172,10 +182,17 @@ data CDSLExecError =
     deriving (Show, Eq)
 
 data CDSLExecErrorCode =
+    -- The given combination of CDSLExpr is not valid
     InvalidSyntaxError
+    -- Same as error above, but specifies the right operand
     | SyntaxErrorRightOperand
+    -- Same as error above, but specifies the Left operand
     | SyntaxErrorLeftOperand
+    -- The given expression should evaluate too a boolean, but does not
     | InvalidBoolEvaluationError
+    -- Due to the way i've structured this
+    -- , this error is needed if there is an combination
+    -- or new expression that has not been added to the validator
     | UnknownExpressionError
     deriving (Show, Eq)
 
@@ -213,7 +230,7 @@ infoCDSL =
         , (CurrentPlayer Null, "Is the current player, i.e. the one whos turn it is")
         , (Reset Null, "Resets a players fields or values")
         , (Cards [], "List of cards")
-        , (Turn, "A reference too the turn-system of the game")
+        , (Turn, "A reference to the turn-system of the game")
         , (GoBack Null, "Will change the current player, to be a reference the previous player, and therefore make it that players turn again")
         , (GoForward Null, "Will change the current player, to be a reference the next player, and therefore make it that players turn")
         , (IsMove Null, "Will evaluate too true, if the last move a player made, is the specified move")
@@ -228,7 +245,7 @@ infoCDSL =
         , (CGRq, "Greater and Equal comparator")
     ]
 
-
+-- Shows the first expression, only used in the help action
 showF :: CDSLExpr -> String
 showF (All _) = "all"
 showF (Any _) = "any"
@@ -247,9 +264,9 @@ showF Pile = "pile"
 showF (Take {}) = "take"
 showF Always = "always"
 showF Never = "never"
-showF (Not _) = "not"
-showF (And _ _) = "and"
-showF (Or _ _) = "or"
+showF (Not _) = "!"
+showF (And _ _) = "&&"
+showF (Or _ _) = "||"
 showF CardRank = "rank"
 showF CardSuit = "suit"
 showF CardValue = "value"
@@ -275,4 +292,7 @@ showF (IsMove _) = "isMove"
 showF PAPass = "pPass"
 showF PADraw = "pDraw"
 showF PAPlay = "pPlay"
+showF Turn = "turn_order"
+showF (GoBack Null) = "goBack"
+showF (GoForward Null) = "goForward"
 showF _ = "(NOT ADDED)"

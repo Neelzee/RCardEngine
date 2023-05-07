@@ -11,13 +11,14 @@ module CardGame.Player (
     , prettyPrintMoves
 ) where
 
-import CardGame.Card ( Card(Card) )
+import CardGame.Card ( Card )
 import Data.CircularList (CList, focus, size, rotR, update)
 import CDSL.CDSLExpr (CDSLExpr (Text, PlayerAction))
 import Data.Maybe (mapMaybe)
-import Functions (splitAndTrim, mapCLCount)
+import Functions (splitAndTrim)
 import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass, DiscardCard), prettyShow)
 import Data.List (intercalate)
+import Control.Monad (replicateM)
 
 data Player = Player {
     name :: String
@@ -34,19 +35,16 @@ instance Ord Player where
 -- Creates players
 createPlayers :: Int -> IO [Player]
 createPlayers 0 = return []
-createPlayers n = do
-    player <- createPlayer
-    players <- createPlayers (n - 1)
-    return (player : players)
+createPlayers n = replicateM n createPlayer
 
 createPlayer :: IO Player
 createPlayer = do
     putStrLn "Enter name:"
     n <- getLine
-    return (Player n [] [] [] 0)
+    return $ Player n [] [] [] 0
 
 resetMoves :: Player -> [(Move, Bool)] -> Player
-resetMoves plr mv = plr {moves = mv }
+resetMoves plr mv = plr { moves = mv }
 
 deal :: Int -> [Card] -> CList Player -> (CList Player, [Card])
 deal n deck players = deal' (n * size players) deck players

@@ -12,7 +12,7 @@ import Data.List.Extra (intercalate)
 import CDSL.ExecCDSLExpr (fromCDSLToString)
 import GameData.GD (GameData)
 import CDSL.CDSLExpr
-    ( infoCDSL, showF, CDSLExpr(Text, Numeric), CDSLParseError )
+    ( infoCDSL, showF, CDSLExpr(Text), CDSLParseError )
 import System.Console.ANSI (clearScreen)
 import Functions (allGames, lookupM)
 import Feature
@@ -27,7 +27,7 @@ import Terminal.GameCommands
       Flag,
       GCEffect(..),
       GCError(CDSLError, MissingOrCorruptDataError),
-      GameCommand(GameCommand, Help, Clear, List, Debug) )
+      GameCommand(GameCommand, Help, Clear, List) )
 import System.IO (hFlush, stdout)
 import Terminal.ValidateGameCommands (validateGCFlags, validateGameCommand)
 import CDSL.ParseCDSLExpr (parseOneCDSL)
@@ -40,9 +40,9 @@ execGameCommands c = case c of
     (Help Nothing) -> do
         printCommands commands
         return ()
-    (Help (Just "flags")) -> putStrLn (intercalate "\n" (map (\(flg, inf) -> "Flag: " ++ unwords flg ++ ": " ++ inf) flags))
-    (Help (Just "feature")) -> putStrLn (intercalate "\n" (map (\(fet, inf) -> "Feature: " ++ show fet ++ ": " ++ inf) featureInfo))
-    (Help (Just "cdsl")) -> putStrLn (intercalate "\n" (map (\(ex, expl) -> "Expression: " ++ showF ex ++ ", " ++ expl) infoCDSL))
+    (Help (Just "flags")) -> printTable (map (\(flg, inf) -> (unwords flg, inf, "")) flags)
+    (Help (Just "feature")) -> printTable (map (\(fet, inf) -> (show fet, inf, "")) featureInfo)
+    (Help (Just "cdsl")) -> printTable (map (\(ex, expl) -> (showF ex, expl, "")) infoCDSL)
     (Help (Just xs)) -> case validateGCFlags (words xs) of
                 Left flg -> case lookup flg flags of -- Give information about that flag
                     Just inf -> putStrLn ("Flag: " ++ unwords flg ++ ": " ++ inf)

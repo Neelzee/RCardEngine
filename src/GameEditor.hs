@@ -16,7 +16,6 @@ import GameData.SaveGD (saveGameData)
 import CDSL.CDSLValidater (validateCDSLExpression)
 import Data.Map (lookup, insert, fromList, delete, toList, null)
 import Functions (lookupM)
-import System.Directory (getAccessTime)
 import Data.Bifunctor (second)
 
 editor :: GameData -> IO ()
@@ -46,7 +45,7 @@ editor gd = do
 
 
 
--- Takes in user input
+-- Most commands are for the editor
 execGameCommand :: GameCommand -> GameData -> IO GameData
 execGameCommand c gd = case c of
     -- Add feature command
