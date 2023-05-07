@@ -147,26 +147,17 @@ data CDSLParseError =
 data CDSLParseErrorCode =
     -- Expression that is incomplete
     IncompleteExpressionError
-    -- Not a valid if statement, i.e. the condition does not evaluates to a boolean
-    | NotIfStatementError
     -- General syntax error
     | SyntaxError
-    | UnnecessaryOperandError
-    | MissingTerminationStatement Int
-    | UnknownKeyWord Int
-    -- Parse errors on load
-    | OnLoad Feature CDSLParseErrorCode
     -- Errors on validate of a feature
     | OnValidateFeature Feature [CDSLExecError]
     -- Errors on validation of CDSL-script 'feature arg = expression'
     | OnValidateExpressions (Maybe Feature) [CDSLParseError]
     | NotAFeatureError
     | NotAnAttributeError
-    | MissMatchFeatureError
     | NotAFeatureOfAttribute Attribute Feature
     | InvalidFeatureArgumentError
     | NotACardFieldError
-    | ParseErrorOnLine CDSLParseErrorCode Int
     -- The given cards, are not actual cards
     | MissMatchCardError [Card] [Card]
     | InvalidExpressionError

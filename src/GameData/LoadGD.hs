@@ -39,7 +39,7 @@ loadGameData gd n = do
     g <- allGames
     let gm = takeWhile (/= '.') (g !! n)
     if n < 0 || n >= length g
-    then -- Shouldnt happen
+    then -- Shouldnt happen, due to prev. validation
         return (Right (CDSLParseError { pErr = SyntaxError, pExpr = Null, rawExpr = show n }, 0))
     else
         do

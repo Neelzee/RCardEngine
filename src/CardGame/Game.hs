@@ -36,7 +36,6 @@ data Game = Game {
     , rules :: [(Feature, [CDSLExpr])]
     , actions :: [(GameState, [(Game -> IO Game, Bool)])]
     , canPlaceCard :: [Game -> Card -> Bool]
-    , cpcException :: [CDSLExpr]
 }
 
 
@@ -52,7 +51,6 @@ createEmptyGame = Game {
                     gameName = "Default Game"
                     , turnOrder = []
                     , discard = []
-                    , cpcException = []
                     , playerMoves = []
                     , cardGen = []
                     , cardSuits = []
