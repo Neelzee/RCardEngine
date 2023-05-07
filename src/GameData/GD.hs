@@ -1,11 +1,11 @@
 module GameData.GD (GameData) where
 
-import Feature (Feature (..))
-import CDSL.CDSLExpr (CDSLExpr (CEffect), CDSLExecError (CDSLExecError), CDSLParseErrorCode (MissMatchCardError), CDSLParseError (CDSLParseError, pErr, pExpr, rawExpr))
-import Functions (lookupAll)
-import CardGame.CardFunctions (makeDeck, cardElem)
+import Data.Map ( Map )
+import Feature (Feature, Attribute)
+import CDSL.CDSLExpr (CDSLExpr)
 
-type GameData = [(Feature, [CDSLExpr])]
+
+type GameData = Map Attribute (Map (Feature, Maybe [CDSLExpr]) [CDSLExpr])
 
 
 

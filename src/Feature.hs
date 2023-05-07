@@ -6,7 +6,9 @@ module Feature (
     , isAFeatureOf
     , featureInfo
     , validateAttribute
+    , getAttribute
 ) where
+
 
 data Attribute =
     GameAttributes
@@ -14,7 +16,15 @@ data Attribute =
     | PlayerAttributes
     | Actions
     | None
-    deriving (Show, Eq)
+    deriving (Eq, Ord)
+
+instance Show Attribute where
+    show a = case a of
+        GameAttributes -> "GAME"
+        PlayerAttributes -> "PLAYER"
+        Actions -> "ACTIONS"
+        CardAttributes -> "CARD"
+        _ -> "NO SHOW"
 
 data Feature = WinCon
     | CardSuits
@@ -29,14 +39,12 @@ data Feature = WinCon
     | PlayerMoves
     | PileCount
     | GameName
-    | Saved
     | CardConstraints
     | IgnoreConstraints
     | ExceptionConstraints
     | CardFeatures
     | PlayerFeatures
     | GameFeatures
-    | CardEffects
     | CEChangeCard
     | CESwapHand
     | CETakeFromHand
@@ -45,40 +53,38 @@ data Feature = WinCon
     | CEDrawCard
     | CardCompare
     | TurnOrder
-    deriving (Eq)
+    deriving (Eq, Ord)
 
 
 instance Show Feature where
     show f = case f of
-        WinCon -> "WIN_CON"
-        CardSuits -> "CARD_SUITS"
-        CardValues -> "CARD_VALUES"
-        CardRanks -> "CARD_RANKS"
-        EndCon -> "END_CON"
+        WinCon -> "win_con"
+        CardSuits -> "card_suits"
+        CardValues -> "card_values"
+        CardRanks -> "card_ranks"
+        EndCon -> "end_con"
         AnyTime -> "any_time"
         StartTime -> "start_time"
         TurnEndTime -> "turn_end"
         TurnStartTime -> "turn_start"
         PlayerHand -> "player_hand"
         PlayerMoves -> "player_moves"
-        PileCount -> "PILE_COUNT"
-        GameName -> "GAME_NAME"
-        Saved -> "SAVED"
-        CardConstraints -> "CARD_CONSTRAINTS"
-        CardFeatures -> "CARD"
-        PlayerFeatures -> "PLAYER"
+        PileCount -> "pile_count"
+        GameName -> "game_name"
+        CardConstraints -> "card_constraints"
+        CardFeatures -> "card"
+        PlayerFeatures -> "player"
         GameFeatures -> "GAME"
-        CardEffects -> "CARD_EFFECTS"
         CEChangeCard -> "change_card"
         CESwapHand -> "swap_hand"
         CETakeFromHand -> "take_from_hand"
         CEGiveCard -> "give_card"
         CEPassNext -> "pass_next"
         CEDrawCard -> "draw_card"
-        IgnoreConstraints -> "IGNORE_CONSTRAINTS"
-        CardCompare -> "CARD_COMPARE"
-        ExceptionConstraints -> "EXCEPTION_CONSTRAINTS"
-        TurnOrder -> "TURN_ORDER"
+        IgnoreConstraints -> "ignore_constraints"
+        CardCompare -> "card_compare"
+        ExceptionConstraints -> "exception_constraints"
+        TurnOrder -> "turn_order"
 
 
 -- Checks if the given feature is valid
@@ -99,7 +105,6 @@ fromStringToFeature x = case x of
     "CARD" -> Just CardFeatures
     "PLAYER" -> Just PlayerFeatures
     "GAME" -> Just GameFeatures
-    "CARD_EFFECTS" -> Just CardEffects
     "change_card" -> Just CEChangeCard
     "swap_hand" -> Just CESwapHand
     "take_from_hand" -> Just CETakeFromHand
@@ -134,7 +139,6 @@ validateKeyWords x = case x of
     "PLAYER" -> Just "PLAYER"
     "ACTIONS" -> Just "ACTIONS"
     "GAME" -> Just "GAME"
-    "CARD_EFFECTS" -> Just "CARD_EFFECTS"
     "change_card" -> Just "change_card"
     "swap_hand" -> Just "swap_hand"
     "take_from_hand" -> Just "take_from_hand"
@@ -157,7 +161,6 @@ isAFeatureOf CEGiveCard CardAttributes = True
 isAFeatureOf CEPassNext CardAttributes = True
 isAFeatureOf CETakeFromHand CardAttributes = True
 isAFeatureOf CESwapHand CardAttributes = True
-isAFeatureOf CardEffects CardAttributes = True
 
 isAFeatureOf CardConstraints CardAttributes = True
 isAFeatureOf CardSuits CardAttributes = True
@@ -180,6 +183,34 @@ isAFeatureOf EndCon GameAttributes = True
 isAFeatureOf TurnOrder GameAttributes = True
 
 isAFeatureOf _ _ = False
+
+
+getAttribute :: Feature -> Attribute
+getAttribute x = case x of
+    CEChangeCard -> CardAttributes
+    CEDrawCard -> CardAttributes
+    CEGiveCard -> CardAttributes
+    CEPassNext -> CardAttributes
+    CETakeFromHand -> CardAttributes
+    CESwapHand -> CardAttributes
+    CardConstraints -> CardAttributes
+    CardSuits -> CardAttributes
+    CardRanks -> CardAttributes
+    IgnoreConstraints -> CardAttributes
+    CardCompare -> CardAttributes
+    CardValues -> CardAttributes
+    ExceptionConstraints -> CardAttributes
+    PlayerHand -> PlayerAttributes
+    PlayerMoves -> PlayerAttributes
+    AnyTime -> Actions
+    StartTime -> Actions
+    TurnStartTime -> Actions
+    TurnEndTime -> Actions
+    WinCon -> GameAttributes
+    EndCon -> GameAttributes
+    TurnOrder -> GameAttributes
+    _ -> None
+
 
 
 featureInfo :: [(Feature, String)]
@@ -216,5 +247,4 @@ validateAttribute x = case x of
     "CARD" -> Just CardAttributes
     "PLAYER" -> Just PlayerAttributes
     "ACTIONS" -> Just Actions
-    "CARD_EFFECTS" -> Just CardAttributes
     _ -> Nothing

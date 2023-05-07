@@ -3,19 +3,25 @@ module Terminal.ValidateGameCommands (
     , validateGCFlags
     ) where
 
-import Terminal.GameCommands (GCError (GCError, errType, UnknownFlagsError, input, UnknownCommandError, InvalidCommandArgumentError, CDSLError), GameCommand (Help, Create, Save, cmd, Edit, Add, Update, Test, Remove, Copy, Rename, Status, Close, Clear, Quit, List, Play), Flag, commands)
+import Terminal.GameCommands (GCError (GCError, errType, UnknownFlagsError, input, UnknownCommandError, InvalidCommandArgumentError, CDSLError, IncompleteCommandError), GameCommand (Help, Create, Save, cmd, Edit, Add, Update, Test, Remove, Copy, Rename, Status, Close, Clear, Quit, List, Play, Debug), Flag, commands)
 import Data.List.Extra (trim, sortOn, partition, groupBy)
 import CDSL.CDSLExpr (CDSLExpr(Text, Numeric))
 import Text.Read (readMaybe)
 import Feature (fromStringToFeature)
-import CDSL.ParseCardDSL (parseExpr, parseOneCDSL)
+import CDSL.ParseCDSLExpr (parseExpr, parseOneCDSL)
 
 
 validateGameCommand :: String -> Either GameCommand GCError
 validateGameCommand xs = case map trim (words xs) of
+    ("debug":y:ys) -> case (readMaybe y :: Maybe Int, validateGCFlags ys) of
+        (Just i, Left flgs) -> Left (Debug (Numeric i) flgs)
+        (Nothing, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a number, got '" ++ y ++ "' instead."), input = xs })
+        (_, Right e) -> Right e
+    ["debug"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
     ("create":gm:ys) -> case validateGCFlags ys of
         Left flgs -> Left (Create (Text gm) flgs)
         Right e -> Right e
+    ["create"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
 
     ("save":ys) -> case validateGCFlags ys of
         Left flgs -> Left (Save flgs)
@@ -25,6 +31,7 @@ validateGameCommand xs = case map trim (words xs) of
         (Nothing, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a number, got '" ++ y ++ "' instead."), input = xs })
         (_, Right e) -> Right e
         (Just i, Left flgs) -> Left (Edit (Numeric i) flgs)
+    ["edit"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
 
     ("add":feature:ys) -> case fromStringToFeature feature of
         (Just f) -> do
@@ -36,6 +43,7 @@ validateGameCommand xs = case map trim (words xs) of
                 Left exps -> Left (Add f exps flg)
                 Right errs -> Right (GCError { errType = CDSLError (Right errs), input = xs })
         Nothing -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a Feature, but got '" ++ feature ++ "' instead."), input = xs })
+    ["add"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
 
     ("update":feature:ys) -> case fromStringToFeature feature of
         (Just f) -> do
@@ -47,6 +55,8 @@ validateGameCommand xs = case map trim (words xs) of
                 Left exps -> Left (Update f exps flg)
                 Right errs -> Right (GCError { errType = CDSLError (Right errs), input = xs })
         Nothing -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a Feature, but got '" ++ feature ++ "' instead."), input = xs })
+    ["update"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
+
 
     ("test":feature:ys) -> case fromStringToFeature feature of
         (Just f) -> do
@@ -58,11 +68,15 @@ validateGameCommand xs = case map trim (words xs) of
                 Left exps -> Left (Test f exps flg)
                 Right errs -> Right (GCError { errType = CDSLError (Right errs), input = xs })
         Nothing -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a Feature, but got '" ++ feature ++ "' instead."), input = xs })
+    ["test"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
 
     ("remove":ys) -> case (mapM fromStringToFeature (words (takeWhile (/= '-') (unwords ys))), validateGCFlags (words (dropWhile (/= '-') (unwords ys)))) of
         (Just fets, Left flg) -> Left (Remove fets flg)
         (Nothing, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a Feature, but got '" ++ xs ++ "' instead."), input = xs })
         (_, Right e) -> Right e
+    ["remove"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
+
+
 
     ("copy":y:ys)  -> case readMaybe y :: Maybe Int of
         (Just i) -> do
@@ -73,15 +87,20 @@ validateGameCommand xs = case map trim (words xs) of
                 (Just fets, flg) -> Left (Copy (Numeric i) fets flg)
                 (Nothing, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Expected any features, got '" ++ unwords fs ++ "' instead."), input = xs })
         Nothing -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a number, got '" ++ y ++ "' instead."), input = xs })
+    ["copy"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
 
     ("rename":y:nm:ys) -> case (readMaybe y :: Maybe Int, validateGCFlags ys) of
         (Just i, Left flgs) -> Left (Rename (Numeric i) (Text nm) flgs)
         (Nothing, _) -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a number, got '" ++ y ++ "' instead."), input = xs })
         (_, Right e) -> Right e
+    ["rename"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
+
 
     ("status":ys) -> case validateGCFlags ys of
         Left flgs -> Left (Status flgs)
         Right e -> Right e
+    ["status"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
+
 
     ("close":ys) -> case validateGCFlags ys of
         Left flgs -> Left (Close flgs)
@@ -117,17 +136,21 @@ validateGameCommand xs = case map trim (words xs) of
                             Left _ -> Left (Help (Just (unwords ys))) -- Give information about that expression
         else
             Right (GCError { errType = InvalidCommandArgumentError ("Can only give information about one thing at the time, '" ++ unwords ys ++ "'"), input = xs })
+    
     ("play":ys) -> case readMaybe (unwords ys) :: Maybe Int of
         Just i -> Left (Play (Numeric i))
         Nothing -> Right (GCError { errType = InvalidCommandArgumentError ("Expected a number, got '" ++ unwords ys ++ "' instead."), input = xs })
+    ["play"] -> Right (GCError { errType = IncompleteCommandError, input = xs})
+    
 
     _ -> case suggestCorrection (head $ words xs) commands of
         Just pge -> Right (GCError { errType = UnknownCommandError ("'" ++ xs ++ "'is not a valid command. Did you mean: " ++ pge ++ "?"), input = xs })
-        Nothing -> Right (GCError { errType = UnknownCommandError ("'" ++ xs ++ "'is not a valid command"), input = xs })
+        Nothing -> Right (GCError { errType = UnknownCommandError ("'" ++ xs ++ " 'is not a valid command"), input = xs })
 
 
 
 -- Compute the Levenshtein distance between two strings
+-- Got this from Chat
 levenshteinDistance :: Eq a => [a] -> [a] -> Int
 levenshteinDistance xs ys = lev (length xs) (length ys)
     where

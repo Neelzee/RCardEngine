@@ -1,88 +1,57 @@
 module GameData.SaveGD (saveGameData) where
 
 import GameData.GD (GameData)
-import Feature (Feature(..))
-import System.Directory (listDirectory)
+import Feature (Feature(..), Attribute (GameAttributes))
 import Constants (gameFolder, gameExtension)
-import Data.List (elemIndex, intercalate)
-import CDSL.CDSLExpr (CDSLExpr(..), CDSLParseErrorCode (ParseErrorOnLine), CDSLParseError (pErr))
-import System.IO (withFile, IOMode (WriteMode), hPrint, hPutStrLn)
+import Data.List (intercalate)
+import CDSL.CDSLExpr (CDSLExpr(..))
 import CDSL.ExecCDSLExpr (fromCDSLToString)
-import GameData.LoadGD (loadGameData)
-import Terminal.GameCommands
+import Terminal.GameCommands ( GCEffect(..) )
+import Functions (lookupM)
+import qualified Data.Map as Map
+import CardGame.CardFunctions (prettyShowCards)
+import Data.Bifunctor (Bifunctor(second))
 
 
 saveGameData :: GameData -> IO GCEffect
 saveGameData gd = do
-    let (_, gd') = span ((/=Saved) . fst) gd
-    saveGameData' gd'
+    gm <- case Map.lookup GameAttributes gd of
+        Just att -> case lookupM GameName att of
+            Just (_, Text gm:_) -> return gm
+            _ -> return "new_game"
+        _ -> return "new_game"
+    saveGD gd gm
+    return (GCEffect { se = "Saved " ++ gm
+    , ve = "Saved " ++ show (Map.size gd) ++ " attributes, saved " ++ show (sum (map (\(_, b) -> Map.size b) (Map.toList gd))) ++ " features", gcErr = []})
 
-saveGameData' :: GameData -> IO GCEffect
-saveGameData' gd = do
-    gl <- listDirectory gameFolder
-    case lookup GameName gd of
-        Just (Text gm:_) -> case elemIndex gm gl of
-            Just i -> do
-                res <- loadGameData [] i
-                case res of
-                    Left oldGd -> do
-                        let new = findNew oldGd gd
-                        let diff = findDiff oldGd gd
-                        let sim = findSim oldGd gd
-                        saveGD gd gm
-                        return (GCEffect { se = "Overwrote old instance of " ++ gm,
-                        ve = "Overwrote " ++ show (length diff) ++ " features, added " ++ show (length new) ++ " features, " ++ show (length sim) ++ " features unchanged"})
-                    Right (e, i') -> do
-                        let gc = (GCEffect { se = "Overwrote old instance of " ++ gm
-                            , ve = "Overwrote old instance, cannot compare differences due to an error on load."
-                            , gcErr = [CDSLError (Right [e {pErr = ParseErrorOnLine (pErr e) i'}])]})
-                        saveGD gd gm
-                        return gc
-            Nothing -> do
-                saveGD gd gm
-                let new = findNew [] gd
-                return (GCEffect { se = "Saved new instance of " ++ gm
-                , ve = "Saved " ++ show (length new) ++ " features", gcErr = []})
-        _ -> do
-            saveGD gd "new_game"
-            let new = findNew gd []
-            return (GCEffect { se = "Saved new GameData."
-            , ve = "Saved " ++ show (length new) ++ " features."
-            , gcErr = [MissingFeatureError GameName] })
+
+saveGD :: GameData -> String -> IO ()
+saveGD cd n = do
+    let pgd = Map.assocs $ Map.fromListWith (++) $ sortToAttributes (Map.toList cd)
+    let cont = map (\(at, fs) -> show at ++ " {\n" ++ showContent fs ++ "\n}") pgd
+    let cs = intercalate "\n\n" cont
+    writeFile (gameFolder ++ "/" ++ n ++ gameExtension) cs
+
+
+sortToAttributes :: [(Attribute, Map.Map (Feature, Maybe [CDSLExpr]) [CDSLExpr])] -> [(Attribute, [((Feature, Maybe [CDSLExpr]), [CDSLExpr])])]
+sortToAttributes = map (second (check . Map.toList))
     where
-        saveGD :: [(Feature, [CDSLExpr])] -> String -> IO ()
-        saveGD cd n = do
-            let filtered = filter (\(f, _) -> f /= Saved && f /= GameName) cd
-            let cont = map (\(f, e) -> show f ++ "\n" ++ intercalate "," (map fromCDSLToString e)) filtered
-            let cs = intercalate "\nEND\n" cont
-            writeFile (gameFolder ++ "/" ++ n ++ gameExtension) (cs ++ "\nEND")
+        check :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> [((Feature, Maybe [CDSLExpr]), [CDSLExpr])]
+        check [] = []
+        check (((GameName, _), _):xs) = check xs
+        check (x:xs) = x : check xs
 
 
-findNew :: Eq a => [(a, b)] -> [(a, b)] -> [(a, b)]
-findNew [] _ = []
-findNew _ [] = []
-findNew old (y:ys) = case lookup (fst y) old of
-    Just _ -> findNew old ys
-    Nothing -> y : findNew old ys
+showContent :: [((Feature, Maybe [CDSLExpr]), [CDSLExpr])] -> String
+showContent [] = ""
+showContent fs = intercalate "\n" (map (uncurry showFeature) fs)
 
-findDiff :: Eq a => Eq b => [(a, b)] -> [(a, b)] -> [(a, b)]
-findDiff [] _ = []
-findDiff _ [] = []
-findDiff old (y:ys) = case lookup (fst y) old of
-    Just o -> if o == snd y
-        then
-            findDiff old ys
-        else
-            y : findDiff old ys
-    Nothing -> findDiff old ys
+showFeature :: (Feature, Maybe [CDSLExpr]) -> [CDSLExpr] -> String
+showFeature (IgnoreConstraints, _) xs = show IgnoreConstraints ++ " = " ++ intercalate ", " (map prShow xs) ++ ";"
+showFeature (f, Nothing) xs = show f ++ " = [" ++ intercalate ", " (map prShow xs) ++ "];"
+showFeature (f, Just arg) xs = show f ++ " " ++ intercalate ", " (map fromCDSLToString arg)  ++ " = [" ++ intercalate "," (map prShow xs) ++ "];"
 
-findSim :: Eq a => Eq b => [(a, b)] -> [(a, b)] -> [(a, b)]
-findSim [] _ = []
-findSim _ [] = []
-findSim old (y:ys) = case lookup (fst y) old of
-    Just o -> if o == snd y
-        then
-            findSim old ys
-        else
-            y : findSim old ys
-    Nothing -> findSim old ys
+
+prShow :: CDSLExpr -> String
+prShow (CEffect _ cs) = prettyShowCards cs
+prShow y = fromCDSLToString y

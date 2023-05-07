@@ -1,12 +1,36 @@
-module CDSL.CDSLValidater (validateCDSLExpression) where
+module CDSL.CDSLValidater (
+    validateCDSLExpression
+    , isCardField
+    , isComperator
+    , isCard
+    , getNonCards
+    , getNonComperators
+    , getNonCardFields
+    , getNonNumerics
+    , getAllCards
+    ) where
 import CDSL.CDSLExpr
+    ( CDSLExecError(..),
+      CDSLExecErrorCode(InvalidBoolEvaluationError,
+                        UnknownExpressionError, SyntaxErrorLeftOperand,
+                        SyntaxErrorRightOperand, InvalidSyntaxError),
+      CDSLExpr(CEffect, Any, All, Greatest, Shuffle, Swap, Take, Reset,
+               If, Text, Numeric, PlayerAction, TORight, TOLeft, Put,
+               GoBack, GoForward, Turn, CEq, CLEq, CGRq, CLe, CGr, Look, Pile,
+               Deck, Discard, Always, Never, IsEqual, Not, Or, And, IsEmpty,
+               IsSame, CurrentPlayer, PreviousPlayer, IsMove, PAPass, CardSuit,
+               CardRank, CardValue, PMoves, Hand, Players, Score, Cards) )
 import Data.Either (partitionEithers, isLeft)
-import CDSL.ParseCardDSL (isCDSLExprNumeric)
+import CDSL.ParseCDSLExpr (isCDSLExprNumeric)
+import Feature ()
+
 
 
 
 -- Checks if a given CDSLExpr is valid.
--- Due to this language being more command-like, there are only a certain ways expressions can be built up
+-- Due to this language being more command-like
+-- , there are only a certain ways expressions can be built up.
+-- But I have to manually add them here, since this is a "whitelist" of valid expressions.
 validateCDSLExpression :: CDSLExpr -> Either CDSLExpr [CDSLExecError]
 -- Players
 validateCDSLExpression e@(Any ex) = if isLeft $ validateCDSLBool ex
@@ -45,10 +69,10 @@ validateCDSLExpression e@(Take n f t) = case (isCDSLExprNumeric n, isList f, isL
     _ -> Right [(CDSLExecError { err = InvalidSyntaxError, expr = e})]
 validateCDSLExpression (And l r) = case (partitionEithers $ map validateCDSLBool l, partitionEithers $ map validateCDSLBool r) of
     ((_, []), (_, [])) -> Left (And l r)
-    ((_, er), _) -> Right (CDSLExecError { err = SyntaxErrorLeftOperand, expr = And l [Null] }:er)
+    ((_, er), _) -> Right (CDSLExecError { err = SyntaxErrorLeftOperand, expr = And l r }:er)
 validateCDSLExpression (Or l r) = case (partitionEithers $ map validateCDSLBool l, partitionEithers $ map validateCDSLBool r) of
     ((_, []), (_, [])) -> Left (Or l r)
-    ((_, er), _) -> Right (CDSLExecError { err = SyntaxErrorLeftOperand, expr = Or l [Null] }:er)
+    ((_, er), _) -> Right (CDSLExecError { err = SyntaxErrorLeftOperand, expr = Or l r }:er)
 validateCDSLExpression Always = Left Always
 validateCDSLExpression Never = Left Never
 validateCDSLExpression ex@(Reset (CurrentPlayer e)) = if isPlayerField e
@@ -74,15 +98,22 @@ validateCDSLExpression CGr = Left CGr
 validateCDSLExpression CLEq = Left CLEq
 validateCDSLExpression CGRq = Left CGRq
 validateCDSLExpression c@(Cards _) = Left c
-validateCDSLExpression p@(Put a b) = if all isList [a, b]
-    then
-        Left p
-    else
-        Right [CDSLExecError { err = InvalidSyntaxError, expr = Put Null Null }]
+validateCDSLExpression p@(Put a b) = case (isList a, isList b) of
+    (True, True) -> Left p
+    (True, False) -> Right [CDSLExecError { err = SyntaxErrorRightOperand, expr = Put a b }]
+    (False, True) -> Right [CDSLExecError { err = SyntaxErrorLeftOperand, expr = Put a b }]
+    _ -> Right [CDSLExecError { err = InvalidSyntaxError, expr = Put a b }]
 validateCDSLExpression e@(GoBack Turn) = Left e
 validateCDSLExpression e@(GoForward Turn) = Left e
 validateCDSLExpression e = Right [CDSLExecError { err = UnknownExpressionError, expr = e }]
 
+isComperator :: CDSLExpr -> Bool
+isComperator CEq = True
+isComperator CLEq = True
+isComperator CGRq = True
+isComperator CLe = True
+isComperator CGr = True
+isComperator _ = False
 
 -- Checks if the given expression is a list
 isList :: CDSLExpr -> Bool
@@ -166,3 +197,41 @@ isPlayerField _ = False
 isNumericList :: CDSLExpr -> Bool
 isNumericList (Players Score) = True
 isNumericList _ = False
+
+
+
+
+isCard :: CDSLExpr -> Bool
+isCard (Cards _) = True
+isCard (CEffect _ _) = True
+isCard _ = False
+
+
+
+getNonCards :: CDSLExpr -> Maybe CDSLExpr
+getNonCards x
+    | isCard x = Nothing
+    | otherwise = Just x
+
+
+getAllCards :: CDSLExpr -> Maybe CDSLExpr
+getAllCards x
+    | isCard x = Just x
+    | otherwise = Nothing
+
+getNonComperators :: CDSLExpr -> Maybe CDSLExpr
+getNonComperators x
+    | isComperator x = Nothing
+    | otherwise = Just x
+
+
+getNonCardFields :: CDSLExpr -> Maybe CDSLExpr
+getNonCardFields x
+    | isCardField x = Nothing
+    | otherwise = Just x
+
+
+getNonNumerics :: CDSLExpr -> Maybe CDSLExpr
+getNonNumerics x
+    | isCDSLExprNumeric x = Nothing
+    | otherwise = Just x

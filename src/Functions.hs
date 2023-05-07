@@ -22,14 +22,17 @@ module Functions (
   , removeLookupAll
   , remLst
   , elemLst
+  , lookupM
+  , lookupMAll
   ) where
 
-import Data.List.Extra (splitOn, split)
+import Data.List.Extra (splitOn)
 import Data.Char (isSpace)
 import Data.Maybe (fromMaybe)
 import System.Directory (listDirectory)
 import Constants (gameFolder, gameExtension)
 import Data.CircularList (CList, focus, update, isEmpty)
+import Data.Map (Map, toList)
 
 
 
@@ -237,3 +240,25 @@ remLst xs ys = go xs (quicksort ys) 0
     go (z:zs) (w:ws) n
       | w == n = go zs ws (n + 1)
       | otherwise = z : go zs (w:ws) (n + 1)
+
+
+
+lookupM :: Eq a => a -> Map (a, Maybe b) c -> Maybe ((a, Maybe b), c)
+lookupM ky mp = lookupM' (toList mp) ky
+  where
+    lookupM' :: Eq a => [((a, Maybe b), c)] -> a -> Maybe ((a, Maybe b), c) 
+    lookupM' [] _ = Nothing
+    lookupM' (((x, y), z):xs) w
+      | x == w = Just ((x, y), z)
+      | otherwise = lookupM' xs w
+
+
+
+lookupMAll :: Eq a => a -> Map (a, Maybe b) c -> [((a, Maybe b), c)]
+lookupMAll ky mp = lookupMAll' (toList mp) ky
+  where
+    lookupMAll' :: Eq a => [((a, Maybe b), c)] -> a -> [((a, Maybe b), c)] 
+    lookupMAll' [] _ = []
+    lookupMAll' (x@((kx, _), _):xs) k
+      | kx == k = x : lookupMAll' xs k
+      | otherwise = lookupMAll' xs k

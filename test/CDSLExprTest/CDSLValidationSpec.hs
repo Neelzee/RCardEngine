@@ -7,7 +7,7 @@ import CDSL.CDSLExpr (CDSLExecErrorCode(InvalidBoolEvaluationError), CDSLExecErr
 import Control.Exception
 
 moduleName :: String -> String
-moduleName = ("ParseCardDSL." ++)
+moduleName = ("ParseCDSL." ++)
 
 exprTest :: CDSLExpr -> String
 exprTest s = "should be valid '" ++ show s ++ "'"

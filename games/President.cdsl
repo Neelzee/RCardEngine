@@ -20,8 +20,9 @@ CARD {
         , King
         , Ace
         , Two];
-    card_constraints = rank;
+    card_constraints = ranks;
     card_compare = gte;
+    change_card suits = [Hearts.Six, Diamonds.Six, Spades.Six, Clubs.Six]
 }
 
 # Player stats
@@ -46,15 +47,10 @@ ACTIONS {
             [
                 always : reset player moves,
                 # Not sure if needed
-                isSame rank look 4 pile : [
+                isSame ranks look 4 pile : [
                         put pile discard
                         , goBack turn]
                 
             ]; 
 }
 
-
-# Define some card effects
-CARD_EFFECTS  {
-    change_card = [Hearts.Six, Diamonds.Six, Spades.Six, Clubs.Six]
-}

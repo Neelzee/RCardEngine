@@ -11,13 +11,14 @@ module CardGame.Player (
     , prettyPrintMoves
 ) where
 
-import CardGame.Card ( Card(Card) )
+import CardGame.Card ( Card )
 import Data.CircularList (CList, focus, size, rotR, update)
 import CDSL.CDSLExpr (CDSLExpr (Text, PlayerAction))
 import Data.Maybe (mapMaybe)
-import Functions (splitAndTrim, mapCLCount)
+import Functions (splitAndTrim)
 import CardGame.PlayerMove (Move (PlayCard, DrawCard, Pass, DiscardCard), prettyShow)
 import Data.List (intercalate)
+import Control.Monad (replicateM)
 
 data Player = Player {
     name :: String
@@ -34,19 +35,16 @@ instance Ord Player where
 -- Creates players
 createPlayers :: Int -> IO [Player]
 createPlayers 0 = return []
-createPlayers n = do
-    player <- createPlayer
-    players <- createPlayers (n - 1)
-    return (player : players)
+createPlayers n = replicateM n createPlayer
 
 createPlayer :: IO Player
 createPlayer = do
     putStrLn "Enter name:"
     n <- getLine
-    return (Player n [] [] [] 0)
+    return $ Player n [] [] [] 0
 
 resetMoves :: Player -> [(Move, Bool)] -> Player
-resetMoves plr mv = plr {moves = mv }
+resetMoves plr mv = plr { moves = mv }
 
 deal :: Int -> [Card] -> CList Player -> (CList Player, [Card])
 deal n deck players = deal' (n * size players) deck players
@@ -64,15 +62,6 @@ giveCards plrs (x:xs) = case focus plrs of
     Nothing -> giveCards (rotR plrs) (x:xs)
 
 
--- Deals the given card to the given player
-dealPlayer :: (Card, Player) -> Player
-dealPlayer (c, p) = p { hand = c : hand p }
-
--- Checks if player has the given move
-hasMove :: Player -> Move -> Bool
-hasMove plr m = case lookup m (moves plr) of
-    Just _ -> True
-    Nothing -> False
 
 -- Gets move from string
 getMoveFromString :: String -> Maybe Move
@@ -81,22 +70,6 @@ getMoveFromString "draw" = Just DrawCard
 getMoveFromString "pass" = Just Pass
 getMoveFromString _ = Nothing
 
--- Gets the given move from the player, with the corresponding continuing bool
-getMoveFromPlayer :: Player -> Move -> Move
-getMoveFromPlayer p m
-    | null (moves p) = Pass
-    | otherwise = do
-        let (x, _) = head (moves p)
-        if m == x
-            then
-                x
-            else
-                getMoveFromPlayer (p {moves = drop 1 (moves p)}) m
--- Checks if the typed action is an action the player can do
-isValidMove :: String -> Player -> Bool
-isValidMove c plr = case getMoveFromString c of
-    Just m -> hasMove plr m
-    Nothing -> False
 
 standardMoves :: [(Move, Bool)]
 standardMoves = [
@@ -105,14 +78,6 @@ standardMoves = [
     (DrawCard, True),
     (DrawCard, True),
     (Pass, False)]
-
-
-addScore :: Player -> Card -> Player
-addScore p (Card _ _ s) = p { pScore = pScore p + s }
-
-
-toString :: (Move, Bool) -> String
-toString (a, b) = show a ++ " " ++ (if b then "TRUE" else "FALSE")
 
 
 parsePlayerMovesExpr :: [CDSLExpr] -> [(Move, Bool)]
