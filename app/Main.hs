@@ -1,24 +1,27 @@
 module Main where
 
-import Data.List (sortOn)
-import System.Directory (listDirectory, renameFile, doesDirectoryExist, createDirectoryIfMissing)
+import System.Directory (listDirectory, doesDirectoryExist, createDirectoryIfMissing)
 import System.Console.ANSI (clearScreen)
 import Control.Monad (unless, when)
 import System.IO ( hFlush, stdout )
 import CardGame.PlayGame (gameStart)
-import Text.Read (readMaybe)
-import GameData.GD (GameData)
 import GameData.LoadGD (loadGameData)
 import CDSL.CDSLExpr ( CDSLExpr(Numeric, Text) )
 import Terminal.ValidateGameCommands (validateGameCommand)
 import GameEditor (editor, gameDataStatus)
-import Feature
+import Feature (Attribute(GameAttributes), Feature(GameName))
+
 import Functions (allGames, lookupM)
 import Terminal.ExecGameCommands
     ( execGameCommands, confirmCommand, printGCEffect, fromCDSLParseErrorOnLoad,  )
 import Constants (gameFolder)
 import qualified Data.Map as Map
 import Terminal.GameCommands
+    ( GCError(InvalidCommandArgumentError, MissingOrCorruptDataError,
+              CDSLError, GCError, errType, input),
+      GameCommand(Quit, Play, Create, Edit, Debug),
+      GCEffect(GCEffect, gcErr, se, ve),
+      showAll )
 import GameData.DebugGD (loadGameDataDebug)
 
 -- Play the selected game
@@ -105,7 +108,7 @@ mainExecCmd s = case validateGameCommand s of
                                     putStrLn "\nGameData:\n"
                                     printGCEffect (gameDataStatus gd) flg
                                     putStrLn "\nErrors:\n"
-                                    printGCEffect (map (\(e, i) -> GCEffect { se = "Error at line: " ++ show i, ve = "Error at line: " ++ show i, gcErr = [GCError { errType = CDSLError (Right [e]), input = "" }] }) res) flg
+                                    printGCEffect (map (\(e, n) -> GCEffect { se = "Error at line: " ++ show n, ve = "Error at line: " ++ show n, gcErr = [GCError { errType = CDSLError (Right [e]), input = "" }] }) res) flg
                                     mainLoop
                 else
                     do

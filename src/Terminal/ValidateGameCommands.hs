@@ -150,7 +150,7 @@ validateGameCommand xs = case map trim (words xs) of
 
 
 -- Compute the Levenshtein distance between two strings
--- Got this from Chat
+-- Got this from ChatGPT
 levenshteinDistance :: Eq a => [a] -> [a] -> Int
 levenshteinDistance xs ys = lev (length xs) (length ys)
     where

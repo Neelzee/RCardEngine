@@ -45,8 +45,8 @@ ACTIONS {
     turn_end
         =
             [
-                always : reset player moves,
                 # Not sure if needed
+                always : reset player moves,
                 isSame ranks look 4 pile : [
                         put pile discard
                         , goBack turn]
