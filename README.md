@@ -10,6 +10,25 @@ Card Domain Specific Language
 The scripting language used to create card games.
 Lets talk about some of the keywords in CDSL.
 <br>
+## Progress
+CardEngine is still under development, and hopefully will mature, as things are implemented and improved
+
+| Features | Not Started | Prototype | MVP | Finished |
+| - | - | - | - | - |
+| GUI | X | | | |
+| TUI | | X | | |
+| Commands | | X | |
+| Editor | | X |
+| Debugging | | X |
+| Syntax | | X |
+| Lexer | X |
+| Parser | | X |
+| Semantic Analysis | | X |
+| Interpreter | | X |
+| Library | X |
+| Tests | X |
+| Documentation | | X |
+
 
 Certain keywords in this scripting language, can only be used in certain contexts.
 For example both, `any` and `all` are keywords specific for `players`, which itself references a list of all the players playing the card game.
