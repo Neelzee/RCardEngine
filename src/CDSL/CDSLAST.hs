@@ -17,7 +17,7 @@ data Node = Node {
     , right :: Maybe Node
     , left :: Maybe Node
   }
-
+  deriving (Eq, Show)
 
 
 

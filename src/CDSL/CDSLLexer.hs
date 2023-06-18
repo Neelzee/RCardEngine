@@ -8,17 +8,19 @@ data CDSLLexer =
   | SymbolToken String
   | AssignToken
   | BoolOperatorToken BoolOperator
+  | NumericOperatorToken NumericOperator
   | NumericToken Int
   | EndToken
+  deriving (Eq, Show)
 
 
 data Type = 
-  Decimal
+  Number 
   | Boolean
   | Card
   | Player
   | List Type
-
+  deriving (Eq, Show)
 
 data KeyWord =
   For
@@ -27,11 +29,13 @@ data KeyWord =
   | Continue
   | Break
   | Return
+  deriving (Eq, Show)
 
 data Delimiter =
   Parentheses
   | CurlyBrackets
   | SquareBrackets
+  deriving (Eq, Show)
 
 
 data BoolOperator =
@@ -51,6 +55,7 @@ data BoolOperator =
   | And
   -- ||
   | Or
+  deriving (Eq, Show)
 
 data NumericOperator =
   -- +
@@ -62,10 +67,11 @@ data NumericOperator =
   -- /
   | DivUp
   -- \
-  | DiwDown
+  | DivDown
   -- %
   | Mod
   -- ^
   | Pow
+  deriving (Eq, Show)
 
 
