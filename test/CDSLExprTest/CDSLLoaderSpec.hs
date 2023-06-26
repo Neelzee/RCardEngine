@@ -1,4 +1,4 @@
-module CDSLExprTest.CDSLLoaderSPec where
+module CDSLExprTest.CDSLLoaderSpec where
 
 
 import Test.Hspec ( describe, it, shouldBe, hspec, Spec )

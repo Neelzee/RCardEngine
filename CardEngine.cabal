@@ -39,6 +39,10 @@ library
       CDSL.CDSLExpr
       CDSL.ExecCDSLExpr
       CDSL.CDSLValidater
+      CDSL.CDSLLexer
+      CDSL.CDSLAST
+      CDSL.CDSLTokenizer
+      CDSL.CDSLParser
       Feature
       LoadGame
       Terminal.GameCommands
