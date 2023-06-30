@@ -1,5 +1,3 @@
-pub mod Game {
-
 pub enum GameState {
     Start,
     TurnStart,
@@ -23,4 +21,21 @@ pub struct Game {
     can_place_card: Vec<String>
 }
 
+
+impl Game {
+    pub fn new(name: String, plrs: Vec<String>) -> Game {
+        Game {
+            game_name: name,
+            state: GameState::Start,
+            players: plrs,
+            player_moves: Vec::new(),
+            card_gen: Vec::new(),
+            discard: Vec::new(),
+            deck: Vec::new(),
+            pile: Vec::new(),
+            rules: Vec::new(),
+            actions: Vec::new(),
+            can_place_card: Vec::new()
+        }
+    }
 }

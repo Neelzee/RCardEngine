@@ -1,4 +1,6 @@
-use Game::Game;
+mod CardGame;
+
+use CardGame::Game::Game;
 
 
 fn main() {
