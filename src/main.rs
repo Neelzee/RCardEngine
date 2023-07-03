@@ -1,6 +1,6 @@
 mod CardGame;
 
-use CardGame::Game::Game;
+use crate::CardGame::Game::Game;
 
 
 fn main() {
