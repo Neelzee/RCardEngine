@@ -1,6 +1,7 @@
 mod CardGame;
+mod CDSL;
 
-use crate::CardGame::Game::Game;
+use crate::CardGame::game::Game;
 
 
 fn main() {

@@ -1,10 +1,17 @@
 use super::Card::Card;
 
+pub enum Move {
+    Play,
+    Draw,
+    Pass,
+    Discard
+}
+
 pub struct Player {
     name: String,
     hand: Vec<Card>,
-    moves: Vec<(String, bool)>,
-    move_history: Vec<(String, bool)>,
+    moves: Vec<(Move, bool)>,
+    move_history: Vec<(Move, bool)>,
     score: i32
 }
 

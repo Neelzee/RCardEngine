@@ -1,5 +1,7 @@
-use super::Player::Player;
+use super::player::Player;
+use super::player::Move;
 use super::Card::Card;
+use crate::CDSL::expr::Expr;
 
 
 pub enum GameState {
@@ -14,15 +16,15 @@ pub enum GameState {
 pub struct Game {
     game_name: String,
     state: GameState,
-    player_moves: Vec<(String, bool)>,
+    player_moves: Vec<(Move, bool)>,
     card_gen: Vec<Card>,
     discard: Vec<Card>,
     deck: Vec<Card>,
     pile: Vec<(Card, Option<Card>)>,
     players: Vec<Player>,
-    rules: Vec<(String, Vec<String>)>,
-    actions: Vec<(GameState, Vec<String>)>,
-    can_place_card: Vec<String>
+    rules: Vec<(String, Vec<Expr>)>,
+    actions: Vec<(GameState, Vec<Expr>)>,
+    can_place_card: Vec<Expr>
 }
 
 
