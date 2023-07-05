@@ -3,7 +3,7 @@ mod Feature;
 mod CDSL;
 mod functions;
 
-use crate::CardGame::Game::Game;
+use crate::CardGame::game::Game;
 
 
 fn main() {

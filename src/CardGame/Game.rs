@@ -1,8 +1,8 @@
-use super::Player::Player;
-use super::Player::Move;
-use super::Card::Card;
 use crate::Feature::Feature;
-use crate::CDSL::Expr::Expr;
+use super::player::Player;
+use super::player::Move;
+use super::Card::Card;
+use crate::CDSL::expr::Expr;
 
 #[derive(Clone, Copy, Debug)]
 pub enum GameState {

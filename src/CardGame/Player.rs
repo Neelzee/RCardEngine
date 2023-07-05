@@ -1,6 +1,12 @@
 use super::Card::Card;
 
-#[derive(Clone, Debug)]
+pub enum Move {
+    Play,
+    Draw,
+    Pass,
+    Discard
+}
+
 pub struct Player {
     name: String,
     hand: Vec<Card>,
