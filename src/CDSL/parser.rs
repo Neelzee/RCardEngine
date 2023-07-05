@@ -151,6 +151,66 @@ pub fn parse_if_expr(xs: &str) -> Result<Expr, Vec<ParseError>> {
                 }
             }
         }
-        None => todo!(),
+        None => Err(ParseError { err: SyntaxError, expr: Some(Expr::If(Expr::Null, Expr::Null)), str: xs.to_owned() }),
+    }
+}
+
+pub fn parse_one_cdsl(mut xs: Vec<&str>) -> Result<(Expr, Vec<&str>), (ParseError, i32)> {
+    let mut i = 0;
+    
+    loop {
+        match xs.pop() {
+            Some(x) => {
+                i += 1;
+                match x {
+                    "any" => todo!(),
+                    "all" => todo!(),
+                    "greatest" => todo!(),
+                    "players" => todo!(),
+                    "score" => todo!(),
+                    "hand" => todo!(),
+                    "isEqual" => todo!(),
+                    "isEmpy" => todo!(),
+                    "swap" => todo!(),
+                    "shuffle" => todo!(),
+                    "prevPlayer" => todo!(),
+                    "deck" => todo!(),
+                    "pile" => todo!(),
+                    "take" => todo!(),
+                    "always" => todo!(),
+                    "never" => todo!(),
+                    "ranks" => todo!(),
+                    "suits" => todo!(),
+                    "values" => todo!(),
+                    "discard" => todo!(),
+                    "left" => todo!(),
+                    "right" => todo!(),
+                    "turn" => todo!(),
+                    "goBack" => todo!(),
+                    "goForward" => todo!(),
+                    "reset" => todo!(),
+                    "player" => todo!(),
+                    "moves" => todo!(),
+                    "le" => todo!(),
+                    "ge" => todo!(),
+                    "lte" => todo!(),
+                    "gte" => todo!(),
+                    "eq" => todo!(),
+                    "isMove" => todo!(),
+                    "pPass" => todo!(),
+                    "pDraw" => todo!(),
+                    "pPlay" => todo!(),
+                    "isSame" => todo!(),
+                    "look" => todo!(),
+                    "put" => todo!(),
+                    "null" => todo!(),
+                    _ => match x.parse::<i32>() {
+                        Ok(i) => Ok((Expr::Numeric(i), xs)),
+                        Err(_) => Ok((Expr::Text(x.to_owned()), xs)),
+                    }
+                }
+            }
+            None => Err((ParseError { err: todo!(), expr: todo!(), str: todo!() }, i)),
+        }
     }
 }
