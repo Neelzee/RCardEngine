@@ -1,3 +1,4 @@
+#[derive(Clone, Debug)]
 pub struct Card {
     suit: String,
     rank: String,
@@ -5,7 +6,7 @@ pub struct Card {
 }
 
 impl Card {
-    fn new(suit: String, rank: String, value: i32) -> Card {
+    pub fn new(suit: String, rank: String, value: i32) -> Card {
         Card {
             suit: suit,
             rank: rank,

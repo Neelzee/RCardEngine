@@ -1,7 +1,10 @@
 use super::Player::Player;
+use super::Player::Move;
 use super::Card::Card;
+use crate::Feature::Feature;
+use crate::CDSL::Expr::Expr;
 
-
+#[derive(Clone, Copy, Debug)]
 pub enum GameState {
     Start,
     TurnStart,
@@ -14,14 +17,14 @@ pub enum GameState {
 pub struct Game {
     game_name: String,
     state: GameState,
-    player_moves: Vec<(String, bool)>,
+    player_moves: Vec<(Move, bool)>,
     card_gen: Vec<Card>,
     discard: Vec<Card>,
     deck: Vec<Card>,
     pile: Vec<(Card, Option<Card>)>,
     players: Vec<Player>,
-    rules: Vec<(String, Vec<String>)>,
-    actions: Vec<(GameState, Vec<String>)>,
+    rules: Vec<(Feature, Vec<Expr>)>,
+    actions: Vec<(GameState, Vec<Expr>)>,
     can_place_card: Vec<String>
 }
 
