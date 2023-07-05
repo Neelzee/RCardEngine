@@ -1,11 +1,4 @@
-use super::Card::Card;
-
-pub enum Move {
-    Play,
-    Draw,
-    Pass,
-    Discard
-}
+use super::card::Card;
 
 pub struct Player {
     name: String,

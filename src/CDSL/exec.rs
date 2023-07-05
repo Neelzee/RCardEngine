@@ -1,15 +1,15 @@
-use crate::CardGame::Game::Game;
-
-use super::Expr::Expr;
+use crate::CardGame::game::Game;
+use crate::CardGame::card::Card;
+use super::expr::Expr;
 
 
 pub fn place_card_stmt(xs: Vec<Expr>) -> impl Fn(Game, Card) -> bool {
 
-    if len(xs) == 0 || xs.0 == Expr::Null {
+    if xs.is_empty() || xs.get(0).unwrap() == Expr::Null {
         return |_, _| true;
     }
 
-    if any(xs, |x| x == Expr::CardRank || x == Expr::CardSuit || x == CardValue) {
+    if xs.into_iter().any(|x| x == Expr::CardRank || x == Expr::CardSuit || x == Expr::CardValue) {
         move |g, c| compare_cards(xs, g, c)
     }
 

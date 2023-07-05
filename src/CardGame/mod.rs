@@ -1,3 +1,3 @@
 pub mod game;
 pub mod player;
-pub mod Card;
+pub mod card;

@@ -1,6 +1,18 @@
-use crate::CardGame::Player::Move;
-use crate::CardGame::Card::Card;
+use crate::CardGame::player::Move;
+use crate::CardGame::card::Card;
+use crate::feature::Feature;
 
+pub enum CardEffect {
+    ChangeCard,
+    SwapHand,
+    TakeFromHand,
+    GiveCard,
+    PassNext,
+    DrawCards,
+    Blank
+}
+
+#[derive(Clone, Debug)]
 pub enum Expr {
     Any(Box<Expr>),
     All(Box<Expr>),
@@ -49,4 +61,115 @@ pub enum Expr {
     CLEq,
     CGRq,
     Null
+}
+
+impl Expr {
+    pub fn is_numeric(&self) -> bool {
+        match self {
+            Expr::Numeric(_) => true,
+            Expr::Score => true,
+            _ => false
+        }
+    }
+
+    pub fn to_numeric(&self) -> Option<Expr> {
+        match self {
+            Expr::Text(t) => match t.parse::<i32>() {
+                Ok(i) => Some(Expr::Numeric(i)),
+                Err(_) => None,
+            }
+            
+            Expr::Numeric(_) => Some(self.clone()),
+            
+            _ => None
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            Expr::Any(_) => todo!(),
+            Expr::All(_) => todo!(),
+            Expr::Greatest(_) => todo!(),
+            Expr::Players(_) => todo!(),
+            Expr::Score => todo!(),
+            Expr::Hand => todo!(),
+            Expr::IsEqual => todo!(),
+            Expr::Numeric(_) => todo!(),
+            Expr::IsEmpty(_) => todo!(),
+            Expr::If(_, _) => todo!(),
+            Expr::Swap(_, _) => todo!(),
+            Expr::Shuffle(_) => todo!(),
+            Expr::Deck => todo!(),
+            Expr::Pile => todo!(),
+            Expr::Discard => todo!(),
+            Expr::Take(_, _, _) => todo!(),
+            Expr::Always => todo!(),
+            Expr::Never => todo!(),
+            Expr::Not(_) => todo!(),
+            Expr::And(_, _) => todo!(),
+            Expr::Or(_, _) => todo!(),
+            Expr::AffectPlayer(_, _) => todo!(),
+            Expr::TOLeft => todo!(),
+            Expr::TORight => todo!(),
+            Expr::CardRank => todo!(),
+            Expr::CardSuit => todo!(),
+            Expr::CardValue => todo!(),
+            Expr::PlayerAction(_, _) => todo!(),
+            Expr::CurrentPlayer(_) => todo!(),
+            Expr::PreviousPlayer(_) => todo!(),
+            Expr::Reset(_) => todo!(),
+            Expr::Cards(_) => todo!(),
+            Expr::Turn => todo!(),
+            Expr::GoBack(_) => todo!(),
+            Expr::GoForward(_) => todo!(),
+            Expr::IsMove(_) => todo!(),
+            Expr::Move(_) => todo!(),
+            Expr::IsSame(_, _) => todo!(),
+            Expr::Look(_, _) => todo!(),
+            Expr::Put(_, _) => todo!(),
+            Expr::Text(_) => todo!(),
+            Expr::CLe => todo!(),
+            Expr::CGr => todo!(),
+            Expr::CEq => todo!(),
+            Expr::CLEq => todo!(),
+            Expr::CGRq => todo!(),
+            Expr::Null => todo!(),
+        }
+    }
+}
+
+
+pub struct ParseError {
+    err: ParseErrorCode,
+    expr: Option<Expr>,
+    str: String
+}
+
+
+pub enum ParseErrorCode {
+    IncompleteExpressionError,
+    SyntaxError,
+    ValidateFeatureError(Feature, Vec<ParseError>),
+    ValidateExpressionError(Option<Feature>, Vec<ParseError>),
+    NotAFeatureError,
+    NotAnAttributeError,
+    NotAFeatureOfAttributeError,
+    InvalidFeatureArgumentError,
+    NotACardFieldError,
+    MissMatchCardError(Vec<Card>, Vec<Card>),
+    InvalidExpressionError,
+}
+
+
+pub struct ExecError {
+    err: ExecErrorCode,
+    expr: Expr
+}
+
+pub enum ExecErrorCode {
+    InvalidSyntaxError,
+    SyntaxErrorRightOperand,
+    SyntaxErrorLeftOperand,
+    InvalidBoolEvaluationError,
+    UnknownExpressionError
 }

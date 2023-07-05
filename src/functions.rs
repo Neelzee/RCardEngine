@@ -1,9 +1,9 @@
-pub fn string_to_list(s: &str) -> Vec<String> {
+pub fn string_to_list(s: &str) -> Vec<&str> {
     let trimmed = s.trim();
     
     if trimmed.starts_with('[') && trimmed.ends_with(']') {
         let inner_str = &trimmed[1..trimmed.len() - 1];
-        let mut result: Vec<String> = vec![];
+        let mut result: Vec<&str> = vec![];
         let mut word = String::new();
         let mut count = 0;
         
@@ -17,13 +17,13 @@ pub fn string_to_list(s: &str) -> Vec<String> {
                     count -= 1;
                     word.push(ch);
                     if count == 0 {
-                        result.push(word.clone());
+                        result.push(&word);
                         word.clear();
                     }
                 }
                 ',' => {
                     if count == 0 {
-                        result.push(word.clone());
+                        result.push(&word);
                         word.clear();
                     } else {
                         word.push(ch);
@@ -35,6 +35,6 @@ pub fn string_to_list(s: &str) -> Vec<String> {
         
         result
     } else {
-        vec![s.to_string()]
+        vec![s]
     }
 }

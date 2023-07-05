@@ -1,5 +1,5 @@
 mod CardGame;
-mod Feature;
+mod feature;
 mod CDSL;
 mod functions;
 
@@ -12,11 +12,11 @@ fn main() {
 
 
 
-fn playGame(n: i32) {
+fn play_game(n: i32) {
 
 }
 
 
-fn getGames() -> Option<Vec<Game>> {
+fn get_games() -> Option<Vec<Game>> {
     None
 }
