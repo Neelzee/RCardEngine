@@ -136,7 +136,7 @@ impl Feature {
         }
     }
 
-    pub fn validate_feature(x: String) -> Result<Feature, ParseError> {
+    pub fn validate_feature(x: &str) -> Result<Feature, ParseError> {
         match x.split_whitespace().collect::<Vec<&str>>()[..] {
             ["change_card", ..] => match get_card_fields(x.split_whitespace().collect::<Vec<&str>>()[1..].to_vec()) {
                 Ok(_) => Ok(Feature::CEChangeCard),
@@ -160,7 +160,7 @@ impl Feature {
                     ParseError {
                         err: ParseErrorCode::InvalidFeatureArgumentError,
                         expr: None,
-                        str: x,
+                        str: x.to_owned(),
                     }
                 ),
             }
@@ -189,7 +189,7 @@ impl Feature {
                     ParseError {
                         err: ParseErrorCode::InvalidFeatureArgumentError,
                         expr: None,
-                        str: x,
+                        str: x.to_owned(),
                     }
                 ),
             }
@@ -198,7 +198,7 @@ impl Feature {
                 ParseError {
                     err: ParseErrorCode::NotAFeatureError,
                     expr: None,
-                    str: x,
+                    str: x.to_owned(),
                 }
             ),
         }

@@ -100,10 +100,6 @@ pub fn get_card_fields(xs: Vec<&str>) -> Result<Vec<Expr>, Vec<ParseError>> {
     return if errs.is_empty() { Ok(exprs) } else { Err(errs) }
 }
 
-pub fn read_cdsl(xs: &str) -> Result<((Feature, Option<Vec<Expr>>), Vec<Expr>), (Option<Feature>, Vec<ParseError>)> {
-    todo!()
-}
-
 pub fn get_cards(xs: Vec<&str>) -> Vec<Card> {
     xs.into_iter()
         .filter_map(|x| if x.contains(".") { Some(x) } else { None } )
@@ -814,10 +810,60 @@ pub fn parse_one_cdsl(mut xs: Vec<&str>, mut i: i32) -> Result<(Expr, Vec<&str>)
 pub fn get_card_comperator(x: &str) -> Option<Expr> {
     match x {
         "eq" => Some(Expr::CEq),
+
         "lte" => Some(Expr::CLEq),
+
         "gte" => Some(Expr::CGRq),
+
         "le" => Some(Expr::CLe),
+
         "ge" => Some(Expr::CGr),
         _ => None
+    }
+}
+
+/**
+ * Takes in one line
+ */
+pub fn read_cdsl(xs: &str) -> Result<((Feature, Option<Vec<Expr>>), Vec<Expr>), (Option<Feature>, Vec<ParseError>)> {
+    match xs.find('=') {
+        Some(index) => {
+            let (y, ys) = xs.split_at(index);
+            match Feature::validate_feature(y) {
+                Ok(f) => match (f, parse_expr(ys.split_whitespace().collect::<Vec<&str>>())) {
+                    // Should parse y and ys when needed, not at top
+                    (Feature::CEDrawCard, Ok(expr)) => {
+                        match y.split_whitespace().collect::<Vec<&str>>()[1].parse::<i32>() {
+                            Ok(i) => Ok(((f, Some(vec![Expr::Numeric(i)])), expr)),
+
+                            Err(_) => Err((Some(f), vec![ParseError { err: ParseErrorCode::InvalidFeatureArgumentError, expr: None, str: y.to_owned() }])),
+                        }
+                    }
+
+                    (Feature::CESwapHand, Ok(expr)) => Ok(((f, None), expr)),
+
+                    (Feature::CEChangeCard, Ok(expr)) => todo!(),
+
+                    (Feature::CETakeFromHand, Ok(expr)) => todo!(),
+
+                    (Feature::CEPassNext, Ok(expr)) => todo!(),
+
+                    (Feature::CEGiveCard, Ok(expr)) => todo!(),
+
+                    (Feature::PlayerMoves, Ok(expr)) => todo!(),
+
+                    (Feature::ExceptionConstraints, Ok(expr)) => todo!(),
+
+                    (Feature::IgnoreConstraints, Ok(expr)) => todo!(),
+                    
+                    (f, Ok(expr)) => todo!(),
+
+                    (f, Err(e)) => todo!()
+                }
+
+                Err(e) => Err((None, vec![ParseError { err: ParseErrorCode::NotAFeatureError, expr: None, str: y.to_owned() }, e]))
+            }
+        }
+        None => todo!(),
     }
 }

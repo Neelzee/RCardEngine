@@ -1,7 +1,7 @@
-use crate::Feature::Feature;
+use crate::feature::Feature;
 use super::player::Player;
 use super::player::Move;
-use super::Card::Card;
+use super::card::Card;
 use crate::CDSL::expr::Expr;
 
 #[derive(Clone, Copy, Debug)]
