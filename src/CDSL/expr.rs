@@ -20,7 +20,7 @@ pub enum Expr {
     Players(Box<Expr>),
     Score,
     Hand,
-    IsEqual,
+    IsEqual(Box<Expr>, Box<Expr>),
     Numeric(i32),
     IsEmpty(Box<Expr>),
     If(Vec<Expr>, Vec<Expr>),
@@ -55,11 +55,15 @@ pub enum Expr {
     Look(Box<Expr>, Box<Expr>),
     Put(Box<Expr>, Box<Expr>),
     Text(String),
+    PMove,
     CLe,
     CGr,
     CEq,
     CLEq,
     CGRq,
+    PAPass,
+    PADraw,
+    PAPlay,
     Null
 }
 
@@ -93,7 +97,7 @@ impl Expr {
             Expr::Players(_) => todo!(),
             Expr::Score => todo!(),
             Expr::Hand => todo!(),
-            Expr::IsEqual => todo!(),
+            Expr::IsEqual(_, _) => todo!(),
             Expr::Numeric(_) => todo!(),
             Expr::IsEmpty(_) => todo!(),
             Expr::If(_, _) => todo!(),
@@ -134,6 +138,10 @@ impl Expr {
             Expr::CLEq => todo!(),
             Expr::CGRq => todo!(),
             Expr::Null => todo!(),
+            Expr::PMove => todo!(),
+            Expr::PAPass => todo!(),
+            Expr::PADraw => todo!(),
+            Expr::PAPlay => todo!(),
         }
     }
 }
@@ -145,6 +153,19 @@ pub struct ParseError {
     str: String
 }
 
+impl ParseError {
+    pub fn get_error(&self) -> ParseErrorCode {
+        self.err
+    }
+
+    pub fn get_expr(&self) -> Option<Expr> {
+        self.expr
+    }
+
+    pub fn get_string(&self) -> String {
+        self.str
+    }
+}
 
 pub enum ParseErrorCode {
     IncompleteExpressionError,
@@ -154,6 +175,7 @@ pub enum ParseErrorCode {
     NotAFeatureError,
     NotAnAttributeError,
     NotAFeatureOfAttributeError,
+    NotANumberError,
     InvalidFeatureArgumentError,
     NotACardFieldError,
     MissMatchCardError(Vec<Card>, Vec<Card>),

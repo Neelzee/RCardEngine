@@ -1,3 +1,5 @@
+use crate::CDSL::{expr::{ParseError, ParseErrorCode}, parser::{get_card_fields, get_card_comperator}};
+
 #[derive(Clone, Copy, Debug)]
 pub enum Attribute {
     GameAttributes,
@@ -133,6 +135,75 @@ impl Feature {
             _ => Attribute::None
         }
     }
+
+    pub fn validate_feature(x: String) -> Result<Feature, ParseError> {
+        match x.split_whitespace().collect::<Vec<&str>>()[..] {
+            ["change_card", ..] => match get_card_fields(x.split_whitespace().collect::<Vec<&str>>()[1..].to_vec()) {
+                Ok(_) => Ok(Feature::CEChangeCard),
+                Err(mut e) => match e.pop() {
+                    Some(err) => Err(err),
+                    None => Ok(Feature::CEChangeCard),
+                },
+            }
+
+            ["swap_hand"] => Ok(Feature::CESwapHand),
+
+            ["take_from_hand"] => Ok(Feature::CETakeFromHand),
+
+            ["give_card"] => Ok(Feature::CEGiveCard),
+
+            ["pass_next"] => Ok(Feature::CEPassNext),
+
+            ["draw_card, .."] => match x.split_whitespace().collect::<Vec<&str>>()[1..].join(" ").parse::<i32>() {
+                Ok(_) => Ok(Feature::CEDrawCard),
+                Err(_) => Err(
+                    ParseError {
+                        err: ParseErrorCode::InvalidFeatureArgumentError,
+                        expr: None,
+                        str: x,
+                    }
+                ),
+            }
+
+            ["card_suits"] => Ok(Feature::CardSuits),
+
+            ["card_ranks"] => Ok(Feature::CardRanks),
+
+            ["card_values"] => Ok(Feature::CardValues),
+
+            ["card_constraints"] => Ok(Feature::CardConstraints),
+
+            ["ignore_constraints"] => Ok(Feature::IgnoreConstraints),
+
+            ["player_hand"] => Ok(Feature::PlayerHand),
+
+            ["player_moves"] => Ok(Feature::PlayerMoves),
+
+            ["any_time"] => Ok(Feature::AnyTime),
+
+            ["start_time"] => Ok(Feature::StartTime),
+
+            ["exception_constraints", ..] => match get_card_comperator(&x.split_whitespace().collect::<Vec<&str>>()[1..].join("")) {
+                Some(_) => Ok(Feature::ExceptionConstraints),
+                None => Err(
+                    ParseError {
+                        err: ParseErrorCode::InvalidFeatureArgumentError,
+                        expr: None,
+                        str: x,
+                    }
+                ),
+            }
+
+            _ => Err(
+                ParseError {
+                    err: ParseErrorCode::NotAFeatureError,
+                    expr: None,
+                    str: x,
+                }
+            ),
+        }
+    }
+
 }
 
 

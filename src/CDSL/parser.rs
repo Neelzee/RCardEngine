@@ -113,27 +113,11 @@ pub fn get_cards(xs: Vec<&str>) -> Vec<Card> {
         .collect::<Vec<Card>>()
 }
 
-
+/**
+ * Takes in a list of lines, then 
+ */
 pub fn parse_expr(mut xs: Vec<&str>) -> Result<Vec<Expr>, Vec<ParseError>> {
-    let mut exprs = Vec::new();
-
-    let mut errs = Vec::new();
-
-
-    let mut expr = Expr::Null;
-
-    for w in xs {
-        // TODO: Add check for not
-
-        match w {
-            "||" => todo!(),
-            "&&" => todo!(),
-            ":" => todo!(),
-            _ => todo!()
-        }
-    }
-
-    return if errs.is_empty() { Ok(exprs) } else { Err(errs) }
+    todo!()
 }
 
 
@@ -151,66 +135,689 @@ pub fn parse_if_expr(xs: &str) -> Result<Expr, Vec<ParseError>> {
                 }
             }
         }
-        None => Err(ParseError { err: SyntaxError, expr: Some(Expr::If(Expr::Null, Expr::Null)), str: xs.to_owned() }),
+        None => Err(vec![ParseError { err: ParseErrorCode::SyntaxError, expr: Some(Expr::If(vec![Expr::Null], vec![Expr::Null])), str: xs.to_owned() }]),
     }
 }
 
-pub fn parse_one_cdsl(mut xs: Vec<&str>) -> Result<(Expr, Vec<&str>), (ParseError, i32)> {
-    let mut i = 0;
-    
-    loop {
-        match xs.pop() {
-            Some(x) => {
-                i += 1;
-                match x {
-                    "any" => todo!(),
-                    "all" => todo!(),
-                    "greatest" => todo!(),
-                    "players" => todo!(),
-                    "score" => todo!(),
-                    "hand" => todo!(),
-                    "isEqual" => todo!(),
-                    "isEmpy" => todo!(),
-                    "swap" => todo!(),
-                    "shuffle" => todo!(),
-                    "prevPlayer" => todo!(),
-                    "deck" => todo!(),
-                    "pile" => todo!(),
-                    "take" => todo!(),
-                    "always" => todo!(),
-                    "never" => todo!(),
-                    "ranks" => todo!(),
-                    "suits" => todo!(),
-                    "values" => todo!(),
-                    "discard" => todo!(),
-                    "left" => todo!(),
-                    "right" => todo!(),
-                    "turn" => todo!(),
-                    "goBack" => todo!(),
-                    "goForward" => todo!(),
-                    "reset" => todo!(),
-                    "player" => todo!(),
-                    "moves" => todo!(),
-                    "le" => todo!(),
-                    "ge" => todo!(),
-                    "lte" => todo!(),
-                    "gte" => todo!(),
-                    "eq" => todo!(),
-                    "isMove" => todo!(),
-                    "pPass" => todo!(),
-                    "pDraw" => todo!(),
-                    "pPlay" => todo!(),
-                    "isSame" => todo!(),
-                    "look" => todo!(),
-                    "put" => todo!(),
-                    "null" => todo!(),
-                    _ => match x.parse::<i32>() {
-                        Ok(i) => Ok((Expr::Numeric(i), xs)),
-                        Err(_) => Ok((Expr::Text(x.to_owned()), xs)),
+pub fn parse_one_cdsl(mut xs: Vec<&str>, mut i: i32) -> Result<(Expr, Vec<&str>), (ParseError, i32)> {
+    match xs.pop() {
+        Some(x) => {
+            i += 1;
+            match x {
+                "any" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::Any(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::Any(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
                     }
                 }
+
+                "all" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::All(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::All(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "greatest" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::Greatest(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::Greatest(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "players" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::Players(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::Players(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "score" => Ok((Expr::Score, xs)),
+
+                "hand" => Ok((Expr::Hand, xs)),
+
+                "isEqual" => match parse_one_cdsl(xs, i) {
+                    Ok((l, ys)) => {
+                        match parse_one_cdsl(ys, i - (xs.len() as i32) - (ys.len() as i32)) {
+                            Ok((r, zs)) => {
+                                Ok((Expr::IsEqual(Box::new(l), Box::new(r)), zs))
+                            }
+
+                            Err((e, j)) => {
+                                let b = match e.get_expr() {
+                                    Some(e) => Box::new(e),
+                                    None => Box::new(Expr::Null),
+                                };
+        
+                                let expr = Some(Expr::IsEqual(Box::new(l), b));
+        
+                                Err((
+                                    ParseError {
+                                        err: e.get_error(),
+                                        expr,
+                                        str: x.to_owned() + " " + &e.get_string(),
+                                    },
+                                    j
+                                ))
+                            }
+                        }
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::IsEqual(b, Box::new(Expr::Null)));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "isEmpy" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::IsEmpty(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::IsEmpty(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "swap" => match parse_one_cdsl(xs, i) {
+                    Ok((l, ys)) => {
+                        match parse_one_cdsl(ys, i - (xs.len() as i32) - (ys.len() as i32)) {
+                            Ok((r, zs)) => {
+                                Ok((Expr::Swap(Box::new(l), Box::new(r)), zs))
+                            }
+
+                            Err((e, j)) => {
+                                let b = match e.get_expr() {
+                                    Some(e) => Box::new(e),
+                                    None => Box::new(Expr::Null),
+                                };
+        
+                                let expr = Some(Expr::Swap(Box::new(l), b));
+        
+                                Err((
+                                    ParseError {
+                                        err: e.get_error(),
+                                        expr,
+                                        str: x.to_owned() + " " + &e.get_string(),
+                                    },
+                                    j
+                                ))
+                            }
+                        }
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::Swap(b, Box::new(Expr::Null)));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+                
+                "shuffle" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::Shuffle(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::Shuffle(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "prevPlayer" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::PreviousPlayer(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::PreviousPlayer(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "deck" => Ok((Expr::Deck, xs)),
+
+                "pile" => Ok((Expr::Pile, xs)),
+
+                "take" => match parse_one_cdsl(xs, i) {
+                    Ok((Expr::Numeric(n), ys)) => match parse_one_cdsl(ys, i - ((xs.len() as i32) - (ys.len() as i32))) {
+                        Ok((l, zs)) => match parse_one_cdsl(zs, i - ((xs.len() as i32) - (zs.len() as i32))) {
+                            Ok((r, ws)) => Ok((Expr::Take(Box::new(Expr::Numeric(n)), Box::new(l), Box::new(r)), ws)),
+
+                            Err((e, j)) => {
+
+                                let r = match e.get_expr() {
+                                    Some(e) => Box::new(e),
+                                    None => Box::new(Expr::Null),
+                                };
+        
+                                let expr = Some(Expr::Take(Box::new(Expr::Numeric(i)), Box::new(l), r));
+        
+                                Err((
+                                    ParseError {
+                                        err: e.get_error(),
+                                        expr,
+                                        str: x.to_owned() + " " + &e.get_string(),
+                                    },
+                                    j
+                                ))
+                            }
+                        }
+
+                        Err((e, j)) => {
+
+                            let l = match e.get_expr() {
+                                Some(e) => Box::new(e),
+                                None => Box::new(Expr::Null),
+                            };
+    
+                            let expr = Some(Expr::Take(Box::new(Expr::Numeric(i)), l, Box::new(Expr::Null)));
+    
+                            Err((
+                                ParseError {
+                                    err: e.get_error(),
+                                    expr,
+                                    str: x.to_owned() + " " + &e.get_string(),
+                                },
+                                j
+                            ))
+                        }
+                    }
+
+                    Ok((e, _)) => Err((
+                        ParseError {
+                            err: ParseErrorCode::NotANumberError,
+                            expr: Some(Expr::Take(Box::new(e), Box::new(Expr::Null), Box::new(Expr::Null))),
+                            str: x.to_owned(),
+                        },
+                        i - 1
+                    )),
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::Take(b, Box::new(Expr::Null), Box::new(Expr::Null)));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "always" => Ok((Expr::Always, xs)),
+
+                "never" => Ok((Expr::Never, xs)),
+
+                "ranks" => Ok((Expr::CardRank, xs)),
+
+                "suits" => Ok((Expr::CardSuit, xs)),
+
+                "values" => Ok((Expr::CardValue, xs)),
+
+                "discard" => Ok((Expr::Discard, xs)),
+
+                "left" => Ok((Expr::TOLeft, xs)),
+
+                "right" => Ok((Expr::TOLeft, xs)),
+
+                "turn" => Ok((Expr::Turn, xs)),
+                
+                "goBack" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::GoBack(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::GoBack(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "goForward" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::GoForward(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::GoForward(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "reset" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::Reset(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::Reset(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "player" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::CurrentPlayer(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::CurrentPlayer(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "moves" => Ok((Expr::PMove, xs)),
+
+                "le" => Ok((Expr::CLe, xs)),
+
+                "ge" => Ok((Expr::CGr, xs)),
+
+                "lte" => Ok((Expr::CLEq, xs)),
+
+                "gte" => Ok((Expr::CGRq, xs)),
+
+                "eq" =>  Ok((Expr::CEq, xs)),
+
+                "isMove" => match parse_one_cdsl(xs, i) {
+                    Ok((exp, ys)) => {
+                        Ok((Expr::IsMove(Box::new(exp)), ys))
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::IsMove(b));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "pPass" => Ok((Expr::PAPass, xs)),
+
+                "pDraw" => Ok((Expr::PADraw, xs)),
+
+                "pPlay" => Ok((Expr::PAPlay, xs)),
+
+                "isSame" => match parse_one_cdsl(xs, i) {
+                    Ok((l, ys)) => {
+                        match parse_one_cdsl(ys, i - (xs.len() as i32) - (ys.len() as i32)) {
+                            Ok((r, zs)) => {
+                                Ok((Expr::IsSame(Box::new(l), Box::new(r)), zs))
+                            }
+
+                            Err((e, j)) => {
+                                let b = match e.get_expr() {
+                                    Some(e) => Box::new(e),
+                                    None => Box::new(Expr::Null),
+                                };
+        
+                                let expr = Some(Expr::IsSame(Box::new(l), b));
+        
+                                Err((
+                                    ParseError {
+                                        err: e.get_error(),
+                                        expr,
+                                        str: x.to_owned() + " " + &e.get_string(),
+                                    },
+                                    j
+                                ))
+                            }
+                        }
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::IsSame(b, Box::new(Expr::Null)));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "look" => match parse_one_cdsl(xs, i) {
+                    Ok((l, ys)) => {
+                        match parse_one_cdsl(ys, i - (xs.len() as i32) - (ys.len() as i32)) {
+                            Ok((r, zs)) => {
+                                Ok((Expr::Look(Box::new(l), Box::new(r)), zs))
+                            }
+
+                            Err((e, j)) => {
+                                let b = match e.get_expr() {
+                                    Some(e) => Box::new(e),
+                                    None => Box::new(Expr::Null),
+                                };
+        
+                                let expr = Some(Expr::Look(Box::new(l), b));
+        
+                                Err((
+                                    ParseError {
+                                        err: e.get_error(),
+                                        expr,
+                                        str: x.to_owned() + " " + &e.get_string(),
+                                    },
+                                    j
+                                ))
+                            }
+                        }
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::Look(b, Box::new(Expr::Null)));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "put" => match parse_one_cdsl(xs, i) {
+                    Ok((l, ys)) => {
+                        match parse_one_cdsl(ys, i - (xs.len() as i32) - (ys.len() as i32)) {
+                            Ok((r, zs)) => {
+                                Ok((Expr::Put(Box::new(l), Box::new(r)), zs))
+                            }
+
+                            Err((e, j)) => {
+                                let b = match e.get_expr() {
+                                    Some(e) => Box::new(e),
+                                    None => Box::new(Expr::Null),
+                                };
+        
+                                let expr = Some(Expr::Put(Box::new(l), b));
+        
+                                Err((
+                                    ParseError {
+                                        err: e.get_error(),
+                                        expr,
+                                        str: x.to_owned() + " " + &e.get_string(),
+                                    },
+                                    j
+                                ))
+                            }
+                        }
+                    }
+
+                    Err((e, j)) => {
+
+                        let b = match e.get_expr() {
+                            Some(e) => Box::new(e),
+                            None => Box::new(Expr::Null),
+                        };
+
+                        let expr = Some(Expr::Put(b, Box::new(Expr::Null)));
+
+                        Err((
+                            ParseError {
+                                err: e.get_error(),
+                                expr,
+                                str: x.to_owned() + " " + &e.get_string(),
+                            },
+                            j
+                        ))
+                    }
+                }
+
+                "null" => Ok((Expr::Null, xs)),
+
+                _ => match x.parse::<i32>() {
+                    Ok(i) => Ok((Expr::Numeric(i), xs)),
+                    Err(_) => Ok((Expr::Text(x.to_owned()), xs)),
+                }
             }
-            None => Err((ParseError { err: todo!(), expr: todo!(), str: todo!() }, i)),
         }
+
+        None => Err((ParseError { err: ParseErrorCode::IncompleteExpressionError, expr: None, str: xs.join(" ") }, i)),
+    }
+}
+
+
+pub fn get_card_comperator(x: &str) -> Option<Expr> {
+    match x {
+        "eq" => Some(Expr::CEq),
+        "lte" => Some(Expr::CLEq),
+        "gte" => Some(Expr::CGRq),
+        "le" => Some(Expr::CLe),
+        "ge" => Some(Expr::CGr),
+        _ => None
     }
 }
