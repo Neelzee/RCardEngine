@@ -1,6 +1,6 @@
 use crate::CDSL::{expr::{ParseError, ParseErrorCode}, parser::{get_card_fields, get_card_comperator}};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Attribute {
     GameAttributes,
     CardAttributes,
@@ -9,7 +9,7 @@ pub enum Attribute {
     None
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Feature {
     WinCon,
     CardSuits,
@@ -157,11 +157,11 @@ impl Feature {
             ["draw_card, .."] => match x.split_whitespace().collect::<Vec<&str>>()[1..].join(" ").parse::<i32>() {
                 Ok(_) => Ok(Feature::CEDrawCard),
                 Err(_) => Err(
-                    ParseError {
-                        err: ParseErrorCode::InvalidFeatureArgumentError,
-                        expr: None,
-                        str: x.to_owned(),
-                    }
+                    ParseError::new(
+                        ParseErrorCode::InvalidFeatureArgumentError,
+                        None,
+                        x.to_owned(),
+                    )
                 ),
             }
 
@@ -186,20 +186,20 @@ impl Feature {
             ["exception_constraints", ..] => match get_card_comperator(&x.split_whitespace().collect::<Vec<&str>>()[1..].join("")) {
                 Some(_) => Ok(Feature::ExceptionConstraints),
                 None => Err(
-                    ParseError {
-                        err: ParseErrorCode::InvalidFeatureArgumentError,
-                        expr: None,
-                        str: x.to_owned(),
-                    }
+                    ParseError::new(
+                        ParseErrorCode::InvalidFeatureArgumentError,
+                        None,
+                        x.to_owned(),
+                    )
                 ),
             }
 
             _ => Err(
-                ParseError {
-                    err: ParseErrorCode::NotAFeatureError,
-                    expr: None,
-                    str: x.to_owned(),
-                }
+                ParseError::new(
+                    ParseErrorCode::NotAFeatureError,
+                    None,
+                    x.to_owned(),
+                )
             ),
         }
     }

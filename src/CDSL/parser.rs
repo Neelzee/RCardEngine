@@ -10,7 +10,7 @@ pub fn parse_cdsl_player_action(xs: &str) -> Result<Vec<Expr>, ParseError> {
     let mut exprs = Vec::new();
 
     for e in parse_string_to_list(xs) {
-        match e {
+        match e.clone() {
             Expr::Text(t) => {
                 match t.find(" ") {
                     Some(index) => {
@@ -24,26 +24,23 @@ pub fn parse_cdsl_player_action(xs: &str) -> Result<Vec<Expr>, ParseError> {
 
                             "PASS" => exprs.push(Expr::PlayerAction(Move::Pass, b == "TRUE")),
 
-                            _ => return Err(ParseError {
-                                err: ParseErrorCode::SyntaxError,
-                                expr: Some(e),
-                                str: w.to_owned()})
+                            _ => return Err(ParseError::new(ParseErrorCode::SyntaxError, Some(e), w.to_owned()))
                         }
                     }
 
-                    None => return Err(ParseError {
-                        err: ParseErrorCode::SyntaxError,
-                        expr: Some(e),
-                        str: t})
+                    None => return Err(ParseError::new(
+                        ParseErrorCode::SyntaxError,
+                        Some(e),
+                        t))
                 }
             }
 
             _ => {
-                return Err(ParseError {
-                    err: ParseErrorCode::SyntaxError,
-                    expr: Some(e),
-                    str: e.to_string()
-                })
+                return Err(ParseError::new(
+                    ParseErrorCode::SyntaxError,
+                    Some(e.clone()),
+                    e.to_string()
+                ))
             }
         }
     }
@@ -93,7 +90,7 @@ pub fn get_card_fields(xs: Vec<&str>) -> Result<Vec<Expr>, Vec<ParseError>> {
             "ranks" => exprs.push(Expr::CardRank),
             "suits" => exprs.push(Expr::CardSuit),
             "values" => exprs.push(Expr::CardValue),
-            _ => errs.push(ParseError { err: ParseErrorCode::NotACardFieldError, expr: Some(Expr::Null), str: x.to_owned() })
+            _ => errs.push(ParseError::new(ParseErrorCode::NotACardFieldError, Some(Expr::Null), x.to_owned()))
         }
     }
 
@@ -131,11 +128,14 @@ pub fn parse_if_expr(xs: &str) -> Result<Expr, Vec<ParseError>> {
                 }
             }
         }
-        None => Err(vec![ParseError { err: ParseErrorCode::SyntaxError, expr: Some(Expr::If(vec![Expr::Null], vec![Expr::Null])), str: xs.to_owned() }]),
+        None => Err(vec![ParseError::new(ParseErrorCode::SyntaxError, Some(Expr::If(vec![Expr::Null], vec![Expr::Null])), xs.to_owned())]),
     }
 }
 
 pub fn parse_one_cdsl(mut xs: Vec<&str>, mut i: i32) -> Result<(Expr, Vec<&str>), (ParseError, i32)> {
+    
+    todo!()
+    /*
     match xs.pop() {
         Some(x) => {
             i += 1;
@@ -804,6 +804,7 @@ pub fn parse_one_cdsl(mut xs: Vec<&str>, mut i: i32) -> Result<(Expr, Vec<&str>)
 
         None => Err((ParseError { err: ParseErrorCode::IncompleteExpressionError, expr: None, str: xs.join(" ") }, i)),
     }
+    */
 }
 
 
@@ -830,40 +831,62 @@ pub fn read_cdsl(xs: &str) -> Result<((Feature, Option<Vec<Expr>>), Vec<Expr>), 
         Some(index) => {
             let (y, ys) = xs.split_at(index);
             match Feature::validate_feature(y) {
-                Ok(f) => match (f, parse_expr(ys.split_whitespace().collect::<Vec<&str>>())) {
-                    // Should parse y and ys when needed, not at top
-                    (Feature::CEDrawCard, Ok(expr)) => {
+                Ok(f) => match f {
+                    // parse_expr(ys.split_whitespace().collect::<Vec<&str>>())
+                    Feature::CEDrawCard => {
                         match y.split_whitespace().collect::<Vec<&str>>()[1].parse::<i32>() {
-                            Ok(i) => Ok(((f, Some(vec![Expr::Numeric(i)])), expr)),
+                            Ok(i) => match parse_expr(ys.split_whitespace().collect::<Vec<&str>>()) {
+                                Ok(expr) => Ok(((f, Some(vec![Expr::Numeric(i)])), expr)),
+                                Err(e) => Err((Some(f), e))
+                            }
 
-                            Err(_) => Err((Some(f), vec![ParseError { err: ParseErrorCode::InvalidFeatureArgumentError, expr: None, str: y.to_owned() }])),
+                            Err(_) => Err((Some(f), vec![ParseError::new(ParseErrorCode::InvalidFeatureArgumentError, None, y.to_owned())])),
                         }
                     }
 
-                    (Feature::CESwapHand, Ok(expr)) => Ok(((f, None), expr)),
+                    Feature::CESwapHand => Ok(((f, None), vec![Expr::Cards(get_cards(ys.split_whitespace().collect::<Vec<&str>>()))])),
 
-                    (Feature::CEChangeCard, Ok(expr)) => todo!(),
+                    Feature::CEChangeCard => {
+                        match get_card_fields(y.split_whitespace().collect::<Vec<&str>>()) {
+                            Ok(expr) => match parse_expr(ys.split_whitespace().collect::<Vec<&str>>()) {
+                                Ok(cards) => Ok(((f, Some(expr)), cards)),
+                                Err(e) => Err((Some(f), e))
+                            }
 
-                    (Feature::CETakeFromHand, Ok(expr)) => todo!(),
+                            Err(mut e) => {
+                                e.push(ParseError::new(ParseErrorCode::InvalidFeatureArgumentError, None, y.to_owned()));
+                                Err((Some(f), e))
+                            }
+                        }
+                    }
 
-                    (Feature::CEPassNext, Ok(expr)) => todo!(),
+                    Feature::CETakeFromHand => Ok(((f, None), vec![Expr::Cards(get_cards(ys.split_whitespace().collect::<Vec<&str>>()))])),
 
-                    (Feature::CEGiveCard, Ok(expr)) => todo!(),
+                    Feature::CEPassNext => Ok(((f, None), vec![Expr::Cards(get_cards(ys.split_whitespace().collect::<Vec<&str>>()))])),
 
-                    (Feature::PlayerMoves, Ok(expr)) => todo!(),
+                    Feature::CEGiveCard => Ok(((f, None), vec![Expr::Cards(get_cards(ys.split_whitespace().collect::<Vec<&str>>()))])),
 
-                    (Feature::ExceptionConstraints, Ok(expr)) => todo!(),
+                    Feature::PlayerMoves => Ok(((f, None), ys.split_whitespace().into_iter().filter_map(|x| Move::from_string(x)).map(|(m, b)| Expr::PlayerAction(m, b)).collect::<Vec<Expr>>())),
 
-                    (Feature::IgnoreConstraints, Ok(expr)) => todo!(),
+                    Feature::ExceptionConstraints => match get_card_comperator(y.split_whitespace().collect::<Vec<&str>>()[1]) {
+                        Some(cc) => match parse_expr(string_to_list(ys)) {
+                            Ok(expr) => Ok(((f, Some(vec![cc])), expr)),
+                            Err(e) => Err((Some(f), e)),
+                        }
+                        None => Err((Some(f), vec![ParseError::new(ParseErrorCode::InvalidFeatureArgumentError, None, y.to_owned())])),
+                    }
+
+                    Feature::IgnoreConstraints => Ok(((f, None), vec![Expr::Cards(get_cards(ys.split_whitespace().collect::<Vec<&str>>()))])),
                     
-                    (f, Ok(expr)) => todo!(),
-
-                    (f, Err(e)) => todo!()
+                    f => match parse_expr(string_to_list(xs)) {
+                        Ok(expr) => Ok(((f, None), expr)),
+                        Err(e) => Err((Some(f), e)),
+                    }
                 }
 
-                Err(e) => Err((None, vec![ParseError { err: ParseErrorCode::NotAFeatureError, expr: None, str: y.to_owned() }, e]))
+                Err(e) => Err((None, vec![ParseError::new(ParseErrorCode::InvalidFeatureArgumentError, None, y.to_owned()), e]))
             }
         }
-        None => todo!(),
+        None => Err((None, vec![ParseError::new(ParseErrorCode::InvalidFeatureArgumentError, None, xs.to_owned())]))
     }
 }

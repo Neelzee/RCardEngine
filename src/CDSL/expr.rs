@@ -12,7 +12,7 @@ pub enum CardEffect {
     Blank
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Expr {
     Any(Box<Expr>),
     All(Box<Expr>),
@@ -147,6 +147,7 @@ impl Expr {
 }
 
 
+#[derive(Clone)]
 pub struct ParseError {
     err: ParseErrorCode,
     expr: Option<Expr>,
@@ -154,19 +155,28 @@ pub struct ParseError {
 }
 
 impl ParseError {
+    pub fn new(err: ParseErrorCode, expr: Option<Expr>, str: String) -> ParseError {
+        ParseError {
+            err,
+            expr,
+            str,
+        }
+    }
+
     pub fn get_error(&self) -> ParseErrorCode {
-        self.err
+        self.err.clone()
     }
 
     pub fn get_expr(&self) -> Option<Expr> {
-        self.expr
+        self.expr.clone()
     }
 
     pub fn get_string(&self) -> String {
-        self.str
+        self.str.clone()
     }
 }
 
+#[derive(Clone)]
 pub enum ParseErrorCode {
     IncompleteExpressionError,
     SyntaxError,
@@ -180,6 +190,7 @@ pub enum ParseErrorCode {
     NotACardFieldError,
     MissMatchCardError(Vec<Card>, Vec<Card>),
     InvalidExpressionError,
+    InvalidFilePath
 }
 
 

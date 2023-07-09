@@ -8,7 +8,7 @@ pub struct Player {
     score: i32
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Move {
     PlayCard,
     DrawCard,
@@ -32,7 +32,7 @@ impl Player {
 
 
 impl Move {
-    pub fn from_string(xs: String) -> Option<(Move, bool)> {
+    pub fn from_string(xs: &str) -> Option<(Move, bool)> {
         let parts: Vec<&str> = xs.split_whitespace().collect();
 
         match &parts[..] {

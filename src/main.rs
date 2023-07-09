@@ -2,6 +2,8 @@ mod CardGame;
 mod feature;
 mod CDSL;
 mod functions;
+mod GameData;
+mod CircularList;
 
 use crate::CardGame::game::Game;
 
