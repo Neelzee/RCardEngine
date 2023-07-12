@@ -6,11 +6,11 @@ pub struct Card {
 }
 
 impl Card {
-    pub fn new(suit: String, rank: String, value: i32) -> Card {
+    pub fn new(suit: &str, rank: &str, value: i32) -> Card {
         Card {
-            suit: suit,
-            rank: rank,
-            value: value
+            suit: suit.to_owned(),
+            rank: rank.to_owned(),
+            value,
         }
     }
 }

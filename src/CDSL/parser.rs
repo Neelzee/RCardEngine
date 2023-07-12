@@ -101,7 +101,7 @@ pub fn get_cards(xs: Vec<&str>) -> Vec<Card> {
     xs.into_iter()
         .filter_map(|x| if x.contains(".") { Some(x) } else { None } )
         .into_iter()
-        .map(|x| Card::new(x.split(".").collect::<Vec<&str>>()[0].to_owned(), x.split(".").collect::<Vec<&str>>()[1].to_owned(), 0))
+        .map(|x| Card::new(x.split(".").collect::<Vec<&str>>()[0], x.split(".").collect::<Vec<&str>>()[1], 0))
         .into_iter()
         .collect::<Vec<Card>>()
 }

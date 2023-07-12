@@ -1,11 +1,4 @@
-mod CardGame;
-mod feature;
-mod CDSL;
-mod functions;
-mod GameData;
-mod CircularList;
-
-use crate::CardGame::game::Game;
+use RCardEngine::CardGame::game::Game;
 
 
 fn main() {
