@@ -31,17 +31,8 @@ impl<T: Any> CircularList<T> {
         CircularList { list: Vec::new(), index: 0, rot: Rotation::Left }
     }
 
-    pub fn from_list<K, I>(list: I) -> CircularList<T>
-    where
-        I: IntoIterator<Item = T>
-    {
-        let mut v: Vec<T> = Vec::new();
-
-        for el in list {
-            v.push(el);
-        }
-
-        CircularList { list: v, index: 0, rot: Rotation::Left }
+    pub fn from_list(list: Vec<T>) -> CircularList<T> {
+        CircularList { list, index: 0, rot: Rotation::Left }
     }
 
     pub fn update(&mut self, new_focus: T) {
@@ -49,18 +40,9 @@ impl<T: Any> CircularList<T> {
         self.list.insert(self.index, new_focus);
     }
 
-    pub fn focus(&mut self) -> Option<T>
+    pub fn focus(&self) -> Option<T>
     where T: Clone
     {
-        let m = self.list.len();
-
-        if m == 0 {
-            self.index = 0;
-        } else {
-            self.index %= m;
-        }
-
-
         self.list.get(self.index as usize).cloned()
     }
 
@@ -140,12 +122,48 @@ impl<T: Any> CircularList<T> {
         return self.list.is_empty();
     }
 
+    pub fn to_list(&self) -> Vec<T> where T: Clone {
+        self.list.clone()
+    }
+
 }
 
 
-impl<T: Any + fmt::Debug> fmt::Debug for CircularList<T> {
+impl<T: Any + fmt::Debug + Clone> fmt::Debug for CircularList<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("CircularList").field("list", &self.list).field("index", &self.index).finish()
+        
+        let mut ccp = self.clone();
+        let mut ccp2 = self.clone();
+        
+
+        let mut left: Vec<T> = Vec::new();
+        let mut right: Vec<T> = Vec::new();
+
+        for _ in 0..self.len() {
+            match (ccp.focus(), ccp2.focus()) {
+                (Some(l), Some(r)) => {
+                    left.push(l);
+                    right.push(r);
+                }
+                
+                _ => break,
+            }
+
+            ccp.rot_l();
+            ccp2.rot_r()
+        }
+
+        f.debug_struct("CircularList")
+            .field("left list:", &left)
+            .field("right list:", &right)
+            .field("index", &self.index).finish()
+
+    }
+}
+
+impl<T: Clone> Clone for CircularList<T> {
+    fn clone(&self) -> Self {
+        Self { list: self.list.clone(), index: self.index.clone(), rot: self.rot.clone() }
     }
 }
 

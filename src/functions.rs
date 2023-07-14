@@ -42,3 +42,37 @@ pub fn string_to_list(s: &str) -> Vec<&str> {
     }
          */
 }
+
+
+pub fn partition_option<T, K>(iter: K) -> Vec<T>
+where
+    K: IntoIterator<Item = Option<T>>
+{
+    let mut v: Vec<T> = Vec::new();
+    for el in iter {
+        match el {
+            Some(e) => v.push(e),
+
+            None => { }
+        }
+    }
+
+    return v;
+}
+
+pub fn partition_result<T, J, K>(iter: K) -> (Vec<T>, Vec<J>)
+where
+    K: IntoIterator<Item = Result<T, J>>
+{
+    let mut ok: Vec<T> = Vec::new();
+    let mut err: Vec<J> = Vec::new();
+
+    for el in iter {
+        match el {
+            Ok(t) => ok.push(t),
+            Err(j) => err.push(j),
+        }
+    }
+
+    (ok, err)
+}

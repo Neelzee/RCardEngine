@@ -1,7 +1,12 @@
+use std::any::TypeId;
+use std::str::FromStr;
+
 use crate::CardGame::player::Move;
 use crate::CardGame::card::Card;
 use crate::feature::Feature;
 
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CardEffect {
     ChangeCard,
     SwapHand,
@@ -35,7 +40,7 @@ pub enum Expr {
     Not(Vec<Expr>),
     And(Vec<Expr>, Vec<Expr>),
     Or(Vec<Expr>, Vec<Expr>),
-    AffectPlayer(String, Option<Vec<Expr>>),
+    AffectPlayer(CardEffect, Option<Vec<Expr>>),
     TOLeft,
     TORight,
     CardRank,
@@ -85,6 +90,20 @@ impl Expr {
             
             Expr::Numeric(_) => Some(self.clone()),
             
+            _ => None
+        }
+    }
+
+    pub fn get_value(&self) -> Option<i32> {
+        match self {
+            Expr::Text(t) => match t.parse::<i32>() {
+                Ok(i) => Some(i),
+
+                Err(_) => todo!(),
+            }
+
+            Expr::Numeric(i) => Some(*i),
+
             _ => None
         }
     }
@@ -144,7 +163,9 @@ impl Expr {
             Expr::PAPlay => todo!(),
         }
     }
+
 }
+
 
 
 #[derive(Clone)]
@@ -197,6 +218,12 @@ pub enum ParseErrorCode {
 pub struct ExecError {
     err: ExecErrorCode,
     expr: Expr
+}
+
+impl ExecError {
+    pub fn new(err: ExecErrorCode, expr: Expr) -> ExecError {
+        ExecError { err, expr }
+    }
 }
 
 pub enum ExecErrorCode {

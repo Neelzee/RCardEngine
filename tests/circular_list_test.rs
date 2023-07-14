@@ -220,7 +220,6 @@ mod test {
         for i in 0..9 {
             c.insert_l(i); 
             a.insert_r(i); 
-            println!("a: {:?}", a);
         }
         
         println!("c: {:?}", c);

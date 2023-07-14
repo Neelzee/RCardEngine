@@ -1,4 +1,4 @@
-use RCardEngine::CardGame::game::Game;
+use RCardEngine::CardGame::{game::Game, card::Card};
 
 
 fn main() {
@@ -12,6 +12,9 @@ fn play_game(n: i32) {
 }
 
 
-fn get_games() -> Option<Vec<Game>> {
+fn get_games<F>() -> Option<Vec<Game<F>>>
+where
+    F: Fn(Game<F>, Card) -> bool
+{
     None
 }

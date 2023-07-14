@@ -1,5 +1,6 @@
 use super::card::Card;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Player {
     name: String,
     hand: Vec<Card>,
@@ -28,6 +29,17 @@ impl Player {
         }
     }
 
+    pub fn set_moves(&mut self, moves: Vec<(Move, bool)>) {
+        self.moves = moves;
+    }
+
+    pub fn add_to_hand(&mut self, mut hand: Vec<Card>) {
+        self.hand.append(&mut hand);
+    }
+
+    pub fn get_move_history(&self) -> Vec<(Move, bool)> {
+        self.move_history.clone()
+    }
 }
 
 
