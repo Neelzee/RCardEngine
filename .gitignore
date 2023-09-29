@@ -1,11 +1,1 @@
-.stack-work/
-*~
-.obsidian
-
-
-# Added by cargo
-
 /target
-
-settings.json
-.vscode
