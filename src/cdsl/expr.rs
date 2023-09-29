@@ -16,7 +16,7 @@ pub enum Type {
     Player
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Value {
     Integer(i32),
     Float(f32),
@@ -26,25 +26,25 @@ pub enum Value {
     Player(Player)
 }
 
-
+#[derive(PartialEq)]
 pub struct FunDecl {
-    fun_name: String,
-    arguments: Vec<Type>,
-    ret_type: Type
+    pub fun_name: String,
+    pub arguments: Vec<Type>,
+    pub ret_type: Type
 }
 
-
+#[derive(PartialEq)]
 pub struct VarDecl {
-    var_name: String,
-    var_type: Type,
-    value: Value
+    pub var_name: String,
+    pub var_type: Type,
+    pub value: Value
 }
 
 
 
 pub struct Scope {
-    variables: Vec<VarDecl>,
-    functions: Vec<FunDecl>
+    pub variables: Vec<VarDecl>,
+    pub functions: Vec<FunDecl>
 }
 
 
@@ -62,14 +62,37 @@ impl Scope {
 
     pub fn lookup_function(&self, expr: &Expr) -> Option<FunDecl> {
         match expr {
-            Expr::FunCall(fun_name, args, ret_type) => match self.functions.iter().filter(|fd| &fd.fun_name == fun_name && &vd.ret_type == ret_type).collect::<Vec<&VarDecl>>() {
+            Expr::FunCall(fun_name, args, ret_type) => match self.functions.iter().filter(|fd| &fd.fun_name == fun_name && &fd.ret_type == ret_type).collect::<Vec<&FunDecl>>() {
                 fs => {
-                    for f in fs {
-                        
-                    }
+                    todo!()
                 }
             }
             _ => None
         }
+    }
+
+    /**
+     * Takes a union of the scopes
+     */
+    pub fn expand_scope(self, scope: Scope) -> Scope {
+        let mut left_vars = self.variables;
+        let right_vars = scope.variables;
+
+        let mut left_funs = self.functions;
+        let right_funs = scope.functions;
+
+        for v in right_vars {
+            if !left_vars.contains(&v) {
+                left_vars.push(v);
+            }
+        }
+
+        for f in right_funs {
+            if !left_funs.contains(&f) {
+                left_funs.push(f);
+            }
+        }
+
+        return Scope {variables: left_vars, functions: left_funs};
     }
 }
