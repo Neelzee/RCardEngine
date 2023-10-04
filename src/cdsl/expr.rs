@@ -3,7 +3,26 @@ use crate::game::card::Card;
 
 pub enum ExprAst {
     Var(String, Type),
+    Add(ExprAst, ExprAst),
+    Neg(ExprAst),
+    Sub(ExprAst, ExprAst),
+    Mult(ExprAst, ExprAst),
+    Div(ExprAst, ExprAst),
     FunCall(String, Vec<ExprAst>, Type)
+}
+
+impl ExprAst {
+    pub fn get_type(&self) -> &Type {
+        match self {
+            ExprAst::Var(_, t) => t,
+            ExprAst::Add(l, _) => l.get_type(),
+            ExprAst::Neg(e) => e.get_type(),
+            ExprAst::Sub(l, _) => l.get_type(),
+            ExprAst::Mult(l, _) => l.get_type(),
+            ExprAst::Div(l, _) => l.get_type(),
+            ExprAst::FunCall(_, _, t) => t
+        }
+    }
 }
 
 #[derive(PartialEq)]
@@ -15,8 +34,6 @@ pub enum Type {
     Card,
     Player
 }
-
-pub struct TypeDecl(Vec<(Type, String)>);
 
 #[derive(Clone, PartialEq)]
 pub enum Value {

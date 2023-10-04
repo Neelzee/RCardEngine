@@ -1,8 +1,8 @@
 use super::expr::{Type, Value, ExprAst};
 
 pub enum Statement {
-    VarDecleration(String, Type, Option<Value>),
-    FunDecleration(String, Vec<Type>, Type, Vec<Statement>),
+    VarDeclaration(String, Type, Option<Value>),
+    FunDeclaration(String, Vec<Type>, Type, Vec<Statement>),
     VarAssignment(String, Value),
     If(ExprAst, Vec<Statement>),
     IfElse(ExprAst, Vec<Statement>, Vec<Statement>),
