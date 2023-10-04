@@ -1,9 +1,9 @@
 use crate::game::player::Player;
 use crate::game::card::Card;
 
-pub enum Expr {
+pub enum ExprAst {
     Var(String, Type),
-    FunCall(String, Vec<Expr>, Type)
+    FunCall(String, Vec<ExprAst>, Type)
 }
 
 #[derive(PartialEq)]
@@ -15,6 +15,8 @@ pub enum Type {
     Card,
     Player
 }
+
+pub struct TypeDecl(Vec<(Type, String)>);
 
 #[derive(Clone, PartialEq)]
 pub enum Value {
@@ -30,7 +32,8 @@ pub enum Value {
 pub struct FunDecl {
     pub fun_name: String,
     pub arguments: Vec<Type>,
-    pub ret_type: Type
+    pub ret_type: Type,
+    pub doc_string: String
 }
 
 #[derive(PartialEq)]
@@ -49,9 +52,9 @@ pub struct Scope {
 
 
 impl Scope {
-    pub fn lookup_variable(&self, expr: &Expr) -> Option<Value> {
+    pub fn lookup_variable(&self, expr: &ExprAst) -> Option<Value> {
         match expr {
-            Expr::Var(var_name, var_type) => match self.variables.iter().filter(|vd| &vd.var_name == var_name && &vd.var_type == var_type).collect::<Vec<&VarDecl>>().pop() {
+            ExprAst::Var(var_name, var_type) => match self.variables.iter().filter(|vd| &vd.var_name == var_name && &vd.var_type == var_type).collect::<Vec<&VarDecl>>().pop() {
                 Some(vd) => Some(vd.value.clone()),
                 None => None
             }
@@ -60,9 +63,9 @@ impl Scope {
     }
 
 
-    pub fn lookup_function(&self, expr: &Expr) -> Option<FunDecl> {
+    pub fn lookup_function(&self, expr: &ExprAst) -> Option<FunDecl> {
         match expr {
-            Expr::FunCall(fun_name, args, ret_type) => match self.functions.iter().filter(|fd| &fd.fun_name == fun_name && &fd.ret_type == ret_type).collect::<Vec<&FunDecl>>() {
+            ExprAst::FunCall(fun_name, args, ret_type) => match self.functions.iter().filter(|fd| &fd.fun_name == fun_name && &fd.ret_type == ret_type).collect::<Vec<&FunDecl>>() {
                 fs => {
                     todo!()
                 }

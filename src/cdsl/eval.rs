@@ -1,8 +1,8 @@
 use crate::cdsl::expr::*;
 
-fn eval(expr: Expr, scope: Scope) -> Value {
+fn eval(expr: ExprAst, scope: Scope) -> Value {
     match expr {
-        Expr::Var(var_name, var_type) => todo!(),
-        Expr::FunCall(fun_name, args, fun_type) => todo!()
+        ExprAst::Var(var_name, var_type) => todo!(),
+        ExprAst::FunCall(fun_name, args, fun_type) => todo!()
     }
 }
