@@ -10,11 +10,11 @@ fn eval(expr: ExprAst, scope: &Scope) -> Result<Value, Error> {
 
         ExprAst::Add(l, r) => {
             if l.get_type() != r.get_type() {
-                Err(Error {})
+                return Err(Error {});
             }
 
-            match eval(l, scope) {
-                Ok(l_v) => match eval(r, scope) {
+            match eval(*l, scope) {
+                Ok(l_v) => match eval(*r, scope) {
                     Ok(r_v) => Ok(l_v + r_v),
                     Err(e) => Err(e)
                 }
@@ -22,20 +22,20 @@ fn eval(expr: ExprAst, scope: &Scope) -> Result<Value, Error> {
             }
         }
 
-        ExprAst::Neg(expr) => match eval(expr) {
-            Ok(v) => -v,
+        ExprAst::Neg(expr) => match eval(*expr, scope) {
+            Ok(v) => Ok(-v),
             Err(e) => Err(e)
         }
 
-        ExprAst::Sub(l, r) => eval(ExprAst::Neg(ExprAst::Add(l, r)), scope),
+        ExprAst::Sub(l, r) => eval(ExprAst::Neg(Box::new(ExprAst::Add(l, r))), scope),
 
         ExprAst::Mult(l, r) => {
             if l.get_type() != r.get_type() {
-                Err(Error {})
+                return Err(Error {});
             }
 
-            match eval(l, scope) {
-                Ok(l_v) => match eval(r, scope) {
+            match eval(*l, scope) {
+                Ok(l_v) => match eval(*r, scope) {
                     Ok(r_v) => Ok(l_v * r_v),
                     Err(e) => Err(e)
                 }
@@ -45,11 +45,11 @@ fn eval(expr: ExprAst, scope: &Scope) -> Result<Value, Error> {
 
         ExprAst::Div(l, r) => {
             if l.get_type() != r.get_type() {
-                Err(Error {})
+                return Err(Error {});
             }
 
-            match eval(l, scope) {
-                Ok(l_v) => match eval(r, scope) {
+            match eval(*l, scope) {
+                Ok(l_v) => match eval(*r, scope) {
                     Ok(r_v) => Ok(l_v / r_v),
                     Err(e) => Err(e)
                 }

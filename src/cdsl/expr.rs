@@ -1,13 +1,14 @@
 use crate::game::player::Player;
 use crate::game::card::Card;
+use std::fmt;
 
 pub enum ExprAst {
     Var(String, Type),
-    Add(ExprAst, ExprAst),
-    Neg(ExprAst),
-    Sub(ExprAst, ExprAst),
-    Mult(ExprAst, ExprAst),
-    Div(ExprAst, ExprAst),
+    Add(Box<ExprAst>, Box<ExprAst>),
+    Neg(Box<ExprAst>),
+    Sub(Box<ExprAst>, Box<ExprAst>),
+    Mult(Box<ExprAst>, Box<ExprAst>),
+    Div(Box<ExprAst>, Box<ExprAst>),
     FunCall(String, Vec<ExprAst>, Type)
 }
 
@@ -15,11 +16,11 @@ impl ExprAst {
     pub fn get_type(&self) -> &Type {
         match self {
             ExprAst::Var(_, t) => t,
-            ExprAst::Add(l, _) => l.get_type(),
+            ExprAst::Add(l, _) => l.get_type(), // Assumes the typing is valid
             ExprAst::Neg(e) => e.get_type(),
-            ExprAst::Sub(l, _) => l.get_type(),
-            ExprAst::Mult(l, _) => l.get_type(),
-            ExprAst::Div(l, _) => l.get_type(),
+            ExprAst::Sub(l, _) => l.get_type(), // Assumes the typing is valid
+            ExprAst::Mult(l, _) => l.get_type(), // Assumes the typing is valid
+            ExprAst::Div(l, _) => l.get_type(), // Assumes the typing is valid
             ExprAst::FunCall(_, _, t) => t
         }
     }
@@ -44,6 +45,85 @@ pub enum Value {
     Card(Card),
     Player(Player)
 }
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+
+impl std::ops::Neg for Value {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        match self {
+            Value::Integer(v) => Value::Integer(-v),
+            Value::Float(v) => Value::Float(-v),
+            _ => panic!("Cant take the negative of {}", self)
+        }
+    }
+}
+
+
+impl std::ops::Mul<Value> for Value {
+    type Output = Self;
+
+    fn mul(self, rhs: Value) -> Self {
+        match (&self, &rhs) {
+            (Value::Integer(l), Value::Integer(r)) => Value::Integer(l * r),
+            (Value::Integer(l), Value::Float(r)) => Value::Float(*l as f32 * r),
+            (Value::Float(l), Value::Integer(r)) => Value::Float(l * *r as f32),
+            (Value::Float(l), Value::Float(r)) => Value::Float(l * r),
+            _ => panic!("Cant add {} and {}", self, rhs)
+        }
+    }
+}
+
+impl std::ops::Div<Value> for Value {
+    type Output = Self;
+
+    fn div(self, rhs: Value) -> Self {
+        match (&self, &rhs) {
+            (Value::Integer(l), Value::Integer(r)) => Value::Integer(l / r),
+            (Value::Integer(l), Value::Float(r)) => Value::Float(*l as f32 / r),
+            (Value::Float(l), Value::Integer(r)) => Value::Float(l / *r as f32),
+            (Value::Float(l), Value::Float(r)) => Value::Float(l / r),
+            _ => panic!("Cant add {} and {}", self, rhs)
+        }
+    }
+}
+
+
+impl std::ops::Add<Value> for Value {
+    type Output = Self;
+
+    fn add(self, rhs: Value) -> Self {
+        match (&self, &rhs) {
+            (Value::Integer(l), Value::Integer(r)) => Value::Integer(l + r),
+            (Value::Integer(l), Value::Float(r)) => Value::Float(*l as f32 + r),
+            (Value::Float(l), Value::Integer(r)) => Value::Float(l + *r as f32),
+            (Value::Float(l), Value::Float(r)) => Value::Float(l + r),
+            (Value::List(l), Value::List(r)) => {
+
+                let mut vc = l.to_owned();
+                
+                for el in r {
+                    vc.push(el.to_owned());
+                }
+
+                return Value::List(vc);
+            },
+
+            _ => {
+                
+                panic!("Cant add {} and {}", self, rhs)
+            } // Should not add these
+        }
+    }
+
+}
+
 
 #[derive(PartialEq)]
 pub struct FunDecl {
