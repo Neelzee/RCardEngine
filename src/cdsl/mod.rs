@@ -1,3 +1,5 @@
+pub mod interface;
+
 pub mod expr;
 
-pub mod eval;
+pub mod algebra;
