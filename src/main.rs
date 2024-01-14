@@ -1,6 +1,7 @@
 #![feature(let_chains)]
 
 mod cdsl;
+mod errors;
 mod parser;
 mod tests;
 
