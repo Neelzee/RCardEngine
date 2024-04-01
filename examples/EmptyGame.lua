@@ -13,9 +13,15 @@ local player = {
 }
 
 local moves = {
-  ["1"] = { "MOVE" = MOVE.PLAY }
+  [1] = { ["MOVE" ] = MOVE.PLAY }
+}
+
+GAME = {
+  deck = { { DECK = "deck", CARDS = {} } },
+  ...
 }
 ]]
+--
 
 MOVE = {
 	PLAY = 1,
@@ -45,8 +51,9 @@ GAME = {
 	-- List of all possible cards
 	cards = {},
 	-- List of decks a player can draw/play/discard on
-	deck = { { DECK = "deck", CARDS = {} } },
+	deck = {},
 	-- Current turn pointer, ie. what player is currently playing
+	-- Using 1-indexing
 	turnPointer = 0,
 	actions = {
 		[GAME_STATE.START] = {},
