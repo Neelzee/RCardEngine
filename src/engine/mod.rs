@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
-use mlua::Lua;
+use mlua::{Lua, LuaSerdeExt, UserData, Value};
 use std::fs::File;
 use std::io::{BufReader, Read};
+
+use self::game::Game;
 
 pub mod game;
 
@@ -26,7 +28,7 @@ pub fn load_game() -> Result<()> {
 
     let gm = globals.get::<_, mlua::Table>("GAME")?;
 
-    println!("{gm:?}");
+    // TODO: Find a way to convert Table into Value
 
     Ok(())
 }
