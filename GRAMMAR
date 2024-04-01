@@ -1,0 +1,98 @@
+Program :
+  { Statement }*
+
+Statement :
+  AssignmentStatement
+  | DeclarationStatement
+  | FunctionDeclaration
+  | ArrayDeclaration
+  | ArrayAssignment
+  | IfStatement
+  | WhileStatement
+  | BlockStatement
+  | ForStatement
+  | ReturnStatement
+  | EmptyStatement
+;
+
+AssignmentStatement :
+  'let' ident '=' Expression ';'
+;
+
+DeclarationStatement :
+  'let' ident ':' Type ';'
+;
+
+FunctionDeclaration :
+  'fn' ident '(' { Parameter }* ')' '->' Type '{'
+    Statement
+  '}'
+;
+
+ArrayDeclaration :
+  'let' ident ':' Type '[' Expression '];'
+;
+
+ArrayAssignment :
+  ident '[' Expression ']' '=' Expression ';'
+;
+
+IfStatement :
+  'if' Expression '{'
+    Statement
+  '}'
+  {
+    'else' '{'
+      Statement
+    '}'
+  }?
+;
+
+WhileStatement :
+  'while' Expression '{'
+    Statement
+  '}'
+;
+
+BlockStatement :
+  '{' { Statement }* '}'
+;
+
+ForStatement :
+  'for' ident { Type }? 'in' Expression '{'
+    Statement
+  '}'
+;
+
+ReturnStatement :
+  'return' { Expression }? ';'
+;
+
+EmptyStatement :;
+
+Expression
+  : PrimitiveExpression
+  | UnOp Expression
+  | Expression BinOp Expression
+  | FunctionCall
+;
+
+PrimitiveExpression :
+  : IntegerLiteral
+  | 'true'
+  | 'false'
+  | StringLiteral
+  | ident
+;
+
+BinOp : '+' | '-' | '*' | '/' | '>' | '<' | '>=' | '<=' | '==' | '=!='| '&&' | '||'
+;
+
+UnOp : '!' | '-'
+;
+
+IntegerLiteral : [0-9]*
+;
+
+StringLiteral : '"' { [a-z-A-Z]* } '"'
+;
